@@ -34,7 +34,7 @@ function getSummonerInfo() {
           return response.json();
         })
         .then(data => {
-          fetch(`/match-history/${region}/${data.puuid}?count=100&queueId=all`)
+          fetch(`/match-history/${region}/${data.puuid}?count=100&queueId=${gameMode}`)
             .then(res => res.json())
             .then(matchData => {
               const matches = matchData.matches || [];
@@ -43,33 +43,15 @@ function getSummonerInfo() {
               if (gameMode === '400') {
                 filteredMatches = matches.filter(m => m.info.queueId === 400 && m.info.gameMode !== 'SWIFTPLAY');
               } else if (gameMode === 'swiftplay') {
-                filteredMatches = matches.filter(m => m.info.gameMode === 'SWIFTPLAY');
+                filteredMatches = matches.filter(m =>
+                  m.info.queueId === 480 || m.info.gameMode === 'SWIFTPLAY'
+                );
               } else if (gameMode !== 'all') {
                 filteredMatches = matches.filter(m => m.info.queueId.toString() === gameMode);
               }
 
-              let totalGames = 0;
-              let winrate = 0;
-
               const rankedSolo = data.ranked?.find(entry => entry.queueType === 'RANKED_SOLO_5x5');
               const rankedFlex = data.ranked?.find(entry => entry.queueType === 'RANKED_FLEX_SR');
-
-              if (gameMode === '420' && rankedSolo) {
-                totalGames = rankedSolo.wins + rankedSolo.losses;
-                winrate = ((rankedSolo.wins / totalGames) * 100).toFixed(1);
-              } else if (gameMode === '440' && rankedFlex) {
-                totalGames = rankedFlex.wins + rankedFlex.losses;
-                winrate = ((rankedFlex.wins / totalGames) * 100).toFixed(1);
-              } else {
-                const playerStats = filteredMatches.map(m => {
-                  const p = m.info.participants.find(p => p.puuid === data.puuid);
-                  return p ? { win: p.win } : null;
-                }).filter(Boolean);
-
-                totalGames = playerStats.length;
-                const wins = playerStats.filter(p => p.win).length;
-                winrate = totalGames ? ((wins / totalGames) * 100).toFixed(1) : 0;
-              }
 
               const soloInfo = rankedSolo
                 ? `<strong>Solo/Duo:</strong><br>${rankedSolo.tier} ${rankedSolo.rank} (${rankedSolo.leaguePoints} LP)<br>
@@ -95,16 +77,6 @@ function getSummonerInfo() {
                     <div class="rank-block">${soloInfo}</div>
                     <div class="rank-block">${flexInfo}</div>
                   </div>
-                  <div class="stat-circles">
-                    <div class="circle played">
-                      <div class="circle-value">${totalGames}</div>
-                      <div class="circle-label">Played</div>
-                    </div>
-                    <div class="circle winrate">
-                      <div class="circle-value">${winrate}%</div>
-                      <div class="circle-label">Winrate</div>
-                    </div>
-                  </div>
                 </div>
               `;
 
@@ -114,33 +86,35 @@ function getSummonerInfo() {
                                   : info.queueId === 440 ? 'Ranked Flex'
                                   : info.queueId === 400 ? 'Draft Pick'
                                   : info.queueId === 450 ? 'ARAM'
-                                  : info.gameMode === 'SWIFTPLAY' ? 'Swiftplay'
+                                  : info.queueId === 480 || info.gameMode === 'SWIFTPLAY' ? 'Swiftplay'
                                   : info.gameMode || 'Other';
 
                 const team1 = info.participants.slice(0, 5);
                 const team2 = info.participants.slice(5, 10);
 
-                const renderTeam = (team, labelColor) => `
-                  <div style="margin-top: 10px;">
-                    <h4 style="color: ${labelColor}; margin-bottom: 6px;">${labelColor === '#00c6ff' ? 'Blue Side' : 'Red Side'}</h4>
-                    <div class="team-grid">
-                      ${team.map(p => {
-                        const champIcon = `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${p.championName}.png`;
-                        const resultColor = p.win ? '#00c6ff' : '#ff4c4c';
-                        return `
-                          <div class="player-card" style="border-left: 3px solid ${resultColor};">
-                            <img src="${champIcon}" alt="${p.championName}" width="32" height="32"><br>
-                            <strong>${p.riotId}</strong><br>
-                            ${p.championName}<br>
-                            KDA: ${p.kills}/${p.deaths}/${p.assists}<br>
-                            CS: ${p.totalMinionsKilled}<br>
-                            Vision: ${p.visionScore}
-                          </div>
-                        `;
-                      }).join('')}
+                const renderTeam = (team, side) => {
+                  const labelColor = side === 'blue' ? '#00c6ff' : '#ff4c4c';
+                  return `
+                    <div style="margin-top: 10px;">
+                      <h4 style="color: ${labelColor}; margin-bottom: 6px;">${side === 'blue' ? 'Blue Side' : 'Red Side'}</h4>
+                      <div class="team-grid">
+                        ${team.map(p => {
+                          const champIcon = `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${p.championName}.png`;
+                          return `
+                            <div class="player-card" style="border-left: 3px solid ${labelColor};">
+                              <img src="${champIcon}" alt="${p.championName}" width="32" height="32"><br>
+                              <strong>${p.riotId}</strong><br>
+                              ${p.championName}<br>
+                              KDA: ${p.kills}/${p.deaths}/${p.assists}<br>
+                              CS: ${p.totalMinionsKilled}<br>
+                              Vision: ${p.visionScore}
+                            </div>
+                          `;
+                        }).join('')}
+                      </div>
                     </div>
-                  </div>
-                `;
+                  `;
+                };
 
                 return `
                   <div class="match-block">
@@ -148,8 +122,8 @@ function getSummonerInfo() {
                       <span><strong>Game Mode:</strong> ${readableMode}</span>
                       <span><strong>Duration:</strong> ${(info.gameDuration / 60).toFixed(1)} min</span>
                     </div>
-                    ${renderTeam(team1, '#00c6ff')}
-                    ${renderTeam(team2, '#ff4c4c')}
+                    ${renderTeam(team1, 'blue')}
+                    ${renderTeam(team2, 'red')}
                   </div>
                 `;
               }).join('');
@@ -181,7 +155,7 @@ function getSummonerInfo() {
 function saveRecentSearch(nameTag) {
   let recent = JSON.parse(localStorage.getItem('recentSearches')) || [];
   if (!recent.includes(nameTag)) {
-        recent.unshift(nameTag);
+    recent.unshift(nameTag);
     if (recent.length > 5) recent.pop();
     localStorage.setItem('recentSearches', JSON.stringify(recent));
   }
@@ -203,4 +177,3 @@ function loadFromRecent(riotId) {
   input.value = riotId;
   getSummonerInfo();
 }
-

@@ -83,7 +83,7 @@ app.get('/match-history/:region/:puuid', async (req, res) => {
   const { region, puuid } = req.params;
   const routingRegion = accountRouting[region];
   const platformDomain = regionDomains[region];
-  const count = parseInt(req.query.count) || 5;
+  const count = 2; // Only want 2 matches
   const queueId = req.query.queueId || 'all';
 
   if (!routingRegion || !platformDomain) {
@@ -93,10 +93,11 @@ app.get('/match-history/:region/:puuid', async (req, res) => {
   try {
     const matchDetails = [];
     let start = 0;
-    const maxMatches = 1000;
+    const batchSize = 30;
+    const maxMatches = 300;
 
     while (start < maxMatches) {
-      const matchListRes = await fetch(`https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=${start}&count=100&api_key=${API_KEY}`);
+      const matchListRes = await fetch(`https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=${start}&count=${batchSize}&api_key=${API_KEY}`);
       if (!matchListRes.ok) break;
 
       const matchIds = await matchListRes.json();
@@ -137,7 +138,7 @@ app.get('/match-history/:region/:puuid', async (req, res) => {
       }
 
       if (matchDetails.length >= count) break;
-      start += 100;
+      start += batchSize;
     }
 
     res.json({ matches: matchDetails });
