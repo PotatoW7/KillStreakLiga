@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <title>Killstreak - League Stats</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
   <h2>Summoner Search</h2>
 
   <div class="form-container">
     <label for="riotId">Riot ID:</label>
-    <input type="text" id="riotId" placeholder="e.g. Sin Of Shadows#ZED"><br>
+    <input type="text" id="riotId" placeholder="e.g. ZenMasterNEED#EUW"><br>
 
     <label for="region">Region:</label>
     <select id="region">
@@ -23,20 +24,12 @@
       <option value="vn2">VN</option>
     </select><br>
 
-    <label for="gameMode">Game Mode:</label>
-    <select id="gameMode">
-      <option value="all">All</option>
-      <option value="420">Ranked Solo/Duo</option>
-      <option value="440">Ranked Flex</option>
-      <option value="400">Draft Pick</option>
-      <option value="480">Swiftplay</option>
-      <option value="450">ARAM</option>
-    </select><br>
-
     <button id="searchBtn">Search</button>
   </div>
 
-  <div id="recent-searches" class="result-box"></div>
+  <div id="recent-searches" class="result-box">
+    <h3>Recent Searches:</h3>
+  </div>
 
   <div class="result-box">
     <h3>Result:</h3>
@@ -44,6 +37,6 @@
     <div id="output"></div>
   </div>
 
-  <script src="client.js"></script>
+  <script type="module" src="client.js"></script>
 </body>
 </html>
