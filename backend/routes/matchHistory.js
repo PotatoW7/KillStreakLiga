@@ -1,16 +1,17 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const { regionDomains } = require('../utils/regions');
+const { regionDomains, accountRouting } = require('../utils/regions');
 const router = express.Router();
 
 const API_KEY = process.env.RIOT_API_KEY;
 
 const queueMap = {
-  ranked_solo: 420,
+  solo_duo: 420,
   ranked_flex: 440,
-  normal: [400, 430],
+  draft: 400,
   aram: 450,
-  swiftplay: 490
+  swiftplay: 480,
+  arena: 1700
 };
 
 router.get('/:region/:puuid', async (req, res) => {
@@ -18,53 +19,65 @@ router.get('/:region/:puuid', async (req, res) => {
   const mode = req.query.mode;
 
   const platformDomain = regionDomains[region];
-  if (!platformDomain) return res.status(400).json({ error: 'Unsupported region' });
+  const routingRegion = accountRouting[region];
+  const queueId = queueMap[mode];
 
-  const queueIds = queueMap[mode];
-  if (!queueIds) return res.status(400).json({ error: 'Unsupported game mode' });
+  if (!platformDomain || !routingRegion) {
+    return res.status(400).json({ error: 'Invalid region or game mode' });
+  }
 
   try {
-    console.log(`Fetching match history for ${puuid} in ${region}, mode: ${mode}`);
-
     const matchListRes = await fetch(
-      `https://${platformDomain}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=100&api_key=${API_KEY}`
+      `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=20&api_key=${API_KEY}`
     );
-    const matchIds = await matchListRes.json();
+    if (!matchListRes.ok) throw new Error('Failed to fetch match list');
 
-    const filteredMatches = [];
+    const matchIds = await matchListRes.json();
+    const recentGames = [];
+
     for (const matchId of matchIds) {
       const matchRes = await fetch(
-        `https://${platformDomain}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${API_KEY}`
+        `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${API_KEY}`
       );
-      if (!matchRes.ok) {
-        console.warn(`Failed to fetch match ${matchId}: ${matchRes.status}`);
-        continue;
-      }
+      if (!matchRes.ok) continue;
 
       const matchData = await matchRes.json();
-      const queueId = matchData.info.queueId;
+      const info = matchData.info;
 
-      if (Array.isArray(queueIds) ? queueIds.includes(queueId) : queueId === queueIds) {
-        filteredMatches.push(matchData);
-        if (filteredMatches.length === 20) break;
-      }
+      if (info.gameDuration < 300) continue; // skip remakes
+
+      const isSwiftplay = info.queueId === 480 || info.gameMode === 'SWIFTPLAY';
+      const isArena = info.queueId === 1700 || info.gameMode === 'CHERRY';
+      const isMatch =
+        mode === 'all' ||
+        (mode === 'swiftplay' && isSwiftplay) ||
+        (mode === 'arena' && isArena) ||
+        (mode !== 'swiftplay' && mode !== 'arena' && info.queueId === queueId);
+
+      if (!isMatch) continue;
+
+      const enrichedParticipants = info.participants.map(p => ({
+        ...p,
+        riotId: `${p.riotIdGameName || p.summonerName || 'Unknown'}#${p.riotIdTagline || ''}`,
+        placement: p.placement,
+        teamId: p.teamId,
+        items: [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5],
+        trinket: p.item6,
+        win: p.win
+        
+      }));
+
+      recentGames.push({
+        gameDuration: info.gameDuration,
+        gameMode: info.gameMode,
+        queueId: info.queueId,
+        players: enrichedParticipants
+      });
+
+      if (recentGames.length === 2) break;
     }
 
-    console.log(`Filtered ${filteredMatches.length} matches for mode ${mode}`);
-
-    let wins = 0;
-    let losses = 0;
-
-    for (const match of filteredMatches) {
-      const participant = match.info.participants.find(p => p.puuid === puuid);
-      if (participant?.win) wins++;
-      else losses++;
-    }
-
-    const total = wins + losses;
-    const winrate = total > 0 ? Math.round((wins / total) * 100) : 0;
-
-    res.json({ mode, wins, losses, winrate });
+    res.json({ mode, recentGames });
 
   } catch (err) {
     console.error('Match history error:', err);

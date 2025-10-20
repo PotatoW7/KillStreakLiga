@@ -46,12 +46,22 @@ router.get('/:region/:gameName/:tagLine', async (req, res) => {
 
     const rankedData = rankedRes.ok ? await rankedRes.json() : [];
 
+    const masteryRes = await fetch(
+   `https://${platformDomain}/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}?api_key=${API_KEY}`
+    );
+ 
+
+    const masteryData = masteryRes.ok ? await masteryRes.json() : [];
+
+    console.log('Mastery data:', masteryData.slice(0, 5));
+
     res.json({
       name: `${accountData.gameName}#${accountData.tagLine}`,
       puuid,
       summonerLevel: summonerData.summonerLevel,
       profileIconId: summonerData.profileIconId,
-      ranked: rankedData
+      ranked: rankedData,
+      mastery: masteryData.slice(0, 5) 
     });
 
   } catch (err) {

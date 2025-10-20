@@ -9,12 +9,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 const summonerRouter = require('./routes/summoner');
 app.use('/summoner-info', summonerRouter);
 
-const matchHistoryRouter = require('./routes/matchHistory');
-app.use('/match-history', matchHistoryRouter);
-
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
+
+const matchHistoryRouter = require('./routes/matchHistory');
+app.use('/match-history', matchHistoryRouter);
 
 app.listen(3000, () => {
   console.log('Server running on http://localhost:3000');
