@@ -1,52 +1,86 @@
 import React, { useState } from "react";
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
 import { auth } from "../firebase";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
 function Register() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [form, setForm] = useState({ username: "", email: "", password: "", confirm: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.password !== form.confirm) return setError("Passwords don't match");
+    if (form.password.length < 6) return setError("Password too short");
+
+    setLoading(true);
     try {
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCred.user, { displayName });
+      const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      await updateProfile(userCredential.user, { displayName: form.username });
+      await sendEmailVerification(userCredential.user);
+      alert("Account created! Check your email for verification.");
       navigate("/profile");
-    } catch (err) {
-      console.error("Registration failed:", err.message);
+    } catch (error) {
+      setError(error.message);
     }
+    setLoading(false);
   };
 
   return (
-    <div>
-      <h2>Create an Account</h2>
-      <form onSubmit={handleRegister}>
-        <input
-          type="text"
-          placeholder="Display Name"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Register</button>
-      </form>
+    <div className="min-h-screen">
+      <div className="auth-container">
+        <h2>Join KillStreak</h2>
+        <p>Create your account</p>
+        
+        {error && (
+          <div className="auth-error">
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="auth-form">
+          <input
+            type="text"
+            placeholder="Username"
+            value={form.username}
+            onChange={e => setForm({...form, username: e.target.value})}
+            className="auth-input"
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={e => setForm({...form, email: e.target.value})}
+            className="auth-input"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={e => setForm({...form, password: e.target.value})}
+            className="auth-input"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            value={form.confirm}
+            onChange={e => setForm({...form, confirm: e.target.value})}
+            className="auth-input"
+            required
+          />
+          
+          <button
+            disabled={loading}
+            className="auth-button"
+          >
+            {loading ? "Creating Account..." : "Register"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
