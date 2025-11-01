@@ -1,9 +1,17 @@
 import React, { useState } from "react";
 
-export default function MatchHistory({ matches, champNameToId, version, puuid }) {
+export default function MatchHistory({ matches, champNameToId, version, puuid, onPlayerClick }) {
   const [expandedMatch, setExpandedMatch] = useState(null);
 
   const toggleMatch = (index) => setExpandedMatch(expandedMatch === index ? null : index);
+
+  
+  const handlePlayerClick = (playerRiotId, event) => {
+    event.stopPropagation(); 
+    if (onPlayerClick) {
+      onPlayerClick(playerRiotId);
+    }
+  };
 
   const renderPlayerRow = (player, isCurrentPlayer = false) => (
     <div className={`player-row ${isCurrentPlayer ? 'current-player' : ''}`} key={player.puuid}>
@@ -11,8 +19,14 @@ export default function MatchHistory({ matches, champNameToId, version, puuid })
         src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${player.championName}.png`} 
         alt={player.championName} 
         className="champion-icon"
+        
       />
-      <div className="player-name">{player.riotId}</div>
+      <div 
+        className={`player-name ${!isCurrentPlayer ? 'clickable-player' : ''}`}
+        onClick={!isCurrentPlayer ? (e) => handlePlayerClick(player.riotId, e) : undefined}
+      >
+        {player.riotId}
+      </div>
       <div className="player-stats">
         <div className="player-kda">{player.kills}/{player.deaths}/{player.assists}</div>
         <div className="kda-ratio">
@@ -29,31 +43,30 @@ export default function MatchHistory({ matches, champNameToId, version, puuid })
     </div>
   );
 
- const getGameMode = (queueId) => {
-  const gameModes = {
-    420: "Solo/Duo",
-    440: "Flex",
-    400: "Draft",
-    450: "ARAM",
-    480: "Swiftplay", // Added Swiftplay
-    830: "Co-op vs AI",
-    840: "Co-op vs AI",
-    850: "Co-op vs AI",
-    900: "URF",
-    1300: "Nexus Blitz",
-    1700: "Arena"
+  const getGameMode = (queueId) => {
+    const gameModes = {
+      420: "Solo/Duo",
+      440: "Flex",
+      400: "Draft",
+      450: "ARAM",
+      480: "Swiftplay",
+      830: "Co-op vs AI",
+      840: "Co-op vs AI",
+      850: "Co-op vs AI",
+      900: "URF",
+      1300: "Nexus Blitz",
+      1700: "Arena"
+    };
+    
+    if (queueId === "swiftplay") return "Swiftplay";
+    if (queueId === "arena") return "Arena";
+    if (queueId === "draft") return "Draft";
+    if (queueId === "aram") return "ARAM";
+    if (queueId === "solo_duo") return "Solo/Duo";
+    if (queueId === "ranked_flex") return "Flex";
+    
+    return gameModes[queueId] || "Normal";
   };
-  
-  // For custom modes or if we have mode info from backend
-  if (queueId === "swiftplay") return "Swiftplay";
-  if (queueId === "arena") return "Arena";
-  if (queueId === "draft") return "Draft";
-  if (queueId === "aram") return "ARAM";
-  if (queueId === "solo_duo") return "Solo/Duo";
-  if (queueId === "ranked_flex") return "Flex";
-  
-  return gameModes[queueId] || "Normal";
-};
 
   const renderMatch = (match, index) => {
     const player = match.players.find(p => p.puuid === puuid);

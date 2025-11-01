@@ -247,7 +247,6 @@ button {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
   letter-spacing: 1px;
   box-shadow: 0 4px 15px rgba(200, 170, 110, 0.3);
 }
@@ -1170,4 +1169,94 @@ button:disabled {
   color: #c8aa6e;
   font-size: 1.2rem;
   font-weight: 600;
+}
+/* ===== CLICKABLE PLAYER STYLES ===== */
+.player-name.clickable-player {
+  color: #3bc149;
+  transition: all 0.2s ease;
+}
+
+.player-name.clickable-player:hover {
+  color: #f0e6d2;
+  text-shadow: 0 0 8px rgba(91, 192, 222, 0.6);
+  background: rgba(91, 192, 222, 0.1);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+}
+
+/* Make sure current player is not clickable */
+.player-row.current-player .player-name {
+  cursor: default;
+  color: #f0e6d2;
+  text-decoration: none;
+}
+/* ===== PLAYER TAGS STYLES ===== */
+.player-tags-section {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.player-tags-section h4 {
+  color: #c8aa6e;
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.player-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.player-tag {
+  background: rgba(200, 170, 110, 0.1);
+  color: #c8aa6e;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid rgba(200, 170, 110, 0.3);
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.player-tag:hover {
+  background: rgba(200, 170, 110, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(200, 170, 110, 0.3);
+}
+
+/* Special styling for millionaire tags */
+.player-tag:contains("Millionaire") {
+  background: rgba(255, 215, 0, 0.1);
+  color: #ffd700;
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .player-tags-container {
+    gap: 6px;
+  }
+  
+  .player-tag {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .player-tags-container {
+    justify-content: center;
+  }
+  
+  .player-tag {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
 }

@@ -16,6 +16,40 @@ function Summoner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const generatePlayerTags = (masteryData, champIdToName) => {
+    if (!masteryData || masteryData.length === 0) return [];
+    
+    const tags = [];
+    const topChamps = masteryData.slice(0, 5); // Top 5 champions
+    
+    topChamps.forEach((mastery) => {
+      const champName = champIdToName[mastery.championId];
+      if (champName) {
+        tags.push(`${champName} Lover`);
+        
+        if (mastery.championPoints >= 1000000) {
+          tags.push(`${champName} Millionaire`);
+        }
+        
+        if (mastery.championPoints >= 500000) {
+          tags.push(`${champName} Expert`);
+        }
+        
+        if (mastery.championLevel === 7) {
+          tags.push(`${champName} Master`);
+        }
+      }
+    });
+
+    if (masteryData.length > 0) {
+      const totalMasteryPoints = masteryData.reduce((sum, mastery) => sum + mastery.championPoints, 0);
+      
+      
+    }
+    
+    return [...new Set(tags)].slice(0, 8);
+  };
+
   const getSummonerInfo = async () => {
     setLoading(true);
     setError(null);
@@ -51,6 +85,8 @@ function Summoner() {
   };
 
   const handleKeyPress = (e) => { if (e.key === "Enter") getSummonerInfo(); };
+
+  const playerTags = data ? generatePlayerTags(data.mastery, champIdToName) : [];
 
   return (
     <div className="summoner-page">
@@ -108,6 +144,21 @@ function Summoner() {
                     compact={true}
                   />
                 </div>
+                
+                {/* Player Tags Section */}
+                {playerTags.length > 0 && (
+                  <div className="player-tags-section">
+                    <h4>Player Tags</h4>
+                    <div className="player-tags-container">
+                      {playerTags.map((tag, index) => (
+                        <span key={index} className="player-tag">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <ChampionMastery masteryData={data.mastery} champIdToName={champIdToName} version={version} />
               </div>
             </div>

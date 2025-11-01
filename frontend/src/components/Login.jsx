@@ -34,7 +34,7 @@ function Login() {
     <div className="min-h-screen">
       <div className="auth-container">
         <h2>Login</h2>
-        <p>Welcome back to KillStreak</p>
+        <p>Welcome to Killstreak</p>
         
         {error && (
           <div className="auth-error">
