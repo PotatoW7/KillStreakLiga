@@ -24,44 +24,59 @@ function App() {
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      navigate("/"); // Redirect to login page after logout
+      navigate("/"); 
     } catch (error) {
       console.error("Logout error:", error);
     }
   };
 
-  if (loading) return (
-    <div className="loading">Checking authentication...</div>
-  );
+  if (loading)
+    return <div className="loading">Checking authentication...</div>;
 
   return (
-    <div className="app-container">
+    <>
       <nav>
         {!user ? (
           <>
-            <Link className="nav-link" to="/">Login</Link>
-            <Link className="nav-link" to="/register">Register</Link>
+            <Link className="nav-link" to="/">
+              Login
+            </Link>
+            <Link className="nav-link" to="/register">
+              Register
+            </Link>
           </>
         ) : (
           <>
             <Link className="nav-link" to="/profile">
               {user.displayName ? `Welcome, ${user.displayName}` : "Profile"}
             </Link>
-            <Link className="nav-link" to="/summoner">Summoner Lookup</Link>
-            <button className="nav-link" onClick={handleLogout}>Logout</button>
+            <Link className="nav-link" to="/summoner">
+              Summoner Lookup
+            </Link>
+            <button className="nav-link" onClick={handleLogout}>
+              Logout
+            </button>
           </>
         )}
       </nav>
 
-      <Routes>
-        <Route path="/" element={user ? <Navigate to="/profile" /> : <Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/summoner" element={<Summoner />} />
-        <Route path="/finishSignIn" element={<FinishSignIn />} />
-        <Route path="*" element={<p className="error-box">404: Page not found</p>} />
-      </Routes>
-    </div>
+      <div className="app-container">
+        <Routes>
+          <Route
+            path="/"
+            element={user ? <Navigate to="/profile" /> : <Login />}
+          />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/summoner" element={<Summoner />} />
+          <Route path="/finishSignIn" element={<FinishSignIn />} />
+          <Route
+            path="*"
+            element={<p className="error-box">404: Page not found</p>}
+          />
+        </Routes>
+      </div>
+    </>
   );
 }
 

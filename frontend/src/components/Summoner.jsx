@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import RankedInfo from "./RankedInfo";
 import MatchHistory from "./MatchHistory";
 import ChampionMastery from "./ChampionMastery";
@@ -14,52 +14,47 @@ function Summoner() {
   const [champNameToId, setChampNameToId] = useState({});
   const [version, setVersion] = useState("");
   const [loading, setLoading] = useState(false);
+  const [matchLoading, setMatchLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [recentSearches, setRecentSearches] = useState([]);
 
-  const generatePlayerTags = (masteryData, champIdToName) => {
-    if (!masteryData || masteryData.length === 0) return [];
-    
-    const tags = [];
-    const topChamps = masteryData.slice(0, 5); // Top 5 champions
-    
-    topChamps.forEach((mastery) => {
-      const champName = champIdToName[mastery.championId];
-      if (champName) {
-        tags.push(`${champName} Lover`);
-        
-        if (mastery.championPoints >= 1000000) {
-          tags.push(`${champName} Millionaire`);
-        }
-        
-        if (mastery.championPoints >= 500000) {
-          tags.push(`${champName} Expert`);
-        }
-        
-        if (mastery.championLevel === 7) {
-          tags.push(`${champName} Master`);
-        }
-      }
-    });
-
-    if (masteryData.length > 0) {
-      const totalMasteryPoints = masteryData.reduce((sum, mastery) => sum + mastery.championPoints, 0);
-      
-      
+  useEffect(() => {
+    const savedSearches = localStorage.getItem("lolRecentSearches");
+    if (savedSearches) {
+      setRecentSearches(JSON.parse(savedSearches));
     }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("lolRecentSearches", JSON.stringify(recentSearches));
+  }, [recentSearches]);
+
+  const addToRecentSearches = (playerRiotId, playerRegion) => {
+    const searchEntry = { riotId: playerRiotId, region: playerRegion, timestamp: Date.now() };
     
-    return [...new Set(tags)].slice(0, 8);
+    setRecentSearches(prev => {
+      const filtered = prev.filter(search => 
+        !(search.riotId === playerRiotId && search.region === playerRegion)
+      );
+      
+      return [searchEntry, ...filtered].slice(0, 10);
+    });
   };
 
-  const getSummonerInfo = async () => {
+  const searchPlayer = async (playerRiotId, playerRegion = region) => {
     setLoading(true);
+    setMatchLoading(true);
     setError(null);
     setData(null);
     setMatches([]);
+    setRiotId(playerRiotId);
+    setRegion(playerRegion);
 
-    const [gameName, tagLine] = riotId.split("#");
-    if (!gameName || !tagLine || !region) {
-      setError("Enter Riot ID like Name#Tag and select a region.");
+    const [gameName, tagLine] = playerRiotId.split("#");
+    if (!gameName || !tagLine || !playerRegion) {
+      setError("Invalid Riot ID format.");
       setLoading(false);
+      setMatchLoading(false);
       return;
     }
 
@@ -69,23 +64,77 @@ function Summoner() {
       setChampIdToName(champIdToName);
       setChampNameToId(champNameToId);
 
-      const summonerRes = await fetch(`/summoner-info/${region}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
-      if (!summonerRes.ok) throw new Error("Summoner not found.");
+      const encodedGameName = encodeURIComponent(gameName);
+      const encodedTagLine = encodeURIComponent(tagLine);
+      
+      const summonerRes = await fetch(`/summoner-info/${playerRegion}/${encodedGameName}/${encodedTagLine}`);
+      
+      if (!summonerRes.ok) {
+        if (summonerRes.status === 404) {
+          throw new Error("Summoner not found. Please check the Riot ID and region.");
+        }
+        throw new Error("Failed to fetch summoner data.");
+      }
+      
       const summonerData = await summonerRes.json();
       setData(summonerData);
 
-      const matchRes = await fetch(`/match-history/${region}/${summonerData.puuid}?mode=${mode}`);
+      addToRecentSearches(playerRiotId, playerRegion);
+
+      const matchRes = await fetch(`/match-history/${playerRegion}/${summonerData.puuid}?mode=${mode}`);
+      if (!matchRes.ok) throw new Error("Failed to fetch match history");
+      
       const matchData = await matchRes.json();
       setMatches(matchData.recentGames || []);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setMatchLoading(false);
     }
   };
 
-  const handleKeyPress = (e) => { if (e.key === "Enter") getSummonerInfo(); };
+  const handleRecentSearchClick = (recentRiotId, recentRegion) => {
+    setRiotId(recentRiotId);
+    setRegion(recentRegion);
+    searchPlayer(recentRiotId, recentRegion);
+  };
 
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+  };
+
+  const removeRecentSearch = (indexToRemove) => {
+    setRecentSearches(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const generatePlayerTags = (masteryData, champIdToName) => {
+    if (!masteryData || masteryData.length === 0) return [];
+    
+    const tags = [];
+    const topChamps = masteryData.slice(0, 5);
+    
+    topChamps.forEach((mastery) => {
+      const champName = champIdToName[mastery.championId];
+      if (champName) {
+        tags.push(`${champName} Lover`);
+        if (mastery.championPoints >= 1000000) tags.push(`${champName} Millionaire`);
+        if (mastery.championPoints >= 500000) tags.push(`${champName} Expert`);
+        if (mastery.championLevel === 7) tags.push(`${champName} Master`);
+      }
+    });
+
+    return [...new Set(tags)].slice(0, 8);
+  };
+
+  const getSummonerInfo = async () => { 
+    await searchPlayer(riotId, region); 
+  };
+  
+  const handleKeyPress = (e) => { 
+    if (e.key === "Enter") getSummonerInfo(); 
+  };
+  
   const playerTags = data ? generatePlayerTags(data.mastery, champIdToName) : [];
 
   return (
@@ -95,7 +144,6 @@ function Summoner() {
       <div className="search-container">
         <input 
           type="text" 
-          placeholder="Riot ID (Faker#KR1)" 
           value={riotId} 
           onChange={(e) => setRiotId(e.target.value)} 
           onKeyPress={handleKeyPress} 
@@ -121,6 +169,42 @@ function Summoner() {
         </button>
       </div>
 
+      {recentSearches.length > 0 && (
+        <div className="recent-searches-section">
+          <div className="recent-searches-header">
+            <h4>Recent Searches</h4>
+            <button 
+              onClick={clearRecentSearches} 
+              className="clear-recent-btn"
+              title="Clear all recent searches"
+            >
+              Clear All
+            </button>
+          </div>
+          <div className="recent-searches-container">
+            {recentSearches.map((search, index) => (
+              <div key={index} className="recent-search-item">
+                <button
+                  onClick={() => handleRecentSearchClick(search.riotId, search.region)}
+                  className="recent-search-btn"
+                  title={`Search for ${search.riotId} in ${search.region.toUpperCase()}`}
+                >
+                  <span className="recent-search-name">{search.riotId}</span>
+                  <span className="recent-search-region">{search.region.toUpperCase()}</span>
+                </button>
+                <button
+                  onClick={() => removeRecentSearch(index)}
+                  className="remove-recent-btn"
+                  title="Remove from recent searches"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {error && <div className="error-box">{error}</div>}
 
       {data && (
@@ -145,7 +229,6 @@ function Summoner() {
                   />
                 </div>
                 
-                {/* Player Tags Section */}
                 {playerTags.length > 0 && (
                   <div className="player-tags-section">
                     <h4>Player Tags</h4>
@@ -165,7 +248,19 @@ function Summoner() {
           </div>
 
           <div className="match-history-section">
-            <MatchHistory matches={matches} champNameToId={champNameToId} version={version} puuid={data.puuid}/>
+            {matchLoading ? (
+              <div className="loading-matches">
+                <p className="text-center">Loading matches...</p>
+              </div>
+            ) : (
+              <MatchHistory 
+                matches={matches} 
+                champNameToId={champNameToId} 
+                version={version} 
+                puuid={data.puuid}
+                onPlayerClick={searchPlayer}
+              />
+            )}
           </div>
         </>
       )}
