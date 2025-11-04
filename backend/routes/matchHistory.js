@@ -37,7 +37,7 @@ router.get('/:region/:puuid', async (req, res) => {
   const queueId = queueMap[mode];
 
   if (!platformDomain || !routingRegion) {
-    return res.status(400).json({ error: 'Invalid region or game mode' });
+    return res.status(400).json({ error: 'Invalid region' });
   }
 
   try {
@@ -60,7 +60,7 @@ router.get('/:region/:puuid', async (req, res) => {
 
       const matchData = await matchRes.json();
       const info = matchData.info;
-      if (info.gameDuration < 300) continue; // skip remakes
+      if (info.gameDuration < 300) continue; 
 
       const objectives = extractObjectives(info.teams);
 
