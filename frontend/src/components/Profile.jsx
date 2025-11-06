@@ -132,7 +132,6 @@ function Profile() {
                 style={{ cursor: "pointer" }}
               />
 
-              {/* Context Menu */}
               {showContextMenu && (
                 <div
                   ref={contextMenuRef}

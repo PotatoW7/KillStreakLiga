@@ -2,14 +2,19 @@ import React, { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
-  sendEmailVerification
+  sendEmailVerification,
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore"; // ✅ import Firestore functions
-import { auth, db } from "../firebase"; // ✅ make sure db is imported
+import { doc, setDoc, getDocs, collection, query, where } from "firebase/firestore";
+import { auth, db } from "../firebase";
 import { useNavigate } from "react-router-dom";
 
 function Register() {
-  const [form, setForm] = useState({ username: "", email: "", password: "", confirm: "" });
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirm: "",
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -20,47 +25,73 @@ function Register() {
     if (form.password !== form.confirm)
       return setError("Passwords don't match");
     if (form.password.length < 6)
-      return setError("Password too short");
+      return setError("Password must be at least 6 characters");
 
     setLoading(true);
     setError("");
 
     try {
-      // ✅ Create the user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      const usernameQuery = query(
+        collection(db, "users"),
+        where("username", "==", form.username.trim())
+      );
+      const usernameSnapshot = await getDocs(usernameQuery);
+
+      if (!usernameSnapshot.empty) {
+        setError("Username already in use");
+        setLoading(false);
+        return;
+      }
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      );
       const user = userCredential.user;
 
-      // ✅ Set the displayName for Auth
-      await updateProfile(user, { displayName: form.username });
+      await updateProfile(user, { displayName: form.username.trim() });
 
-      // ✅ Save user info in Firestore (this was missing)
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, {
-        username: form.username,       // 🔥 saves username properly
-        email: form.email,
+        username: form.username.trim(),
+        email: form.email.trim().toLowerCase(),
         createdAt: new Date(),
         friends: [],
-        pendingRequests: []
+        pendingRequests: [],
       });
 
-      // ✅ Send email verification
       await sendEmailVerification(user);
 
-      alert("Account created! Check your email for verification.");
       navigate("/profile");
-
     } catch (error) {
       console.error("Error registering:", error);
-      setError(error.message);
+
+      let message = "Something went wrong. Please try again.";
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          message = "Email already in use";
+          break;
+        case "auth/invalid-email":
+          message = "Invalid email address";
+          break;
+        case "auth/weak-password":
+          message = "Password too weak";
+          break;
+        default:
+          message = error.message.replace("Firebase: ", "").split("(")[0].trim();
+      }
+
+      setError(message);
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="register-page">
       <div className="auth-container">
-        <h2>Join KillStreak</h2>
+        <h2>Join Killstreak</h2>
         <p>Create your account</p>
 
         {error && <div className="auth-error">{error}</div>}

@@ -21,7 +21,6 @@ function App() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        // Initialize user in Firestore if they don't exist
         await initializeUserInFirestore(firebaseUser);
       }
       setUser(firebaseUser);
@@ -120,7 +119,6 @@ function App() {
           />
         </Routes>
 
-        {/* Friends & Chat System */}
         {user && showSocial && (
           <div className="social-container">
             {!selectedFriend ? (

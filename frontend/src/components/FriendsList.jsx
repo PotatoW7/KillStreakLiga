@@ -96,11 +96,14 @@ function FriendsList({ onSelectFriend }) {
       querySnapshot.forEach((docSnap) => {
         if (docSnap.id !== auth.currentUser.uid) {
           const userData = docSnap.data();
+          const isAlreadyFriend = friends.some(friend => friend.id === docSnap.id);
+          
           results.push({
             id: docSnap.id,
             username: userData.username || 'Anonymous',
             email: userData.email,
-            profileImage: userData.profileImage
+            profileImage: userData.profileImage,
+            isAlreadyFriend
           });
         }
       });
@@ -161,7 +164,6 @@ function FriendsList({ onSelectFriend }) {
         })
       });
 
-      alert(`You are now friends with ${request.fromUsername || 'Anonymous'}!`);
     } catch (error) {
       console.error('Error accepting friend request:', error);
       alert('Error accepting friend request: ' + error.message);
@@ -174,7 +176,6 @@ function FriendsList({ onSelectFriend }) {
       await updateDoc(userRef, {
         pendingRequests: arrayRemove(request)
       });
-      alert('Friend request rejected.');
     } catch (error) {
       console.error('Error rejecting friend request:', error);
       alert('Error rejecting friend request: ' + error.message);
@@ -216,19 +217,21 @@ function FriendsList({ onSelectFriend }) {
                 </div>
                 <div className="user-details">
                   <span className="username">{user.username}</span>
-                  <span className="email">({user.email})</span>
                 </div>
               </div>
-              <button onClick={() => sendFriendRequest(user.id, user.username)}>Add Friend</button>
+              {user.isAlreadyFriend ? (
+                <button disabled className="already-friends-btn">
+                  Already Friends
+                </button>
+              ) : (
+                <button onClick={() => sendFriendRequest(user.id, user.username)}>
+                  Add Friend
+                </button>
+              )}
             </div>
           ))}
         </div>
       )}
-
-      {searchResults.length === 0 && searchUsername.trim() && !searchLoading && (
-        <p>No users found matching "{searchUsername}"</p>
-      )}
-
       {pendingRequests.length > 0 && (
         <div className="pending-requests">
           <h4>Pending Requests ({pendingRequests.length})</h4>

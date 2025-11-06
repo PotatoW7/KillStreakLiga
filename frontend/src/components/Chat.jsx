@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, onSnapshot as onSnapshotListener } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  onSnapshot as onSnapshotListener,
+} from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 function Chat({ selectedFriend, onBack }) {
   const [messages, setMessages] = useState([]);
@@ -9,11 +19,12 @@ function Chat({ selectedFriend, onBack }) {
   const [uploading, setUploading] = useState(false);
   const [friendProfile, setFriendProfile] = useState({
     ...selectedFriend,
-    profileImage: selectedFriend.profileImage || null
+    profileImage: selectedFriend.profileImage || null,
   });
   const [senderProfiles, setSenderProfiles] = useState({});
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const inputRef = useRef(null);
   const navigate = useNavigate();
 
   if (!selectedFriend) return null;
@@ -22,14 +33,14 @@ function Chat({ selectedFriend, onBack }) {
 
   useEffect(() => {
     const unsubscribeFunctions = [];
-    
+
     const currentUserRef = doc(db, 'users', auth.currentUser.uid);
     const unsubscribeCurrentUser = onSnapshotListener(currentUserRef, (docSnap) => {
       if (docSnap.exists()) {
         const userData = docSnap.data();
-        setSenderProfiles(prev => ({
+        setSenderProfiles((prev) => ({
           ...prev,
-          [auth.currentUser.uid]: userData.profileImage || null
+          [auth.currentUser.uid]: userData.profileImage || null,
         }));
       }
     });
@@ -39,66 +50,46 @@ function Chat({ selectedFriend, onBack }) {
     const unsubscribeFriend = onSnapshotListener(friendRef, (docSnap) => {
       if (docSnap.exists()) {
         const friendData = docSnap.data();
-        setFriendProfile(prev => ({
+        setFriendProfile((prev) => ({
           ...prev,
           profileImage: friendData.profileImage || prev.profileImage,
-          username: friendData.username || prev.username
+          username: friendData.username || prev.username,
         }));
-        
-        setSenderProfiles(prev => ({
+
+        setSenderProfiles((prev) => ({
           ...prev,
-          [selectedFriend.id]: friendData.profileImage || null
+          [selectedFriend.id]: friendData.profileImage || null,
         }));
       }
     });
     unsubscribeFunctions.push(unsubscribeFriend);
 
-    const uniqueSenders = [...new Set(messages.map(msg => msg.senderId))];
-    
-    uniqueSenders.forEach(senderId => {
-      if (senderId !== auth.currentUser.uid && senderId !== selectedFriend.id) {
-        const senderRef = doc(db, 'users', senderId);
-        const unsubscribe = onSnapshotListener(senderRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const senderData = docSnap.data();
-            setSenderProfiles(prev => ({
-              ...prev,
-              [senderId]: senderData.profileImage || null
-            }));
-          }
-        });
-        unsubscribeFunctions.push(unsubscribe);
-      }
-    });
-
     return () => {
-      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+      unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
     };
-  }, [selectedFriend.id, messages]);
+  }, [selectedFriend.id]);
 
   useEffect(() => {
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
     const unsubscribe = onSnapshotListener(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setMessages(msgs);
-      scrollToBottom();
       markMessagesAsRead(msgs);
     });
     return () => unsubscribe();
   }, [chatId]);
 
   const markMessagesAsRead = async (msgs) => {
-    const unreadMessages = msgs.filter(msg => 
-      msg.senderId !== auth.currentUser.uid && 
-      !msg.read
+    const unreadMessages = msgs.filter(
+      (msg) => msg.senderId !== auth.currentUser.uid && !msg.read
     );
 
     for (const msg of unreadMessages) {
       const messageRef = doc(db, 'chats', chatId, 'messages', msg.id);
       await updateDoc(messageRef, {
         read: true,
-        readAt: serverTimestamp()
+        readAt: serverTimestamp(),
       });
     }
   };
@@ -107,9 +98,32 @@ function Chat({ selectedFriend, onBack }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        e.preventDefault();
+        const cursorPosition = e.target.selectionStart;
+        const textBefore = newMessage.substring(0, cursorPosition);
+        const textAfter = newMessage.substring(cursorPosition);
+        
+        setNewMessage(textBefore + '\n' + textAfter);
+        
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.selectionStart = cursorPosition + 1;
+            inputRef.current.selectionEnd = cursorPosition + 1;
+          }
+        }, 0);
+      } else {
+        e.preventDefault();
+        handleSend();
+      }
+    }
+  };
+
   const handleSend = async () => {
     if (!newMessage.trim()) return;
-    
+
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     await addDoc(messagesRef, {
       text: newMessage,
@@ -117,15 +131,35 @@ function Chat({ selectedFriend, onBack }) {
       senderName: auth.currentUser.displayName,
       timestamp: serverTimestamp(),
       read: false,
-      type: 'text'
+      type: 'text',
     });
     setNewMessage('');
+    
+
+    setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+  };
+
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
   };
 
   const handleImageUpload = async (file) => {
     if (!file) return;
-    
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+    const validTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ];
     if (!validTypes.includes(file.type)) {
       alert('Please select a valid image file (JPEG, PNG, GIF, WebP)');
       return;
@@ -139,7 +173,7 @@ function Chat({ selectedFriend, onBack }) {
     setUploading(true);
     try {
       const base64String = await fileToBase64(file);
-      
+
       const messagesRef = collection(db, 'chats', chatId, 'messages');
       await addDoc(messagesRef, {
         imageData: base64String,
@@ -149,8 +183,12 @@ function Chat({ selectedFriend, onBack }) {
         senderName: auth.currentUser.displayName,
         timestamp: serverTimestamp(),
         read: false,
-        type: 'image'
+        type: 'image',
       });
+      
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('Error uploading image. Please try again.');
@@ -162,40 +200,55 @@ function Chat({ selectedFriend, onBack }) {
     }
   };
 
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-    });
-  };
+  useEffect(() => {
+    const handlePaste = (e) => {
+      if (!e.clipboardData) return;
+      const items = e.clipboardData.items;
+      for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            handleImageUpload(file);
+            e.preventDefault();
+          }
+        }
+      }
+    };
+
+    const input = inputRef.current;
+    if (input) {
+      input.addEventListener('paste', handlePaste);
+    }
+
+    return () => {
+      if (input) {
+        input.removeEventListener('paste', handlePaste);
+      }
+    };
+  }, []);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      handleImageUpload(file);
-    }
+    if (file) handleImageUpload(file);
   };
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
 
-  const getOptimizedImageSrc = (base64Data) => {
-    return base64Data;
-  };
-
   const getSenderProfileImage = (senderId) => {
     if (senderProfiles[senderId]) {
       return senderProfiles[senderId];
     }
-    
+
     if (senderId === auth.currentUser.uid) {
-      return auth.currentUser.photoURL || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+      return (
+        auth.currentUser.photoURL ||
+        'https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png'
+      );
     }
-    
-    return "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+
+    return 'https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png';
   };
 
   return (
@@ -203,56 +256,67 @@ function Chat({ selectedFriend, onBack }) {
       <div className="chat-header">
         <button onClick={onBack} className="back-btn">← Back</button>
         <div className="chat-friend-info">
-          <img 
-            src={friendProfile.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"} 
+          <img
+            src={
+              friendProfile.profileImage ||
+              'https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png'
+            }
             alt={friendProfile.username}
             className="chat-friend-avatar"
           />
           <h3>{friendProfile.username}</h3>
         </div>
-        <div className="chat-status">
-          {messages.some(msg => 
-            msg.senderId !== auth.currentUser.uid && !msg.read
-          ) && <span className="new-messages-indicator">New messages</span>}
-        </div>
       </div>
 
       <div className="chat-messages">
-        {messages.map(msg => (
+        {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`chat-message ${msg.senderId === auth.currentUser.uid ? 'sent' : 'received'}`}
+            className={`chat-message ${
+              msg.senderId === auth.currentUser.uid ? 'sent' : 'received'
+            }`}
           >
             <div className="message-user-info">
-              <img 
-                src={getSenderProfileImage(msg.senderId)} 
+              <img
+                src={getSenderProfileImage(msg.senderId)}
                 alt={msg.senderName}
                 className="message-profile-img"
               />
               <span className="message-username">
-                {msg.senderId === auth.currentUser.uid ? auth.currentUser.displayName : msg.senderName}
+                {msg.senderId === auth.currentUser.uid
+                  ? auth.currentUser.displayName
+                  : msg.senderName}
               </span>
             </div>
-            
+
             {msg.type === 'image' ? (
               <div className="message-image-container">
-                <img 
-                  src={getOptimizedImageSrc(msg.imageData || msg.imageUrl)} 
-                  alt="Shared content" 
+                <img
+                  src={msg.imageData}
+                  alt="Shared content"
                   className="message-image"
                   onClick={() => {
-                    if (msg.imageData) {
-                      const newWindow = window.open();
-                      newWindow.document.write(`<img src="${msg.imageData}" style="max-width: 100%;" />`);
-                    } else if (msg.imageUrl) {
-                      window.open(msg.imageUrl, '_blank');
-                    }
+                    const newWindow = window.open();
+                    newWindow.document.write(
+                      `<img src="${msg.imageData}" style="max-width: 100%;" />`
+                    );
                   }}
                 />
               </div>
             ) : (
-              <div className={`message-text ${msg.senderId === auth.currentUser.uid ? 'sent-text' : 'received-text'}`}>
-                {msg.text}
+              <div
+                className={`message-text ${
+                  msg.senderId === auth.currentUser.uid
+                    ? 'sent-text'
+                    : 'received-text'
+                }`}
+              >
+                {msg.text.split('\n').map((line, index) => (
+                  <React.Fragment key={index}>
+                    {line}
+                    {index < msg.text.split('\n').length - 1 && <br />}
+                  </React.Fragment>
+                ))}
                 {msg.senderId === auth.currentUser.uid && (
                   <span className="message-status">
                     {msg.read ? '✓✓' : '✓'}
@@ -273,26 +337,27 @@ function Chat({ selectedFriend, onBack }) {
           accept="image/*"
           style={{ display: 'none' }}
         />
-        <button 
-          onClick={triggerFileInput} 
+        <button
+          onClick={triggerFileInput}
           disabled={uploading}
           className="attach-btn"
           title="Attach image (20MB max)"
         >
           {uploading ? '📤' : '📎'}
         </button>
-        <input
-          type="text"
+
+        <textarea
+          ref={inputRef}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Type a message..."
+          onKeyDown={handleKeyDown}
           disabled={uploading}
+          placeholder="Type a message"
+          rows={1}
+          className="chat-input-textarea"
         />
-        <button 
-          onClick={handleSend} 
-          disabled={uploading || !newMessage.trim()}
-        >
+
+        <button onClick={handleSend} disabled={uploading || !newMessage.trim()}>
           Send
         </button>
       </div>
