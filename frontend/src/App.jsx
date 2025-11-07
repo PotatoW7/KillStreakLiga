@@ -30,16 +30,16 @@ function App() {
   }, []);
 
   const initializeUserInFirestore = async (user) => {
-    const userRef = doc(db, 'users', user.uid);
+    const userRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userRef);
-    
+
     if (!userDoc.exists()) {
       await setDoc(userRef, {
         username: user.displayName,
         email: user.email,
         createdAt: new Date(),
         friends: [],
-        pendingRequests: []
+        pendingRequests: [],
       });
     }
   };
@@ -49,7 +49,7 @@ function App() {
       await auth.signOut();
       setSelectedFriend(null);
       setShowSocial(false);
-      navigate("/"); 
+      navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -70,8 +70,7 @@ function App() {
     }
   };
 
-  if (loading)
-    return <div className="loading">Checking authentication...</div>;
+  if (loading) return <div className="loading">Checking authentication...</div>;
 
   return (
     <>
@@ -93,9 +92,6 @@ function App() {
             <Link className="nav-link" to="/summoner">
               Summoner Lookup
             </Link>
-            <button className="nav-link" onClick={toggleSocial}>
-              {showSocial ? "Close Chat" : "Friends & Chat"}
-            </button>
             <button className="nav-link" onClick={handleLogout}>
               Logout
             </button>
@@ -119,17 +115,29 @@ function App() {
           />
         </Routes>
 
-        {user && showSocial && (
-          <div className="social-container">
-            {!selectedFriend ? (
-              <FriendsList onSelectFriend={handleSelectFriend} />
-            ) : (
-              <Chat 
-                selectedFriend={selectedFriend} 
-                onBack={handleBackToFriends}
-              />
-            )}
-          </div>
+        {user && (
+          <>
+            <button
+              className="floating-chat-btn"
+              onClick={toggleSocial}
+              title={showSocial ? "Close Chat" : "Open Friends & Chat"}
+            >
+             💬
+            </button>
+
+            <div className={`social-container-wrapper ${showSocial ? "open" : ""}`}>
+              <div className="social-container">
+                {!selectedFriend ? (
+                  <FriendsList onSelectFriend={handleSelectFriend} />
+                ) : (
+                  <Chat
+                    selectedFriend={selectedFriend}
+                    onBack={handleBackToFriends}
+                  />
+                )}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </>

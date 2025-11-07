@@ -1636,7 +1636,7 @@ button:disabled {
    INSTAGRAM-STYLE CHAT SYSTEM
 ======================= */
 
-/* Social Container */
+/* ===== SOCIAL CONTAINER ===== */
 .social-container {
   position: fixed;
   right: 20px;
@@ -1652,6 +1652,80 @@ button:disabled {
   overflow: hidden;
   z-index: 1000;
 }
+
+/* === WRAPPER FOR FADE/SLIDE ANIMATION === */
+.social-container-wrapper {
+  position: fixed;
+  right: 20px;
+  bottom: 100px;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 999;
+}
+
+.social-container-wrapper.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* ===== FLOATING CHAT BUTTON ===== */
+.floating-chat-btn {
+  all: unset; /* Reset inherited nav-link/button styles */
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #0078ff;
+  color: #fff;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(0, 120, 255, 0.4);
+  transition: all 0.25s ease;
+  z-index: 1002;
+}
+
+/* === HOVER EFFECT: Glow & Lift === */
+.floating-chat-btn:hover {
+  transform: translateY(-3px) scale(1.07);
+  box-shadow: 0 0 18px rgba(0, 120, 255, 0.75),
+              0 0 28px rgba(0, 120, 255, 0.35);
+}
+
+/* === ACTIVE (CLICK) EFFECT === */
+.floating-chat-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 10px rgba(0, 120, 255, 0.6);
+}
+
+/* === FORCE COLORS (prevents black hover override) === */
+.floating-chat-btn,
+.floating-chat-btn:hover,
+.floating-chat-btn:focus,
+.floating-chat-btn:active {
+  background-color: #0078ff !important;
+  color: #fff !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* ===== OPTIONAL LOADING TEXT ===== */
+.loading {
+  text-align: center;
+  margin-top: 50px;
+  font-size: 18px;
+  color: #ccc;
+}
+
+
+
 
 /* Friends List */
 .friends-container {
@@ -2826,3 +2900,4 @@ button:disabled {
 .chat-messages::-webkit-scrollbar-thumb:hover {
   background: var(--accent-gold);
 }
+
