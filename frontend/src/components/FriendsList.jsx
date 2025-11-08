@@ -182,6 +182,49 @@ function FriendsList({ onSelectFriend }) {
     }
   };
 
+const unfriend = async (friendId, friendUsername) => {
+  if (!window.confirm(`Are you sure you want to unfriend ${friendUsername}?`)) {
+    return;
+  }
+
+     try {
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const friendRef = doc(db, 'users', friendId);
+
+    // Get the current user's document
+    const userSnap = await getDoc(userRef);
+    const userData = userSnap.data();
+
+    // Find the exact friend object to remove
+    const friendToRemove = (userData.friends || []).find(f => f.id === friendId);
+    if (!friendToRemove) {
+      alert("Friend not found in your list.");
+      return;
+    }
+
+    // Remove friend from current user's friends list
+    await updateDoc(userRef, {
+      friends: arrayRemove(friendToRemove)
+    });
+
+    // Get the friend's document
+    const friendSnap = await getDoc(friendRef);
+    const friendData = friendSnap.data();
+
+    // Find and remove current user from friend's friends list
+    const userToRemove = (friendData.friends || []).find(f => f.id === auth.currentUser.uid);
+    if (userToRemove) {
+      await updateDoc(friendRef, {
+        friends: arrayRemove(userToRemove)
+      });
+    }
+
+    alert(`You are no longer friends with ${friendUsername}`);
+  } catch (error) {
+    console.error('Error unfriending:', error);
+    alert('Error unfriending: ' + error.message);
+  }
+};
   return (
     <div className="friends-container">
       <h3>Friends</h3>
@@ -255,30 +298,45 @@ function FriendsList({ onSelectFriend }) {
             <div 
               key={friend.id} 
               className={`friend-item ${unreadCounts[friend.id] > 0 ? 'has-unread' : ''}`}
-              onClick={() => onSelectFriend({
-                id: friend.id,
-                username: friend.username,
-                profileImage: friend.profileImage || null
-              })}
             >
-              <div className="friend-avatar">
-                <img 
-                  src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"} 
-                  alt={friend.username}
-                  className="avatar-img"
-                  onError={(e) => {
-                    e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                  }}
-                />
-              </div>
-              <div className="friend-info">
-                <span className="friend-name">{friend.username}</span>
-              </div>
-              {unreadCounts[friend.id] > 0 && (
-                <div className="unread-badge">
-                  {unreadCounts[friend.id]}
+              <div 
+                className="friend-content"
+                onClick={() => onSelectFriend({
+                  id: friend.id,
+                  username: friend.username,
+                  profileImage: friend.profileImage || null
+                })}
+              >
+                <div className="friend-avatar">
+                  <img 
+                    src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"} 
+                    alt={friend.username}
+                    className="avatar-img"
+                    onError={(e) => {
+                      e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                    }}
+                  />
                 </div>
-              )}
+                <div className="friend-info">
+                  <span className="friend-name">{friend.username}</span>
+                </div>
+                {unreadCounts[friend.id] > 0 && (
+                  <div className="unread-badge">
+                    {unreadCounts[friend.id]}
+                  </div>
+                )}
+              </div>
+              
+              <button 
+                className="unfriend-btn"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering the friend click
+                  unfriend(friend.id, friend.username);
+                }}
+                title="Unfriend"
+              >
+                Unfriend
+              </button>
             </div>
           ))
         )}

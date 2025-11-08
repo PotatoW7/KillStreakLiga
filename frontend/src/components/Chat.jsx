@@ -122,6 +122,7 @@ function Chat({ selectedFriend, onBack }) {
   };
 
   const handleSend = async () => {
+    setNewMessage('');
     if (!newMessage.trim()) return;
 
     const messagesRef = collection(db, 'chats', chatId, 'messages');
@@ -133,7 +134,7 @@ function Chat({ selectedFriend, onBack }) {
       read: false,
       type: 'text',
     });
-    setNewMessage('');
+    
     
 
     setTimeout(() => {
