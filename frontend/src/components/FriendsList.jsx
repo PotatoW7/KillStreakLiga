@@ -191,27 +191,22 @@ const unfriend = async (friendId, friendUsername) => {
     const userRef = doc(db, 'users', auth.currentUser.uid);
     const friendRef = doc(db, 'users', friendId);
 
-    // Get the current user's document
     const userSnap = await getDoc(userRef);
     const userData = userSnap.data();
 
-    // Find the exact friend object to remove
     const friendToRemove = (userData.friends || []).find(f => f.id === friendId);
     if (!friendToRemove) {
       alert("Friend not found in your list.");
       return;
     }
 
-    // Remove friend from current user's friends list
     await updateDoc(userRef, {
       friends: arrayRemove(friendToRemove)
     });
 
-    // Get the friend's document
     const friendSnap = await getDoc(friendRef);
     const friendData = friendSnap.data();
 
-    // Find and remove current user from friend's friends list
     const userToRemove = (friendData.friends || []).find(f => f.id === auth.currentUser.uid);
     if (userToRemove) {
       await updateDoc(friendRef, {
@@ -330,7 +325,7 @@ const unfriend = async (friendId, friendUsername) => {
               <button 
                 className="unfriend-btn"
                 onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering the friend click
+                  e.stopPropagation(); 
                   unfriend(friend.id, friend.username);
                 }}
                 title="Unfriend"

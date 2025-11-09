@@ -2609,3 +2609,314 @@ button:disabled {
 .chat-messages::-webkit-scrollbar-thumb:hover {
   background: var(--accent-gold);
 }
+/* ===== MESSAGE DELETE ANIMATION ===== */
+.chat-message {
+  transition: all 0.s ease;
+  transform-origin: center;
+}
+
+.chat-message.deleting {
+  animation: deleteMessage 0.6s ease forwards;
+}
+
+@keyframes deleteMessage {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    max-height: 200px;
+    margin-bottom: 12px;
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.95);
+    max-height: 100px;
+    margin-bottom: 6px;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+    max-height: 0px;
+    margin-bottom: 0px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+/* Ensure smooth layout transition */
+.chat-messages {
+  transition: all 0.3s ease;
+}
+
+/* ===== MESSAGE CONTEXT MENU STYLES - OUTSIDE LEFT ===== */
+.message-bubble-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.message-context-menu {
+  position: absolute;
+  top: 50%;
+  left: -50px; /* Position outside the message bubble */
+  transform: translateY(-50%);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-accent);
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow-lg);
+  z-index: 10;
+  animation: slideInLeft 0.2s ease;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+.context-icon-btn {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.context-icon-btn:hover {
+  background: var(--bg-tertiary);
+  transform: scale(1.1);
+}
+
+.context-icon-btn.edit-icon:hover {
+  border-color: var(--accent-blue);
+  background: rgba(11, 198, 227, 0.1);
+}
+
+.context-icon-btn.delete-icon:hover {
+  border-color: var(--defeat);
+  background: rgba(248, 92, 112, 0.1);
+}
+
+/* Adjust message positioning to account for external context menu */
+.chat-message.sent {
+  position: relative;
+  padding-right: 0;
+}
+
+.chat-message.received {
+  position: relative;
+  padding-left: 0;
+}
+
+/* Ensure sent messages have space on the left for context menu */
+.chat-message.sent .message-content-wrapper {
+  align-items: flex-end;
+  margin-left: 0;
+}
+
+.chat-message.received .message-content-wrapper {
+  align-items: flex-start;
+  margin-right: 0;
+}
+
+/* Add some space between context menu and message */
+.chat-message.sent .message-bubble-wrapper {
+  margin-left: 10px;
+}
+
+/* ===== MESSAGE EDIT STYLES ===== */
+.message-edit-container {
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent-gold);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 4px 0;
+  box-shadow: 0 4px 16px rgba(200, 155, 60, 0.2);
+  animation: editPulse 0.3s ease;
+}
+
+@keyframes editPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(200, 155, 60, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(200, 155, 60, 0);
+  }
+  100% {
+    box-shadow: 0 4px 16px rgba(200, 155, 60, 0.2);
+  }
+}
+
+.message-edit-textarea {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  resize: vertical;
+  min-height: 60px;
+  max-height: 120px;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.message-edit-textarea:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(200, 155, 60, 0.1);
+}
+
+.message-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.save-edit-btn,
+.cancel-edit-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-edit-btn {
+  background: var(--victory);
+  color: white;
+}
+
+.save-edit-btn:hover:not(:disabled) {
+  background: #00b37d;
+  transform: translateY(-1px);
+}
+
+.save-edit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cancel-edit-btn {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+
+.cancel-edit-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
+}
+
+/* ===== MESSAGE META STYLES ===== */
+.message-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.message-edited {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.message-status {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+/* ===== ENHANCED MESSAGE BUBBLE STYLES ===== */
+.message-content-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.chat-message.sent .message-content-wrapper {
+  align-items: flex-end;
+}
+
+.chat-message.received .message-content-wrapper {
+  align-items: flex-start;
+}
+
+/* Make message bubbles more distinct when editing */
+.chat-message.editing .message-text {
+  opacity: 0.6;
+  background: rgba(200, 155, 60, 0.1) !important;
+}
+
+/* ===== RESPONSIVE DESIGN FOR CONTEXT MENU ===== */
+@media (max-width: 768px) {
+  .message-context-menu {
+    left: -45px;
+    padding: 4px;
+    gap: 3px;
+  }
+  
+  .context-icon-btn {
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+    font-size: 0.75rem;
+  }
+  
+  .message-edit-container {
+    padding: 10px;
+  }
+  
+  .message-edit-textarea {
+    padding: 8px 10px;
+    min-height: 50px;
+  }
+  
+  .save-edit-btn,
+  .cancel-edit-btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+  
+  /* Less space on mobile */
+  .chat-message.sent .message-bubble-wrapper {
+    margin-left: 5px;
+  }
+}
+
+/* For very small screens */
+@media (max-width: 480px) {
+  .message-context-menu {
+    left: -40px;
+  }
+  
+  .context-icon-btn {
+    width: 26px;
+    height: 26px;
+    padding: 5px;
+  }
+}
