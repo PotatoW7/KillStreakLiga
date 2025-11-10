@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query,orderBy,onSnapshot, addDoc,serverTimestamp,doc,updateDoc,deleteDoc,
-} from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,6 +17,7 @@ function Chat({ selectedFriend, onBack }) {
   const [contextMenu, setContextMenu] = useState(null);
   const [deletingMessageId, setDeletingMessageId] = useState(null);
   const messagesEndRef = useRef(null);
+  const chatMessagesRef = useRef(null); 
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -41,6 +41,28 @@ function Chat({ selectedFriend, onBack }) {
   }
 
   const chatId = [auth.currentUser.uid, selectedFriend.id].sort().join('_');
+
+  useEffect(() => {
+    const chatMessages = chatMessagesRef.current;
+    if (!chatMessages) return;
+
+    const handleWheel = (e) => {
+      const { scrollTop, scrollHeight, clientHeight } = chatMessages;
+      const isAtTop = scrollTop === 0;
+      const isAtBottom = Math.abs(scrollTop + clientHeight - scrollHeight) < 1;
+
+      if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    chatMessages.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      chatMessages.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -314,7 +336,19 @@ function Chat({ selectedFriend, onBack }) {
         </div>
       </div>
 
-      <div className="chat-messages">
+      <div 
+        ref={chatMessagesRef}
+        className="chat-messages"
+        onWheel={(e) => {
+          const element = e.currentTarget;
+          const isAtTop = element.scrollTop === 0;
+          const isAtBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 1;
+          
+          if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
+            e.stopPropagation();
+          }
+        }}
+      >
         {messages.map((msg) => {
           const isOwnMessage = msg.senderId === auth.currentUser.uid;
           const isDeleting = deletingMessageId === msg.id;
