@@ -1,0 +1,138 @@
+/* Ranked Information */
+.ranked-container {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
+}
+
+.ranked-container.compact {
+  gap: var(--space-md);
+}
+
+.rank-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  min-width: 240px;
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+.rank-card.compact {
+  min-width: 200px;
+  padding: var(--space-md);
+}
+
+.rank-card:hover {
+  border-color: var(--accent-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(11, 198, 227, 0.15);
+}
+
+.rank-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.rank-icon {
+  width: 85px;
+  height: 85px;
+  filter: drop-shadow(0 4px 12px rgba(11, 198, 227, 0.3));
+}
+
+.rank-details {
+  flex: 1;
+}
+
+.tier {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  margin-bottom: var(--space-xs);
+  letter-spacing: 0.5px;
+}
+
+.queue-name,
+.queue-label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: var(--space-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.unranked {
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
+  padding: var(--space-md);
+}
+
+.stats {
+  display: flex;
+  gap: var(--space-xs);
+  margin: var(--space-xs) 0;
+  flex-wrap: wrap;
+}
+
+.lp,
+.winrate,
+.games {
+  background: rgba(11, 198, 227, 0.1);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--accent-blue);
+  border: 1px solid rgba(11, 198, 227, 0.2);
+}
+
+.record {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-xs);
+}
+
+/* Player rank in match details */
+.player-rank-section {
+  display: flex;
+  align-items: center;
+  margin-left: var(--space-md);
+  min-width: 100px;
+}
+
+.player-rank-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rank-emblem {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.rank-tier {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.rank-lp {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.unranked-player {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-style: italic;
+}

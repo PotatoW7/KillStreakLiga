@@ -89,7 +89,7 @@ function Register() {
   };
 
   return (
-    <div className="register-page">
+    <div className="register-page"> {/* ← CORRECT */}
       <div className="auth-container">
         <h2>Join Killstreak</h2>
         <p>Create your account</p>

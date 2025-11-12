@@ -1,0 +1,52 @@
+:root {
+  /* ===== COLOR SYSTEM ===== */
+  --bg-primary: #0f1419;
+  --bg-secondary: #16181d;
+  --bg-tertiary: #1c1e24;
+  --accent-gold: #c89b3c;
+  --accent-gold-light: #f0e6d2;
+  --accent-blue: #0bc6e3;
+  --text-primary: #f9f9f9;
+  --text-secondary: #a0a0a0;
+  --victory: #00c98d;
+  --defeat: #f85c70;
+  
+  /* ===== BORDERS ===== */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-accent: rgba(200, 155, 60, 0.25);
+  
+  /* ===== SHADOWS ===== */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  
+  /* ===== SPACING ===== */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  
+  /* ===== BORDER RADIUS ===== */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  
+  /* ===== TYPOGRAPHY ===== */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+}

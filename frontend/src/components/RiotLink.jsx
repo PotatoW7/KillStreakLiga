@@ -23,29 +23,40 @@ function RiotLink() {
   };
 
   return (
-    <form onSubmit={handleLink} className="form-container">
+    <form onSubmit={handleLink} className="link-account-form">
       <h3>Link Riot Account</h3>
-      <input
-        type="text"
-        placeholder="Game Name"
-        value={gameName}
-        onChange={(e) => setGameName(e.target.value)}
-        required
-      />
-      <input
-        type="text"
-        placeholder="Tag Line"
-        value={tagLine}
-        onChange={(e) => setTagLine(e.target.value)}
-        required
-      />
-      <select value={region} onChange={(e) => setRegion(e.target.value)}>
-        <option value="euw1">EUW</option>
-        <option value="na1">NA</option>
-        <option value="kr">KR</option>
-        <option value="eun1">EUNE</option>
-      </select>
-      <button type="submit">Link Account</button>
+      <div className="form-group">
+        <label>Game Name</label>
+        <input
+          type="text"
+          placeholder="Game Name"
+          value={gameName}
+          onChange={(e) => setGameName(e.target.value)}
+          required
+          className="riot-id-input"
+        />
+      </div>
+      <div className="form-group">
+        <label>Tag Line</label>
+        <input
+          type="text"
+          placeholder="Tag Line"
+          value={tagLine}
+          onChange={(e) => setTagLine(e.target.value)}
+          required
+          className="riot-id-input"
+        />
+      </div>
+      <div className="form-group">
+        <label>Region</label>
+        <select value={region} onChange={(e) => setRegion(e.target.value)}>
+          <option value="euw1">EUW</option>
+          <option value="na1">NA</option>
+          <option value="kr">KR</option>
+          <option value="eun1">EUNE</option>
+        </select>
+      </div>
+      <button type="submit" className="link-account-btn">Link Account</button>
     </form>
   );
 }

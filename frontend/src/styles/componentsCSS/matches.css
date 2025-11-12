@@ -1,0 +1,430 @@
+/* Match History Section */
+.match-history-section {
+  margin-top: var(--space-2xl);
+}
+
+.match-container h3 {
+  margin-bottom: var(--space-xl);
+  text-align: center;
+}
+
+/* Match Cards */
+.match-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-sm);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.match-card.victory {
+  border-left: 3px solid var(--victory);
+}
+
+.match-card.defeat {
+  border-left: 3px solid var(--defeat);
+}
+
+.match-card:hover {
+  transform: translateX(4px);
+  border-color: var(--border-accent);
+}
+
+.match-header {
+  padding: var(--space-lg) var(--space-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-tertiary);
+  gap: var(--space-lg);
+}
+
+.match-basic-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  flex: 1;
+}
+
+.match-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.match-result.victory .result-text {
+  color: var(--victory);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.5px;
+}
+
+.match-result.defeat .result-text {
+  color: var(--defeat);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.5px;
+}
+
+.match-champion-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.champion-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.champion-name {
+  color: var(--accent-gold);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.5px;
+}
+
+.match-game-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex: 1;
+}
+
+.match-mode {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.match-duration {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.match-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+.match-kda {
+  text-align: center;
+}
+
+.kda-numbers {
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.5px;
+}
+
+.kda-ratio-compact {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  margin-top: 2px;
+}
+
+.match-build {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.match-items {
+  display: flex;
+  gap: 4px;
+}
+
+.match-item {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+}
+
+.match-item:empty {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--border-subtle);
+}
+
+.match-details {
+  padding: var(--space-xl);
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Team Containers */
+.team-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl);
+}
+
+.team h4 {
+  margin-bottom: var(--space-md);
+  text-align: center;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.blue-team h4 {
+  color: var(--accent-blue);
+  border: 1px solid rgba(11, 198, 227, 0.2);
+}
+
+.red-team h4 {
+  color: var(--defeat);
+  border: 1px solid rgba(248, 92, 112, 0.2);
+}
+
+/* Player Rows */
+.player-row {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  transition: all 0.2s;
+  margin-bottom: var(--space-xs);
+}
+
+.player-row:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-accent);
+}
+
+.player-row.current-player {
+  border-color: var(--accent-gold);
+  background: rgba(200, 155, 60, 0.08);
+  box-shadow: 0 0 0 1px rgba(200, 155, 60, 0.1);
+}
+
+.player-row .champion-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-accent);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  margin-left: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.player-info .champion-name {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  color: var(--accent-gold);
+  margin-bottom: 2px;
+}
+
+.player-info .player-name {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.player-name.clickable-player {
+  color: var(--accent-blue);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.player-name.clickable-player:hover {
+  color: var(--text-primary);
+  background: rgba(11, 198, 227, 0.1);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+}
+
+.player-kda {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.items-row {
+  display: flex;
+  gap: 3px;
+}
+
+.item-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+}
+
+.item-icon:empty {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+/* Objectives */
+.objectives-section {
+  margin-bottom: var(--space-xl);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.team-objectives-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.team-objectives h5 {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+.team-objectives {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 80px;
+}
+
+.objectives-row {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.objective-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-tertiary);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  height: fit-content;
+  flex-shrink: 0;
+}
+
+.objective-text {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+/* Summoner Spells & Runes */
+.summoner-spells {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summoner-spell {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+.runes-container {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.runes-compact .rune-icon.keystone {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.runes-full {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  border: 1px solid #463714;
+}
+
+.rune-style-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.primary-runes, .secondary-runes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rune-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+.rune-icon.keystone {
+  width: 22px;
+  height: 22px;
+}
+
+.primary-rune {
+  border-color: var(--accent-gold);
+}
+
+.secondary-rune {
+  opacity: 0.8;
+}
+
+.stat-shards {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 6px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.stat-shard {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-primary);
+}

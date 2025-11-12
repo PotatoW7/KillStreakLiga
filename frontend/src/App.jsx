@@ -9,7 +9,7 @@ import FriendsList from "./components/FriendsList";
 import Chat from "./components/Chat";
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import "./App.css";
+import "./styles/index.css";
 
 function App() {
   const [user, setUser] = useState(null);

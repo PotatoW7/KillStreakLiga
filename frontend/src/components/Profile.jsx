@@ -21,22 +21,22 @@ function Profile() {
   const fileInputRef = useRef(null);
 
   const regions = [
-    { value: "na1", label: "North America (NA)" },
-    { value: "euw1", label: "Europe West (EUW)" },
-    { value: "eun1", label: "Europe Nordic & East (EUNE)" },
-    { value: "kr", label: "Korea (KR)" },
-    { value: "br1", label: "Brazil (BR)" },
-    { value: "la1", label: "Latin America North (LAN)" },
-    { value: "la2", label: "Latin America South (LAS)" },
-    { value: "oc1", label: "Oceania (OCE)" },
-    { value: "ru", label: "Russia (RU)" },
-    { value: "tr1", label: "Turkey (TR)" },
-    { value: "jp1", label: "Japan (JP)" },
-    { value: "ph2", label: "Philippines (PH)" },
-    { value: "sg2", label: "Singapore (SG)" },
-    { value: "th2", label: "Thailand (TH)" },
-    { value: "tw2", label: "Taiwan (TW)" },
-    { value: "vn2", label: "Vietnam (VN)" }
+    { value: "na1", label: "NA" },
+    { value: "euw1", label: "EUW" },
+    { value: "eun1", label: "EUNE"},
+    { value: "kr", label: "KR" },
+    { value: "br1", label: "BR" },
+    { value: "la1", label: "LAN" },
+    { value: "la2", label: "LAS" },
+    { value: "oc1", label: "OCE" },
+    { value: "ru", label: "RU" },
+    { value: "tr1", label: "TR" },
+    { value: "jp1", label: "JP" },
+    { value: "ph2", label: "PH" },
+    { value: "sg2", label: "SG" },
+    { value: "th2", label: "TH" },
+    { value: "tw2", label: "TW" },
+    { value: "vn2", label: "VN" }
   ];
 
   useEffect(() => {
@@ -49,7 +49,6 @@ function Profile() {
           setProfileImage(userData.profileImage || null);
           setLinkedAccount(userData.riotAccount || null);
           
-          // If there's a linked account, fetch ranked data
           if (userData.riotAccount) {
             fetchRankedData(userData.riotAccount);
           }
@@ -168,12 +167,10 @@ function Profile() {
       throw new Error('Both name and tag are required');
     }
 
-    // Validate tag line length (max 5 characters)
     if (tagLine.length > 5) {
       throw new Error('Tag line cannot be longer than 5 characters');
     }
 
-    // Validate game name length (Riot IDs have limits but being more permissive here)
     if (gameName.length < 3) {
       throw new Error('Game name must be at least 3 characters long');
     }
@@ -250,7 +247,6 @@ function Profile() {
       setLinkedAccount(accountData);
       setLinkSuccess(`Riot account ${validatedAccount.gameName}#${validatedAccount.tagLine} linked successfully!`);
       
-      // Fetch ranked data for the newly linked account
       fetchRankedData(accountData);
       
       setRiotId("");
@@ -284,7 +280,6 @@ function Profile() {
     }
   };
 
-  // RankedInfo component for displaying ranked data
   const RankedInfo = ({ rankedData }) => {
     const getRankIcon = (tier) => tier ? `/rank-icons/Rank=${tier.charAt(0).toUpperCase()+tier.slice(1).toLowerCase()}.png` : null;
 
@@ -302,10 +297,8 @@ function Profile() {
           <div className="unranked">Unranked</div>
         </div>
       );
-
       const totalGames = queue.wins + queue.losses;
       const winRate = totalGames > 0 ? Math.round((queue.wins/totalGames)*100) : 0;
-
       return (
         <div className="rank-card">
           <div className="rank-info">
@@ -381,7 +374,6 @@ function Profile() {
                 style={{ display: "none" }}
               />
             </div>
-
             <div className="profile-info">
               <h3 className="profile-display-name">{user.displayName || "Anonymous Summoner"}</h3>
               <div className="profile-details">
@@ -414,7 +406,6 @@ function Profile() {
             </div>
           </div>
 
-          {/* Riot Account Linking Section */}
           <div className="riot-account-section">
             <h4>Riot Games Account</h4>
             
@@ -447,7 +438,6 @@ function Profile() {
                   </span>
                 </div>
 
-                {/* Ranked Information */}
                 {rankedData && (
                   <div className="ranked-section">
                     <h5>Ranked Information</h5>
@@ -471,12 +461,12 @@ function Profile() {
                     id="riotId"
                     value={riotId}
                     onChange={(e) => setRiotId(e.target.value)}
-                    placeholder="Enter your Riot ID (e.g., wewtawgds#adgdf)"
+                    placeholder="Enter your Riot ID"
                     className="riot-id-input"
-                    maxLength={25} // Game name (16) + # (1) + tag (5) + buffer
+                    maxLength={25} 
                   />
                   <div className="input-hint">
-                    Format: name#tag (name: 3-16 chars, tag: max 5 chars)
+                    Format: Name#Tag
                   </div>
                 </div>
                 
