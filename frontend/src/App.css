@@ -2920,3 +2920,424 @@ button:disabled {
     padding: 5px;
   }
 }
+
+/* ===== BEAUTIFUL COMPACT RIOT ACCOUNT STYLES ===== */
+.riot-account-section {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  border: 1px solid var(--border-accent);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.riot-account-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-blue));
+  border-radius: 14px 14px 0 0;
+}
+
+.riot-account-section h4 {
+  color: var(--accent-gold);
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: left;
+  letter-spacing: -0.3px;
+}
+
+/* Beautiful Compact Linked Account */
+.linked-account-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.linked-account-info {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.linked-account-info:hover {
+  border-color: var(--accent-gold);
+  box-shadow: var(--shadow-md);
+}
+
+.account-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.account-icon-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.summoner-icon {
+  width: 55px;
+  height: 55px;
+  border-radius: 12px;
+  border: 2px solid var(--accent-gold);
+  box-shadow: 0 2px 8px rgba(200, 155, 60, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.summoner-icon:hover {
+  transform: scale(1.05);
+}
+
+.account-icon-name div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.account-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.account-level {
+  font-size: 0.8rem;
+  color: var(--accent-blue);
+  font-weight: 600;
+  background: rgba(11, 198, 227, 0.1);
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(11, 198, 227, 0.2);
+  align-self: flex-start;
+}
+
+.account-status.verified {
+  background: linear-gradient(135deg, var(--victory) 0%, #00d9a6 100%);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 201, 141, 0.3);
+}
+
+.account-details {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.account-region,
+.account-linked-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.account-region::before {
+  content: '🌎';
+  font-size: 0.7rem;
+}
+
+.account-linked-date::before {
+  content: '📅';
+  font-size: 0.7rem;
+}
+
+/* Beautiful Compact Ranked Section */
+.ranked-section {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.ranked-section h5 {
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.riot-account-section .ranked-container {
+  gap: 0.75rem;
+}
+
+.riot-account-section .rank-card {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.75rem;
+  min-width: 160px;
+  transition: all 0.2s ease;
+}
+
+.riot-account-section .rank-card:hover {
+  border-color: var(--accent-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(11, 198, 227, 0.15);
+}
+
+.riot-account-section .rank-icon {
+  width: 55px;
+  height: 55px;
+  filter: drop-shadow(0 2px 6px rgba(11, 198, 227, 0.3));
+}
+
+.riot-account-section .tier {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.riot-account-section .queue-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.riot-account-section .stats {
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.riot-account-section .lp,
+.riot-account-section .winrate,
+.riot-account-section .games {
+  font-size: 0.7rem;
+  padding: 3px 6px;
+  background: rgba(11, 198, 227, 0.1);
+  border: 1px solid rgba(11, 198, 227, 0.2);
+}
+
+.riot-account-section .record {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Beautiful Compact Form */
+.link-account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.form-group {
+  flex: 1;
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+
+.form-group input,
+.form-group select {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(200, 155, 60, 0.1);
+}
+
+.riot-id-input {
+  min-width: 150px;
+}
+
+.link-account-btn {
+  background: linear-gradient(135deg, var(--accent-gold) 0%, #a0782d 100%);
+  color: var(--bg-primary);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(200, 155, 60, 0.3);
+  min-width: 80px;
+}
+
+.link-account-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(200, 155, 60, 0.4);
+}
+
+.link-account-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Beautiful Messages */
+.error-message {
+  background: linear-gradient(135deg, rgba(248, 92, 112, 0.1) 0%, rgba(248, 92, 112, 0.05) 100%);
+  border: 1px solid rgba(248, 92, 112, 0.3);
+  color: var(--defeat);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.85rem;
+  border-left: 3px solid var(--defeat);
+}
+
+.success-message {
+  background: linear-gradient(135deg, rgba(0, 201, 141, 0.1) 0%, rgba(0, 201, 141, 0.05) 100%);
+  border: 1px solid rgba(0, 201, 141, 0.3);
+  color: var(--victory);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.85rem;
+  border-left: 3px solid var(--victory);
+}
+
+.unlink-account-btn {
+  background: linear-gradient(135deg, var(--defeat) 0%, #c4455c 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 6px rgba(248, 92, 112, 0.3);
+  align-self: flex-start;
+}
+
+.unlink-account-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(248, 92, 112, 0.4);
+}
+
+/* Input hint */
+.input-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .riot-account-section {
+    padding: 1rem;
+    margin-top: 1.25rem;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .riot-id-input {
+    width: 100%;
+  }
+  
+  .link-account-btn {
+    width: 100%;
+  }
+  
+  .account-details {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .riot-account-section {
+    padding: 0.75rem;
+  }
+  
+  .account-icon-name {
+    gap: 10px;
+  }
+  
+  .summoner-icon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .account-name {
+    font-size: 1rem;
+  }
+  
+  .riot-account-section .ranked-container {
+    flex-direction: column;
+  }
+  
+  .riot-account-section .rank-card {
+    min-width: 100%;
+  }
+}
+
+/* Loading animation */
+.link-account-btn:disabled::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border: 2px solid transparent;
+  border-top: 2px solid var(--bg-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

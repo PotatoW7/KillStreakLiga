@@ -77,6 +77,9 @@ function App() {
       <nav>
         {!user ? (
           <>
+            <Link className="nav-link" to="/summoner">
+              Summoner Lookup
+            </Link>
             <Link className="nav-link" to="/">
               Login
             </Link>

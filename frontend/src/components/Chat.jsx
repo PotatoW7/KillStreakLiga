@@ -28,12 +28,10 @@ function Chat({ selectedFriend, onBack }) {
         <div className="chat-header">
           <button onClick={onBack} className="back-btn">← Back</button>
           <div className="chat-friend-info">
-            <h3>Select a friend to start chatting</h3>
           </div>
         </div>
         <div className="chat-messages">
           <div className="no-chat-selected">
-            <p>Please select a friend from the list to start chatting</p>
           </div>
         </div>
       </div>
