@@ -1,7 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { auth, db } from "../firebase";
-import { sendEmailVerification } from "firebase/auth";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { 
+  sendEmailVerification, 
+  deleteUser, 
+  reauthenticateWithCredential,
+  EmailAuthProvider 
+} from "firebase/auth";
+import { doc, updateDoc, getDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 function Profile() {
   const [user, setUser] = useState(null);
@@ -16,6 +21,11 @@ function Profile() {
   const [linkError, setLinkError] = useState("");
   const [linkSuccess, setLinkSuccess] = useState("");
   const [rankedData, setRankedData] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReauthModal, setShowReauthModal] = useState(false);
+  const [password, setPassword] = useState("");
+  const [reauthError, setReauthError] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const contextMenuRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -280,6 +290,55 @@ function Profile() {
     }
   };
 
+  const handleReauthentication = async () => {
+    if (!user || !user.email) {
+      setReauthError("No user email found");
+      return;
+    }
+
+    try {
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, credential);
+      
+      setShowReauthModal(false);
+      setPassword("");
+      setReauthError("");
+      await performAccountDeletion();
+    } catch (error) {
+      console.error("Reauthentication error:", error);
+      if (error.code === 'auth/wrong-password') {
+        setReauthError("Incorrect password. Please try again.");
+      } else if (error.code === 'auth/invalid-credential') {
+        setReauthError("Invalid credentials. Please check your password.");
+      } else {
+        setReauthError("Reauthentication failed. Please try again.");
+      }
+    }
+  };
+
+  const performAccountDeletion = async () => {
+    setDeletingAccount(true);
+    try {
+      const userRef = doc(db, "users", user.uid);
+      await deleteDoc(userRef);
+
+      await deleteUser(user);
+      
+      alert("Account terminated successfully. Goodbye!");
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Error during account deletion:", error);
+      alert("Error terminating account. Please try again.");
+      setDeletingAccount(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const initiateAccountDeletion = () => {
+    setShowDeleteConfirm(false);
+    setShowReauthModal(true);
+  };
+
   const RankedInfo = ({ rankedData }) => {
     const getRankIcon = (tier) => tier ? `/rank-icons/Rank=${tier.charAt(0).toUpperCase()+tier.slice(1).toLowerCase()}.png` : null;
 
@@ -495,13 +554,107 @@ function Profile() {
                 >
                   {linkingAccount ? "Validating..." : "Link Riot Account"}
                 </button>
-
-                <div className="account-note">
-                </div>
               </form>
             )}
           </div>
         </div>
+
+        <div className="termination-section">
+          <h4>Account Management</h4>
+          <div className="termination-card">
+            <div className="termination-warning">
+              <span className="warning-icon">⚠️</span>
+              <div className="warning-content">
+                <h5>Terminate Account</h5>
+                <p>This action cannot be undone. All your data, including profile, chats, and linked accounts will be permanently deleted.</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowDeleteConfirm(true)}
+              className="terminate-account-btn"
+            >
+              Terminate Account
+            </button>
+          </div>
+        </div>
+
+        {showDeleteConfirm && (
+          <div className="modal-overlay">
+            <div className="delete-modal">
+              <h3>Confirm Account Termination</h3>
+              <div className="delete-warning">
+                <span className="delete-icon">🗑️</span>
+                <p>Are you sure you want to terminate your account? This action is permanent and cannot be undone.</p>
+                <ul>
+                  <li>All your profile data will be deleted</li>
+                  <li>Your chat history will be removed</li>
+                  <li>Linked Riot account will be unlinked</li>
+                  <li>This action cannot be reversed</li>
+                </ul>
+              </div>
+              <div className="modal-actions">
+                <button 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="cancel-btn"
+                  disabled={deletingAccount}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={initiateAccountDeletion}
+                  className="confirm-delete-btn"
+                  disabled={deletingAccount}
+                >
+                  {deletingAccount ? "Deleting..." : "Yes, Delete My Account"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showReauthModal && (
+          <div className="modal-overlay">
+            <div className="reauth-modal">
+              <h3>Verify Your Identity</h3>
+              <div className="reauth-warning">
+                <span className="reauth-icon">🔒</span>
+                <p>For security reasons, please enter your password to confirm account deletion.</p>
+              </div>
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="riot-id-input"
+                />
+                {reauthError && <div className="error-message">{reauthError}</div>}
+              </div>
+              <div className="modal-actions">
+                <button 
+                  onClick={() => {
+                    setShowReauthModal(false);
+                    setPassword("");
+                    setReauthError("");
+                  }}
+                  className="cancel-btn"
+                  disabled={deletingAccount}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleReauthentication}
+                  className="confirm-delete-btn"
+                  disabled={deletingAccount || !password}
+                >
+                  {deletingAccount ? "Deleting..." : "Confirm Deletion"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
