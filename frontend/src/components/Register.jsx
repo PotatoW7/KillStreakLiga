@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
-  sendEmailVerification,
 } from "firebase/auth";
 import { doc, setDoc, getDocs, collection, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
@@ -59,9 +58,8 @@ function Register() {
         createdAt: new Date(),
         friends: [],
         pendingRequests: [],
+        emailVerificationSent: false
       });
-
-      await sendEmailVerification(user);
 
       navigate("/profile");
     } catch (error) {
@@ -89,7 +87,7 @@ function Register() {
   };
 
   return (
-    <div className="register-page"> {/* ← CORRECT */}
+    <div className="register-page">
       <div className="auth-container">
         <h2>Join Killstreak</h2>
         <p>Create your account</p>

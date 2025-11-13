@@ -147,6 +147,15 @@
   color: var(--error);
 }
 
+/* Email Verification Section */
+.verification-section {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
 .verify-button {
   background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
   color: var(--text-dark);
@@ -157,13 +166,46 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: var(--font-size-sm);
-  margin-top: var(--space-sm);
-  flex-shrink: 0;
+  width: 100%;
+  margin-bottom: var(--space-xs);
 }
 
-.verify-button:hover {
+.verify-button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+}
+
+.verify-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.verification-hint {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.resend-link {
+  background: none;
+  border: none;
+  color: var(--accent-gold);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  margin-left: var(--space-xs);
+  padding: 0;
+}
+
+.resend-link:hover:not(:disabled) {
+  color: var(--accent-gold-light);
+}
+
+.resend-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Riot Account Section */
@@ -662,6 +704,59 @@ select.riot-id-input {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Reauthentication Modal Specific Styles */
+.reauth-modal h3 {
+  color: var(--accent-gold);
+}
+
+.reauth-warning {
+  border-left-color: var(--accent-gold);
+}
+
+.reauth-icon {
+  color: var(--accent-gold);
+}
+
+.reauth-modal .form-group {
+  margin-bottom: var(--space-lg);
+}
+
+.reauth-modal .form-group label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+}
+
+.reauth-modal .riot-id-input {
+  width: 100%;
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  transition: all 0.3s ease;
+}
+
+.reauth-modal .riot-id-input:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px var(--accent-gold-light);
+}
+
+.reauth-modal .error-message {
+  background: var(--error-light);
+  color: var(--error);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin: var(--space-md) 0;
+  font-size: var(--font-size-sm);
+  border-left: 4px solid var(--error);
+  text-align: center;
 }
 
 /* Loading State */

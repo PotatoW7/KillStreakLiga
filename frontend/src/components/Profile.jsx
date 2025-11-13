@@ -28,6 +28,8 @@ function Profile() {
   const [reauthError, setReauthError] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [latestVersion, setLatestVersion] = useState("25.12"); 
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
 
   const contextMenuRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -71,6 +73,7 @@ function Profile() {
           const userData = docSnap.data();
           setProfileImage(userData.profileImage || null);
           setLinkedAccount(userData.riotAccount || null);
+          setEmailVerificationSent(userData.emailVerificationSent || false);
           
           if (userData.riotAccount) {
             fetchRankedData(userData.riotAccount);
@@ -129,11 +132,31 @@ function Profile() {
 
   const verifyEmail = async () => {
     if (!user) return;
+    
     try {
+      setVerificationLoading(true);
+      
       await sendEmailVerification(user);
-      alert("Verification email sent! Check your inbox.");
+      
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        emailVerificationSent: true,
+        lastVerificationSent: new Date()
+      });
+      
+      setEmailVerificationSent(true);
+      alert("Verification email sent! Please check your inbox and spam folder.");
     } catch (error) {
-      alert("Error sending verification: " + error.message);
+      console.error("Error sending verification:", error);
+      
+      let errorMessage = "Error sending verification email. Please try again.";
+      if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many verification requests. Please wait a few minutes before trying again.";
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setVerificationLoading(false);
     }
   };
 
@@ -340,6 +363,23 @@ function Profile() {
       
       console.log("Starting account deletion for user:", userId);
 
+      try {
+        const queueResponse = await fetch('http://localhost:3000/api/queue/leave', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userId
+          })
+        });
+        if (queueResponse.ok) {
+          console.log("Removed user from queue system");
+        }
+      } catch (queueError) {
+        console.log("Could not remove from queue system, continuing...");
+      }
+
       const allUsersQuery = query(collection(db, "users"));
       const allUsersSnapshot = await getDocs(allUsersQuery);
       const updatePromises = [];
@@ -525,9 +565,27 @@ function Profile() {
                   </span>
                 </div>
                 {!user.emailVerified && (
-                  <button onClick={verifyEmail} className="verify-button">
-                    Verify Email
-                  </button>
+                  <div className="verification-section">
+                    <button 
+                      onClick={verifyEmail} 
+                      className="verify-button"
+                      disabled={verificationLoading || emailVerificationSent}
+                    >
+                      {verificationLoading ? "Sending..." : emailVerificationSent ? "Verification Sent" : "Verify Email"}
+                    </button>
+                    {emailVerificationSent && !user.emailVerified && (
+                      <p className="verification-hint">
+                        Check your email for the verification link. Didn't receive it? 
+                        <button 
+                          onClick={verifyEmail} 
+                          className="resend-link"
+                          disabled={verificationLoading}
+                        >
+                          {verificationLoading ? "Sending..." : "Resend"}
+                        </button>
+                      </p>
+                    )}
+                  </div>
                 )}
                 <div className="profile-detail">
                   <span className="detail-label">Joined:</span>
@@ -636,6 +694,104 @@ function Profile() {
             )}
           </div>
         </div>
+
+        <div className="termination-section">
+          <h4>Account Management</h4>
+          <div className="termination-card">
+            <div className="termination-warning">
+              <span className="warning-icon">⚠️</span>
+              <div className="warning-content">
+                <h5>Terminate Account</h5>
+                <p>This action cannot be undone. All your data, including profile, chats, and linked accounts will be permanently deleted.</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowDeleteConfirm(true)}
+              className="terminate-account-btn"
+            >
+              Terminate Account
+            </button>
+          </div>
+        </div>
+
+        {showDeleteConfirm && (
+          <div className="modal-overlay">
+            <div className="delete-modal">
+              <h3>Confirm Account Termination</h3>
+              <div className="delete-warning">
+                <span className="delete-icon">🗑️</span>
+                <p>Are you sure you want to terminate your account? This action is permanent and cannot be undone.</p>
+                <ul>
+                  <li>All your profile data will be deleted</li>
+                  <li>Your chat history will be removed</li>
+                  <li>Linked Riot account will be unlinked</li>
+                  <li>You will be removed from any active queues</li>
+                  <li>This action cannot be reversed</li>
+                </ul>
+              </div>
+              <div className="modal-actions">
+                <button 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="cancel-btn"
+                  disabled={deletingAccount}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={initiateAccountDeletion}
+                  className="confirm-delete-btn"
+                  disabled={deletingAccount}
+                >
+                  {deletingAccount ? "Deleting..." : "Yes, Delete My Account"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showReauthModal && (
+          <div className="modal-overlay">
+            <div className="reauth-modal">
+              <h3>Verify Your Identity</h3>
+              <div className="reauth-warning">
+                <span className="reauth-icon">🔒</span>
+                <p>For security reasons, please enter your password to confirm account deletion.</p>
+              </div>
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="riot-id-input"
+                />
+                {reauthError && <div className="error-message">{reauthError}</div>}
+              </div>
+              <div className="modal-actions">
+                <button 
+                  onClick={() => {
+                    setShowReauthModal(false);
+                    setPassword("");
+                    setReauthError("");
+                  }}
+                  className="cancel-btn"
+                  disabled={deletingAccount}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleReauthentication}
+                  className="confirm-delete-btn"
+                  disabled={deletingAccount || !password}
+                >
+                  {deletingAccount ? "Deleting..." : "Confirm Deletion"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
