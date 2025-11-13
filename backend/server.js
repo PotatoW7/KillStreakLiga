@@ -5,9 +5,8 @@ require('dotenv').config({ override: true });
 
 const app = express();
 
-// Add CORS middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Your Vite frontend URL
+  origin: 'http://localhost:5173', 
   credentials: true
 }));
 
@@ -17,6 +16,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const summonerRouter = require('./routes/summoner');
 app.use('/summoner-info', summonerRouter);
+
+const queueRoutes = require('./routes/queue');
+app.use('/api/queue', queueRoutes);
 
 const matchHistoryRouter = require('./routes/matchHistory');
 app.use('/match-history', matchHistoryRouter);

@@ -6,19 +6,64 @@ function RiotLink() {
   const [gameName, setGameName] = useState("");
   const [tagLine, setTagLine] = useState("");
   const [region, setRegion] = useState("euw1");
+  const [loading, setLoading] = useState(false);
+
+  const validateRiotAccount = async (gameName, tagLine, region) => {
+    try {
+      const response = await fetch(`http://localhost:3000/summoner-info/${region}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
+      
+      if (!response.ok) {
+        throw new Error('Summoner not found');
+      }
+
+      const summonerData = await response.json();
+      return {
+        gameName,
+        tagLine,
+        region,
+        puuid: summonerData.puuid,
+        summonerLevel: summonerData.summonerLevel,
+        profileIconId: summonerData.profileIconId,
+        verified: true
+      };
+    } catch (error) {
+      throw new Error('Failed to validate Riot account. Please check the details and try again.');
+    }
+  };
 
   const handleLink = async (e) => {
     e.preventDefault();
     const uid = auth.currentUser?.uid;
     if (!uid) return;
 
+    if (!gameName.trim() || !tagLine.trim()) {
+      alert("Please enter both Game Name and Tag Line");
+      return;
+    }
+
+    setLoading(true);
+
     try {
+      const validatedAccount = await validateRiotAccount(gameName, tagLine, region);
+
+      const accountData = {
+        ...validatedAccount,
+        linkedAt: new Date()
+      };
+
       await setDoc(doc(db, "users", uid), {
-        riotAccount: { gameName, tagLine, region }
+        riotAccount: accountData
       }, { merge: true });
-      alert("Riot account linked!");
+      
+      alert("Riot account linked successfully!");
+      setGameName("");
+      setTagLine("");
+      setRegion("euw1");
     } catch (err) {
       console.error("Failed to link Riot account:", err.message);
+      alert(err.message || "Failed to link Riot account");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,7 +101,13 @@ function RiotLink() {
           <option value="eun1">EUNE</option>
         </select>
       </div>
-      <button type="submit" className="link-account-btn">Link Account</button>
+      <button 
+        type="submit" 
+        className="link-account-btn" 
+        disabled={loading}
+      >
+        {loading ? "Validating..." : "Link Account"}
+      </button>
     </form>
   );
 }

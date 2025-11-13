@@ -7,6 +7,7 @@ import Summoner from "./components/Summoner";
 import FinishSignIn from "./components/FinishSignIn";
 import FriendsList from "./components/FriendsList";
 import Chat from "./components/Chat";
+import QueueSystem from "./components/QueueSystem"; 
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import "./styles/index.css";
@@ -95,6 +96,9 @@ function App() {
             <Link className="nav-link" to="/summoner">
               Summoner Lookup
             </Link>
+            <Link className="nav-link" to="/queue"> 
+              Find Queue
+            </Link>
             <button className="nav-link" onClick={handleLogout}>
               Logout
             </button>
@@ -111,6 +115,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/summoner" element={<Summoner />} />
+          <Route path="/queue" element={<QueueSystem />} /> 
           <Route path="/finishSignIn" element={<FinishSignIn />} />
           <Route
             path="*"

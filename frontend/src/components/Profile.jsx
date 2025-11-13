@@ -7,6 +7,7 @@ import {
   EmailAuthProvider 
 } from "firebase/auth";
 import { doc, updateDoc, getDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { fetchDDragon } from "../utils/fetchDDragon"; 
 
 function Profile() {
   const [user, setUser] = useState(null);
@@ -16,7 +17,7 @@ function Profile() {
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [linkingAccount, setLinkingAccount] = useState(false);
   const [riotId, setRiotId] = useState("");
-  const [region, setRegion] = useState("na1");
+  const [region, setRegion] = useState("euw1");
   const [linkedAccount, setLinkedAccount] = useState(null);
   const [linkError, setLinkError] = useState("");
   const [linkSuccess, setLinkSuccess] = useState("");
@@ -26,6 +27,7 @@ function Profile() {
   const [password, setPassword] = useState("");
   const [reauthError, setReauthError] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [latestVersion, setLatestVersion] = useState("25.12"); 
 
   const contextMenuRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -50,6 +52,17 @@ function Profile() {
   ];
 
   useEffect(() => {
+    const loadLatestVersion = async () => {
+      try {
+        const ddragonData = await fetchDDragon();
+        setLatestVersion(ddragonData.latestVersion);
+      } catch (error) {
+        console.error("Failed to load latest version:", error);
+      }
+    };
+
+    loadLatestVersion();
+
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -78,6 +91,10 @@ function Profile() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const getProfileIconUrl = (profileIconId) => {
+    return `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/${profileIconId}.png`;
+  };
 
   const fetchRankedData = async (account) => {
     try {
@@ -319,16 +336,77 @@ function Profile() {
   const performAccountDeletion = async () => {
     setDeletingAccount(true);
     try {
-      const userRef = doc(db, "users", user.uid);
+      const userId = user.uid;
+      
+      console.log("Starting account deletion for user:", userId);
+
+      const allUsersQuery = query(collection(db, "users"));
+      const allUsersSnapshot = await getDocs(allUsersQuery);
+      const updatePromises = [];
+      
+      allUsersSnapshot.forEach(otherUserDoc => {
+        if (otherUserDoc.id !== userId) {
+          const otherUserData = otherUserDoc.data();
+          const updates = {};
+          
+          if (otherUserData.friends?.some(friend => friend.id === userId)) {
+            updates.friends = otherUserData.friends.filter(friend => friend.id !== userId);
+          }
+          
+          if (otherUserData.pendingRequests?.some(req => req.from === userId)) {
+            updates.pendingRequests = otherUserData.pendingRequests.filter(req => req.from !== userId);
+          }
+          
+          if (Object.keys(updates).length > 0) {
+            updatePromises.push(
+              updateDoc(doc(db, "users", otherUserDoc.id), updates)
+            );
+          }
+        }
+      });
+
+      if (updatePromises.length > 0) {
+        await Promise.all(updatePromises);
+      }
+      console.log("Finished updating friend lists");
+
+      try {
+        const chatsQuery = query(
+          collection(db, "chats"),
+          where("participants", "array-contains", userId)
+        );
+        
+        const chatsSnapshot = await getDocs(chatsQuery);
+        const chatDeletionPromises = chatsSnapshot.docs.map(chatDoc => 
+          deleteDoc(doc(db, "chats", chatDoc.id))
+        );
+
+        if (chatDeletionPromises.length > 0) {
+          await Promise.all(chatDeletionPromises);
+          console.log("Deleted chat documents");
+        }
+      } catch (chatError) {
+        console.log("Could not delete chat documents (may not have permission), continuing...");
+      }
+      const userRef = doc(db, "users", userId);
       await deleteDoc(userRef);
+      console.log("Deleted user document");
 
       await deleteUser(user);
       
-      alert("Account terminated successfully. Goodbye!");
+      alert("Account terminated successfully! Your profile has been deleted. Goodbye!");
       window.location.href = "/";
     } catch (error) {
       console.error("Error during account deletion:", error);
-      alert("Error terminating account. Please try again.");
+      
+      if (error.code === 'permission-denied') {
+        alert("Permission denied. This might be because chat deletion failed. Your profile was still deleted.");
+      } else if (error.code === 'unavailable') {
+        alert("Network error. Please check your connection and try again.");
+      } else {
+        alert("Error terminating account. Please try again.");
+      }
+      
       setDeletingAccount(false);
       setShowDeleteConfirm(false);
     }
@@ -474,9 +552,12 @@ function Profile() {
                   <div className="account-header">
                     <div className="account-icon-name">
                       <img 
-                        src={`https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/${linkedAccount.profileIconId}.png`}
+                        src={getProfileIconUrl(linkedAccount.profileIconId)} 
                         alt="Summoner icon"
                         className="summoner-icon"
+                        onError={(e) => {
+                          e.target.src = `https://ddragon.leagueoflegends.com/cdn/25.22/img/profileicon/${linkedAccount.profileIconId}.png`;
+                        }}
                       />
                       <div>
                         <span className="account-name">
@@ -491,9 +572,6 @@ function Profile() {
                   </div>
                   <span className="account-region">
                     Region: {regions.find(r => r.value === linkedAccount.region)?.label || linkedAccount.region}
-                  </span>
-                  <span className="account-linked-date">
-                    Linked: {new Date(linkedAccount.linkedAt).toLocaleDateString()}
                   </span>
                 </div>
 
@@ -558,103 +636,6 @@ function Profile() {
             )}
           </div>
         </div>
-
-        <div className="termination-section">
-          <h4>Account Management</h4>
-          <div className="termination-card">
-            <div className="termination-warning">
-              <span className="warning-icon">⚠️</span>
-              <div className="warning-content">
-                <h5>Terminate Account</h5>
-                <p>This action cannot be undone. All your data, including profile, chats, and linked accounts will be permanently deleted.</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setShowDeleteConfirm(true)}
-              className="terminate-account-btn"
-            >
-              Terminate Account
-            </button>
-          </div>
-        </div>
-
-        {showDeleteConfirm && (
-          <div className="modal-overlay">
-            <div className="delete-modal">
-              <h3>Confirm Account Termination</h3>
-              <div className="delete-warning">
-                <span className="delete-icon">🗑️</span>
-                <p>Are you sure you want to terminate your account? This action is permanent and cannot be undone.</p>
-                <ul>
-                  <li>All your profile data will be deleted</li>
-                  <li>Your chat history will be removed</li>
-                  <li>Linked Riot account will be unlinked</li>
-                  <li>This action cannot be reversed</li>
-                </ul>
-              </div>
-              <div className="modal-actions">
-                <button 
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="cancel-btn"
-                  disabled={deletingAccount}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={initiateAccountDeletion}
-                  className="confirm-delete-btn"
-                  disabled={deletingAccount}
-                >
-                  {deletingAccount ? "Deleting..." : "Yes, Delete My Account"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showReauthModal && (
-          <div className="modal-overlay">
-            <div className="reauth-modal">
-              <h3>Verify Your Identity</h3>
-              <div className="reauth-warning">
-                <span className="reauth-icon">🔒</span>
-                <p>For security reasons, please enter your password to confirm account deletion.</p>
-              </div>
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="riot-id-input"
-                />
-                {reauthError && <div className="error-message">{reauthError}</div>}
-              </div>
-              <div className="modal-actions">
-                <button 
-                  onClick={() => {
-                    setShowReauthModal(false);
-                    setPassword("");
-                    setReauthError("");
-                  }}
-                  className="cancel-btn"
-                  disabled={deletingAccount}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleReauthentication}
-                  className="confirm-delete-btn"
-                  disabled={deletingAccount || !password}
-                >
-                  {deletingAccount ? "Deleting..." : "Confirm Deletion"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
