@@ -18,6 +18,21 @@ function Summoner() {
   const [error, setError] = useState(null);
   const [recentSearches, setRecentSearches] = useState([]);
 
+useEffect(() => {
+  const handleSearchPlayer = (event) => {
+    const { riotId, region } = event.detail;
+    setRiotId(riotId);
+    setRegion(region);
+    searchPlayer(riotId, region);
+  };
+
+  window.addEventListener('searchPlayer', handleSearchPlayer);
+  
+  return () => {
+    window.removeEventListener('searchPlayer', handleSearchPlayer);
+  };
+}, []);
+
   useEffect(() => {
     const savedSearches = localStorage.getItem("lolRecentSearches");
     if (savedSearches) {

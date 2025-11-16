@@ -2,11 +2,56 @@ const express = require('express');
 const router = express.Router();
 
 let queue = [];
-let matches = [];
 
-router.post('/join', (req, res) => {
+const QUEUE_CONFIG = {
+  MAX_WAIT_TIME: 900000,
+  CLEANUP_INTERVAL: 300000
+};
+
+const GAME_MODES = {
+  solo_duo: {
+    validSizes: [2]
+  },
+  ranked_flex: {
+    validSizes: [1, 2, 3, 5]
+  },
+  draft: {
+    validSizes: [1, 2, 3, 4, 5]
+  },
+  swiftplay: {
+    validSizes: [1, 2, 3, 4, 5]
+  },
+  aram: {
+    validSizes: [1, 2, 3, 4, 5]
+  }
+};
+
+router.post('/join', async (req, res) => {
   try {
-    const { userId, playerName, riotAccount, region } = req.body;
+    const { 
+      userId, 
+      playerName, 
+      riotAccount, 
+      region, 
+      preferredRoles = [],
+      queueType,
+      partySize = 1,
+      rank,
+      communicationPrefs = { voice: false, text: true }
+    } = req.body;
+
+    if (!userId || !riotAccount?.gameName) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    const modeConfig = GAME_MODES[queueType];
+    if (!modeConfig) {
+      return res.status(400).json({ success: false, error: 'Invalid game mode' });
+    }
+
+    if (!modeConfig.validSizes.includes(partySize)) {
+      return res.status(400).json({ success: false, error: 'Invalid party size for this game mode' });
+    }
 
     const alreadyInQueue = queue.find(player => player.userId === userId);
     if (alreadyInQueue) {
@@ -17,20 +62,24 @@ router.post('/join', (req, res) => {
       userId,
       playerName,
       riotAccount,
-      region,
+      region: region.toLowerCase(),
+      preferredRoles,
+      queueType,
+      partySize,
+      rank,
+      communicationPrefs,
       joinedAt: new Date(),
       queueId: generateQueueId()
     };
 
     queue.push(player);
-    console.log(`Player ${playerName} joined queue. Queue size: ${queue.length}`);
-
-    tryMatchPlayers();
+    console.log(`Player ${playerName} joined ${queueType} queue. Queue size: ${queue.length}`);
 
     res.json({ 
       success: true, 
       queueId: player.queueId,
-      position: queue.length
+      position: queue.length,
+      estimatedWait: estimateWaitTime(queue.length)
     });
   } catch (error) {
     console.error('Error joining queue:', error);
@@ -59,15 +108,21 @@ router.get('/status/:userId', (req, res) => {
     const { userId } = req.params;
     
     const inQueue = queue.find(player => player.userId === userId);
-    const userMatch = matches.find(match => 
-      match.player1.userId === userId || match.player2.userId === userId
-    );
+
+    const queueStats = {
+      totalPlayers: queue.length,
+      playersInRegion: inQueue ? queue.filter(p => p.region === inQueue.region).length : 0,
+      averageWaitTime: calculateAverageWaitTime(),
+      modePreferences: calculateModePreferences()
+    };
 
     res.json({
       inQueue: !!inQueue,
       queuePosition: inQueue ? queue.indexOf(inQueue) + 1 : null,
       queueSize: queue.length,
-      currentMatch: userMatch || null
+      currentMatch: null,
+      queueStats,
+      estimatedWait: inQueue ? estimateWaitTime(queue.length) : null
     });
   } catch (error) {
     console.error('Error getting queue status:', error);
@@ -82,6 +137,11 @@ router.get('/players', (req, res) => {
         playerName: player.playerName,
         riotAccount: player.riotAccount,
         region: player.region,
+        preferredRoles: player.preferredRoles,
+        queueType: player.queueType,
+        partySize: player.partySize,
+        rank: player.rank,
+        communicationPrefs: player.communicationPrefs,
         waitTime: Math.floor((new Date() - player.joinedAt) / 1000)
       }))
     });
@@ -91,44 +151,52 @@ router.get('/players', (req, res) => {
   }
 });
 
-function tryMatchPlayers() {
-  if (queue.length < 2) return;
-
-  const playersByRegion = {};
-  queue.forEach(player => {
-    if (!playersByRegion[player.region]) {
-      playersByRegion[player.region] = [];
-    }
-    playersByRegion[player.region].push(player);
-  });
-
-  for (const region in playersByRegion) {
-    const regionPlayers = playersByRegion[region];
+router.get('/analytics', (req, res) => {
+  try {
+    const { region } = req.query;
     
-    while (regionPlayers.length >= 2) {
-      const player1 = regionPlayers.shift();
-      const player2 = regionPlayers.shift();
-      
-      queue = queue.filter(p => p.userId !== player1.userId && p.userId !== player2.userId);
-      
-      const match = {
-        matchId: generateMatchId(),
-        player1,
-        player2,
-        matchedAt: new Date()
-      };
-      
-      matches.push(match);
-      
-      console.log(`Matched ${player1.playerName} with ${player2.playerName} in region ${region}`);
-      
-      setTimeout(() => {
-        matches = matches.filter(m => m.matchId !== match.matchId);
-      }, 10 * 60 * 1000);
-      
-      break;
-    }
+    const filteredQueue = region && region !== 'all' && region !== 'undefined' 
+      ? queue.filter(p => p.region === region.toLowerCase()) 
+      : queue;
+    
+    const analytics = {
+      totalPlayers: filteredQueue.length,
+      averageWaitTime: calculateAverageWaitTime(filteredQueue),
+      modePreferences: calculateModePreferences(filteredQueue),
+      region: region || 'all'
+    };
+    
+    res.json(analytics);
+  } catch (error) {
+    console.error('Error getting queue analytics:', error);
+    res.status(500).json({ error: 'Failed to get analytics' });
   }
+});
+
+function calculateModePreferences(players = queue) {
+  const preferences = {};
+  players.forEach(player => {
+    preferences[player.queueType] = (preferences[player.queueType] || 0) + 1;
+  });
+  return preferences;
+}
+
+function estimateWaitTime(queueSize) {
+  const baseWait = 30;
+  const sizeMultiplier = 10;
+  return Math.max(baseWait, queueSize * sizeMultiplier);
+}
+
+function calculateAverageWaitTime(players = queue) {
+  if (players.length === 0) return 0;
+  const totalWait = players.reduce((sum, player) => {
+    return sum + Math.floor((new Date() - player.joinedAt) / 1000);
+  }, 0);
+  return Math.floor(totalWait / players.length);
+}
+
+function generateQueueId() {
+  return 'q_' + Math.random().toString(36).substr(2, 9);
 }
 
 setInterval(() => {
@@ -140,21 +208,6 @@ setInterval(() => {
   if (initialQueueSize !== queue.length) {
     console.log(`Cleaned up ${initialQueueSize - queue.length} old queue entries`);
   }
-  
-  const initialMatchesSize = matches.length;
-  matches = matches.filter(match => match.matchedAt > fifteenMinutesAgo);
-  
-  if (initialMatchesSize !== matches.length) {
-    console.log(`Cleaned up ${initialMatchesSize - matches.length} old matches`);
-  }
 }, 5 * 60 * 1000);
-
-function generateQueueId() {
-  return 'q_' + Math.random().toString(36).substr(2, 9);
-}
-
-function generateMatchId() {
-  return 'm_' + Math.random().toString(36).substr(2, 9);
-}
 
 module.exports = router;
