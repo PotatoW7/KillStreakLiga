@@ -1,34 +1,77 @@
+/* navigation.css - Navigation Specific Styles */
+
+/* Navigation Bar - Buttons on Right Side */
 nav {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1001;
   display: flex;
-  gap: 8px;
-  background: rgba(22, 24, 29, 0.95);
-  backdrop-filter: blur(20px);
-  padding: 8px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-lg);
+  justify-content: flex-end; /* Buttons on the right */
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .nav-link {
-  color: var(--text-secondary) !important;
+  padding: var(--space-sm) var(--space-md);
   text-decoration: none;
-  padding: 10px 18px;
+  color: var(--text-secondary);
   border-radius: var(--radius-sm);
-  background: transparent !important;
-  border: none !important;
   transition: all 0.2s;
   font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
   white-space: nowrap;
+  font-size: var(--font-size-sm);
+  border: 1px solid transparent;
 }
 
 .nav-link:hover {
-  color: var(--text-primary) !important;
-  background: rgba(200, 155, 60, 0.1) !important;
-  transform: translateY(-1px);
+  color: var(--text-primary);
+  background: rgba(200, 155, 60, 0.1);
+  border-color: var(--border-accent);
+}
+
+.logout-btn {
+  background: rgba(255, 0, 0, 0.605);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  margin-left: 0; /* No margin needed since all buttons are on right */
+}
+
+.logout-btn:hover {
+  background: rgba(248, 92, 112, 0.1);
+  border-color: var(--defeat);
+}
+
+/* Mobile Navigation */
+@media (max-width: 768px) {
+  nav {
+    justify-content: center; /* Center on mobile */
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+  }
+  
+  .nav-link {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-xs);
+  }
+  
+  .nav-link {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    padding: var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
 }

@@ -1,444 +1,83 @@
-/* ===== RESPONSIVE BREAKPOINTS ===== */
+/* ===== ENHANCED RESPONSIVE BREAKPOINTS ===== */
 
-/* Large devices (desktops, 1024px and up) */
-@media (max-width: 1024px) {
-  .app-container,
-  .summoner-page,
-  .profile-page {
-    padding: 80px 16px 32px;
-  }
-
-  .match-stats {
-    gap: var(--space-md);
-  }
-
-  .match-item {
-    width: 28px;
-    height: 28px;
+/* Large laptops (1200px and up) */
+@media (min-width: 1200px) {
+  .app-container {
+    max-width: 1400px;
   }
 }
 
-/* Medium devices (tablets, 768px and up) */
+/* Standard laptops (1024px to 1199px) */
+@media (max-width: 1199px) {
+  .app-container {
+    max-width: 1000px;
+  }
+}
+
+/* Small laptops (768px to 1023px) */
+@media (max-width: 1023px) {
+  .app-container {
+    max-width: 900px;
+    padding: 0 var(--space-md);
+  }
+  
+  .profile-card,
+  .match-card {
+    max-width: 700px;
+  }
+}
+
+/* Tablets (768px and down) */
 @media (max-width: 768px) {
-  h1 {
-    font-size: var(--font-size-3xl);
+  html {
+    font-size: 15px;
   }
-
-  nav {
-    top: 12px;
-    right: 12px;
-    left: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
+  
+  .app-container {
+    padding: 0 var(--space-sm);
   }
-
-  .nav-link {
-    font-size: var(--font-size-sm);
-    padding: 8px 14px;
-  }
-
-  /* Profile */
+  
   .profile-card {
     flex-direction: column;
-    align-items: center;
     text-align: center;
-    padding: var(--space-xl);
-  }
-
-  .profile-icon {
-    width: 100px;
-    height: 100px;
-  }
-
-  /* Match History */
-  .team-container {
-    grid-template-columns: 1fr;
-  }
-
-  .match-header {
-    flex-direction: column;
-    gap: var(--space-md);
-    align-items: flex-start;
-  }
-
-  .match-basic-info {
-    width: 100%;
-  }
-
-  .match-stats {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .player-row {
-    flex-wrap: wrap;
-    gap: var(--space-xs);
-  }
-
-  /* Mastery */
-  .mastery-grid {
-    grid-template-columns: 1fr;
-  }
-
-  /* Auth */
-  .auth-container {
-    padding: var(--space-xl) var(--space-lg);
-  }
-
-  /* Riot Account */
-  .riot-account-section {
-    padding: var(--space-md);
-    margin-top: var(--space-md);
-  }
-  
-  .form-row {
-    flex-direction: column;
-    gap: var(--space-md);
-  }
-  
-  .riot-id-input {
-    width: 100%;
-  }
-  
-  .link-account-btn {
-    width: 100%;
-  }
-  
-  .account-details {
-    flex-direction: column;
-    gap: var(--space-sm);
-  }
-
-  /* Chat & Friends */
-  .social-container {
-    width: 100%;
-    height: 100%;
-    bottom: 0;
-    right: 0;
-    left: 0;
-    top: 0;
-    border-radius: 0;
-  }
-  
-  .friends-container h3 {
     padding: var(--space-md);
   }
   
-  .search-friends,
-  .search-results,
-  .pending-requests,
-  .friend-item {
-    padding: var(--space-md) var(--space-lg);
-  }
-  
-  .chat-header {
-    padding: var(--space-md) var(--space-lg);
-    gap: var(--space-md);
-  }
-  
-  .back-btn {
-    padding: 6px 12px;
-    font-size: var(--font-size-sm);
-    margin-right: 8px;
-  }
-  
-  .chat-input {
-    padding: var(--space-md) var(--space-lg);
-    gap: var(--space-xs);
-  }
-  
-  .chat-messages {
-    padding: var(--space-md);
-    gap: var(--space-md);
-  }
-  
-  .message-image {
-    max-width: 200px;
-    max-height: 200px;
-  }
-  
-  .chat-message {
-    max-width: 90%;
-  }
-
-  /* Mobile adjustments for unfriend button */
-  .unfriend-btn {
-    padding: 6px 12px;
-    font-size: var(--font-size-xs);
-  }
-  
-  .friend-name {
-    max-width: 120px;
-  }
-
-  /* Message Context Menu */
-  .message-context-menu {
-    left: -45px;
-    padding: 4px;
-    gap: 3px;
-  }
-  
-  .context-icon-btn {
-    width: 28px;
-    height: 28px;
-    padding: 6px;
-    font-size: var(--font-size-xs);
-  }
-  
-  .message-edit-container {
-    padding: 10px;
-  }
-  
-  .message-edit-textarea {
-    padding: 8px 10px;
-    min-height: 50px;
-  }
-  
-  .save-edit-btn,
-  .cancel-edit-btn {
-    padding: 5px 10px;
-    font-size: var(--font-size-xs);
-  }
-  
-  .chat-message.sent .message-bubble-wrapper {
-    margin-left: 5px;
-  }
-
-  /* Objectives */
-  .team-objectives-container {
-    grid-template-columns: 1fr;
-    gap: var(--space-md);
-  }
-  
-  .team-objectives {
-    min-height: 70px;
-  }
-  
-  .objectives-row {
-    gap: 6px;
-  }
-  
-  .objective-item {
-    padding: 4px 8px;
-  }
-  
-  .player-rank-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-xs);
-  }
-
-  /* Recent Searches */
-  .recent-searches-section {
-    padding: var(--space-md);
-    margin: 0 auto var(--space-lg);
-  }
-  
-  .recent-searches-header {
-    margin-bottom: 10px;
-  }
-  
-  .recent-searches-header h4 {
-    font-size: var(--font-size-sm);
-  }
-  
-  .recent-search-item {
-    min-width: 100px;
-    padding: 4px 6px;
-  }
-  
-  .recent-search-name {
-    font-size: var(--font-size-xs);
-  }
-  
-  .recent-search-region {
-    font-size: var(--font-size-xs);
-    padding: 1px 4px;
-  }
-  
-  .remove-recent-btn {
-    padding: 1px 4px;
-    font-size: var(--font-size-xs);
-    min-width: 18px;
-    height: 18px;
+  .profile-icon-container {
+    width: 70px;
+    height: 70px;
   }
 }
 
-/* Small devices (phones, 480px and up) */
+/* Mobile devices (480px and down) */
 @media (max-width: 480px) {
-  h1 {
-    font-size: var(--font-size-2xl);
-  }
-
-  .search-container {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .search-container input,
-  .search-container select {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .match-champion-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .match-item {
-    width: 24px;
-    height: 24px;
-  }
-
-  .item-icon {
-    width: 24px;
-    height: 24px;
-  }
-
-  .player-row .champion-icon {
-    width: 32px;
-    height: 32px;
-  }
-
-  .rank-card {
-    min-width: 100%;
-  }
-
-  /* Riot Account */
-  .riot-account-section {
-    padding: var(--space-md);
+  html {
+    font-size: 14px;
   }
   
-  .account-icon-name {
-    gap: 10px;
+  .app-container {
+    padding: 0 var(--space-xs);
   }
   
-  .summoner-icon {
-    width: 50px;
-    height: 50px;
+  .social-container {
+    width: 95vw;
+    height: 70vh;
+    right: 2.5vw;
+    bottom: 2.5vh;
   }
   
-  .account-name {
+  .floating-chat-btn {
+    width: 45px;
+    height: 45px;
     font-size: var(--font-size-base);
-  }
-  
-  .riot-account-section .ranked-container {
-    flex-direction: column;
-  }
-  
-  .riot-account-section .rank-card {
-    min-width: 100%;
-  }
-
-  /* Chat Context Menu */
-  .message-context-menu {
-    left: -40px;
-  }
-  
-  .context-icon-btn {
-    width: 26px;
-    height: 26px;
-    padding: 5px;
-  }
-
-  /* Recent Searches */
-  .recent-searches-container {
-    gap: 4px;
-  }
-  
-  .recent-search-item {
-    flex: 1 1 calc(50% - 4px);
-    min-width: 0;
+    bottom: 15px;
+    right: 15px;
   }
 }
 
-/* Very small devices (phones, 360px and up) */
-@media (max-width: 360px) {
-  .app-container,
-  .summoner-page,
-  .profile-page {
-    padding: 70px 12px 24px;
-  }
-
-  h1 {
-    font-size: var(--font-size-xl);
-  }
-
-  h2 {
-    font-size: var(--font-size-lg);
-  }
-
-  .profile-card {
-    padding: var(--space-md);
-  }
-
-  .auth-container {
-    padding: var(--space-lg) var(--space-md);
-  }
-
-  .search-container button {
-    padding: 12px 20px;
-    font-size: var(--font-size-sm);
-  }
-}
-
-/* Touch device optimizations */
-@media (hover: none) and (pointer: coarse) {
-  .btn:hover {
-    transform: none;
-  }
-  
-  .chat-message:hover {
-    transform: none;
-  }
-  
-  /* Increase tap targets for mobile */
-  .nav-link {
-    padding: 12px 16px;
-  }
-  
-  button {
-    padding: 12px 20px;
-  }
-  
-  .friend-item {
-    padding: 20px 16px;
-  }
-}
-
-/* High DPI screens */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  .profile-icon,
-  .champion-icon,
-  .match-champion-icon {
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-  }
-}
-
-/* Dark mode support (already dark, but for consistency) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  
-  .floating-chat-btn:hover {
-    transform: none;
-  }
-  
-  .chat-message {
-    animation: none;
+/* Prevent zoom on mobile inputs */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px;
   }
 }

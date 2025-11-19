@@ -3,7 +3,7 @@ import RankedInfo from "./RankedInfo";
 import MatchHistory from "./MatchHistory";
 import ChampionMastery from "./ChampionMastery";
 import { fetchDDragon } from "../utils/fetchDDragon";
-
+// slab 2 
 function Summoner() {
   const [riotId, setRiotId] = useState("");
   const [region, setRegion] = useState("euw1");

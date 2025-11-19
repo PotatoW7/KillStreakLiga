@@ -74,7 +74,7 @@ function App() {
   if (loading) return <div className="loading">Checking authentication...</div>;
 
   return (
-    <>
+    <div className="app"> {/* Added main app wrapper */}
       <nav>
         {!user ? (
           <>
@@ -99,14 +99,14 @@ function App() {
             <Link className="nav-link" to="/queue"> 
               Find Queue
             </Link>
-            <button className="nav-link" onClick={handleLogout}>
+            <button className="nav-link logout-btn" onClick={handleLogout}>
               Logout
             </button>
           </>
         )}
       </nav>
 
-      <div className="app-container">
+      <div className="app-container"> {/* This should have proper styling */}
         <Routes>
           <Route
             path="/"
@@ -148,7 +148,7 @@ function App() {
           </>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
