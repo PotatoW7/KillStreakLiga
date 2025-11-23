@@ -4,7 +4,7 @@
 @import './utilities.css';
 @import './layout/navigation.css';
 @import './layout/responsive.css';
-@import './scaling.css';
+
 
 /* Component Styles */
 @import './componentsCSS/auth.css';

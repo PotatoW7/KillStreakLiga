@@ -1,7 +1,13 @@
+/* ------------------------------------------ */
 /* Text utilities */
-.text-center { text-align: center; }
+/* ------------------------------------------ */
+.text-center { 
+  text-align: center; 
+}
 
+/* ------------------------------------------ */
 /* Loading states */
+/* ------------------------------------------ */
 .loading {
   display: flex;
   justify-content: center;
@@ -19,7 +25,9 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* ------------------------------------------ */
 /* Error and status messages */
+/* ------------------------------------------ */
 .error-box {
   background: rgba(248, 92, 112, 0.1);
   border: 1px solid rgba(248, 92, 112, 0.3);
@@ -32,7 +40,9 @@
   font-weight: var(--font-weight-semibold);
 }
 
-/* Form elements base styles */
+/* ------------------------------------------ */
+/* Form Elements (inputs, selects) */
+/* ------------------------------------------ */
 input,
 select {
   background: var(--bg-secondary);
@@ -69,7 +79,10 @@ input::placeholder {
   opacity: 0.6;
 }
 
-/* Button base styles */
+/* ------------------------------------------ */
+/* Button Base Styles (Safe) */
+/* ------------------------------------------ */
+
 button {
   background: transparent;
   color: var(--text-secondary);
@@ -83,9 +96,8 @@ button {
   font-family: 'Inter', sans-serif;
 }
 
-button:hover:not(:disabled) {
-  color: var(--text-primary);
-  background: rgba(200, 155, 60, 0.1);
+button:hover:not(:disabled):not(.nav-link):not(.logout-btn) {
+  opacity: 0.85;
   transform: translateY(-1px);
 }
 

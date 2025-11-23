@@ -1,59 +1,89 @@
-/* navigation.css - Navigation Specific Styles */
-
-/* Navigation Bar - Buttons on Right Side */
+/* ------------------------------------------------------ */
+/* Navigation Bar Layout */
+/* ------------------------------------------------------ */
 nav {
   display: flex;
-  justify-content: flex-end; /* Buttons on the right */
+  justify-content: flex-end;
   align-items: center;
   gap: var(--space-md);
+  width: 100%;
   padding: var(--space-md);
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-subtle);
-  width: 100%;
   flex-wrap: wrap;
+  backdrop-filter: blur(6px);
 }
 
+/* ------------------------------------------------------ */
+/* Navigation Links */
+/* ------------------------------------------------------ */
 .nav-link {
   padding: var(--space-sm) var(--space-md);
   text-decoration: none;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
-  transition: all 0.2s;
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
   font-size: var(--font-size-sm);
   border: 1px solid transparent;
+  transition: all 0.25s ease;
 }
 
+/* Hover effect for normal nav buttons */
 .nav-link:hover {
   color: var(--text-primary);
-  background: rgba(200, 155, 60, 0.1);
+  background: rgba(200, 155, 60, 0.12);
+  border-color: var(--border-accent);
+  transform: translateY(-2px);
+}
+
+/* Active/current page state */
+.nav-link.active {
+  color: var(--text-primary);
+  background: rgba(200, 155, 60, 0.18);
   border-color: var(--border-accent);
 }
 
+/* ------------------------------------------------------ */
+/* Logout Button */
+/* ------------------------------------------------------ */
 .logout-btn {
-  background: rgba(255, 0, 0, 0.605);
-  border: 1px solid var(--border-subtle);
+  background: rgba(255, 0, 0, 0.6) !important;
+  border: 1px solid rgba(255, 0, 0, 0.7) !important;
+  color: #fff !important;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
-  margin-left: 0; /* No margin needed since all buttons are on right */
+  white-space: nowrap;
+  transition: all 0.25s ease;
 }
 
+/* Glow effect ONLY — background stays constant */
 .logout-btn:hover {
-  background: rgba(248, 92, 112, 0.1);
-  border-color: var(--defeat);
+  background: rgba(255, 0, 0, 0.6) !important;
+  border-color: rgba(255, 0, 0, 0.7) !important;
+  color: #fff !important;
+  box-shadow:
+    0 0 10px rgba(255, 80, 80, 0.8),
+    0 0 20px rgba(255, 80, 80, 0.6),
+    0 0 35px rgba(255, 80, 80, 0.4);
+  transform: translateY(-3px);
 }
 
-/* Mobile Navigation */
+/* ------------------------------------------------------ */
+/* Responsive Navigation */
+/* ------------------------------------------------------ */
 @media (max-width: 768px) {
   nav {
-    justify-content: center; /* Center on mobile */
+    justify-content: center;
     gap: var(--space-sm);
     padding: var(--space-sm);
   }
-  
-  .nav-link {
+
+  .nav-link,
+  .logout-btn {
     padding: var(--space-xs) var(--space-sm);
     font-size: var(--font-size-xs);
   }
@@ -66,12 +96,12 @@ nav {
     justify-content: center;
     gap: var(--space-xs);
   }
-  
-  .nav-link {
+
+  .nav-link,
+  .logout-btn {
     flex: 1;
     min-width: 0;
     text-align: center;
     padding: var(--space-sm);
-    font-size: var(--font-size-xs);
   }
 }
