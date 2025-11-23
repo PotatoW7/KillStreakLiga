@@ -30,6 +30,8 @@ function Profile() {
   const [latestVersion, setLatestVersion] = useState("25.12"); 
   const [verificationLoading, setVerificationLoading] = useState(false);
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [terminationButtonActive, setTerminationButtonActive] = useState(false);
+  const [ripple, setRipple] = useState(false);
 
   const contextMenuRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -328,6 +330,21 @@ function Profile() {
       console.error("Error unlinking Riot account:", error);
       setLinkError("Failed to unlink Riot account. Please try again.");
     }
+  };
+
+  const handleTerminationClick = () => {
+    setTerminationButtonActive(true);
+    setRipple(true);
+    setShowDeleteConfirm(true);
+    
+    // Remove active state after animation completes
+    setTimeout(() => {
+      setTerminationButtonActive(false);
+    }, 300);
+    
+    setTimeout(() => {
+      setRipple(false);
+    }, 600);
   };
 
   const handleReauthentication = async () => {
@@ -671,6 +688,7 @@ function Profile() {
                     id="region"
                     value={region}
                     onChange={(e) => setRegion(e.target.value)}
+                    className="riot-id-input"
                   >
                     {regions.map(region => (
                       <option key={region.value} value={region.value}>
@@ -706,10 +724,11 @@ function Profile() {
               </div>
             </div>
             <button 
-              onClick={() => setShowDeleteConfirm(true)}
-              className="terminate-account-btn"
+              onClick={handleTerminationClick}
+              className={`terminate-account-btn ${terminationButtonActive ? 'active' : ''}`}
             >
               Terminate Account
+              {ripple && <span className="ripple"></span>}
             </button>
           </div>
         </div>
@@ -720,14 +739,16 @@ function Profile() {
               <h3>Confirm Account Termination</h3>
               <div className="delete-warning">
                 <span className="delete-icon">🗑️</span>
-                <p>Are you sure you want to terminate your account? This action is permanent and cannot be undone.</p>
-                <ul>
-                  <li>All your profile data will be deleted</li>
-                  <li>Your chat history will be removed</li>
-                  <li>Linked Riot account will be unlinked</li>
-                  <li>You will be removed from any active queues</li>
-                  <li>This action cannot be reversed</li>
-                </ul>
+                <div>
+                  <p>Are you sure you want to terminate your account? This action is permanent and cannot be undone.</p>
+                  <ul>
+                    <li>All your profile data will be deleted</li>
+                    <li>Your chat history will be removed</li>
+                    <li>Linked Riot account will be unlinked</li>
+                    <li>You will be removed from any active queues</li>
+                    <li>This action cannot be reversed</li>
+                  </ul>
+                </div>
               </div>
               <div className="modal-actions">
                 <button 

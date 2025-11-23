@@ -1,15 +1,17 @@
-/* profile.css - Profile Component Specific Styles */
+/* profile.css - Enhanced Profile Component Styles */
+/* Fixed version with improved styling and no disappearing elements */
 
-/* Main Profile Layout */
+/* ===== ENHANCED PROFILE LAYOUT ===== */
 .profile-page {
   min-height: 100vh;
   padding: var(--space-xl);
+  background: var(--bg-primary);
 }
 
 .profile-container {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: var(--space-lg);
+  padding: var(--space-xl);
 }
 
 .profile-title {
@@ -19,9 +21,13 @@
   text-align: center;
   margin-bottom: var(--space-xl);
   letter-spacing: -0.3px;
+  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Profile Card */
+/* ===== ENHANCED PROFILE CARD ===== */
 .profile-card {
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
@@ -30,36 +36,54 @@
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
+  position: relative;
 }
 
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-blue));
+}
+
+/* ===== ENHANCED PROFILE HEADER ===== */
 .profile-header {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: var(--space-xl);
-  align-items: flex-start;
   margin-bottom: var(--space-xl);
 }
 
-/* Profile Image Section */
 .profile-icon-container {
   position: relative;
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
 }
 
 .profile-avatar {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   border-radius: var(--radius-full);
   object-fit: cover;
   border: 3px solid var(--accent-gold);
   transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(200, 155, 60, 0.2);
 }
 
 .profile-avatar:hover {
   border-color: var(--accent-gold-light);
   transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(200, 155, 60, 0.3);
 }
 
-/* Context Menu */
+/* ===== ENHANCED CONTEXT MENU ===== */
 .context-menu {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -81,6 +105,9 @@
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
   font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .context-menu-btn:hover {
@@ -98,10 +125,11 @@
   color: var(--error);
 }
 
-/* Profile Info Section */
+/* ===== ENHANCED PROFILE INFO ===== */
 .profile-info {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .profile-display-name {
@@ -109,70 +137,142 @@
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   margin-bottom: var(--space-lg);
-  word-wrap: break-word;
+  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.3;
+  text-align: center;
 }
 
+/* ===== ENHANCED PROFILE DETAILS ===== */
 .profile-details {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  width: 100%;
 }
 
 .profile-detail {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  flex-wrap: wrap;
+  gap: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  min-height: 60px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.profile-detail:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-gold);
+  transform: translateX(8px);
 }
 
 .detail-label {
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-secondary);
-  min-width: 100px;
+  min-width: 120px;
   font-size: var(--font-size-sm);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: left;
 }
+
+.detail-label::before {
+  font-size: var(--font-size-sm);
+  width: 20px;
+  text-align: center;
+}
+
+.profile-detail:nth-child(1) .detail-label::before { content: '📧'; }
+.profile-detail:nth-child(2) .detail-label::before { content: '✅'; }
+.profile-detail:nth-child(3) .detail-label::before { content: '📅'; }
+.profile-detail:nth-child(4) .detail-label::before { content: '🕒'; }
 
 .detail-value {
   color: var(--text-primary);
   font-size: var(--font-size-sm);
-  word-break: break-word;
+  font-weight: var(--font-weight-medium);
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 .detail-value.verified {
   color: var(--success);
+  font-weight: var(--font-weight-semibold);
 }
 
 .detail-value.not-verified {
   color: var(--error);
+  font-weight: var(--font-weight-semibold);
 }
 
-/* Email Verification Section */
+/* ===== ENHANCED VERIFICATION SECTION ===== */
 .verification-section {
-  margin-top: var(--space-sm);
-  padding: var(--space-sm);
+  margin-top: var(--space-lg);
+  padding: var(--space-lg);
   background: var(--bg-tertiary);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.verification-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
 }
 
 .verify-button {
   background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
   color: var(--text-dark);
   border: none;
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: var(--font-size-sm);
   width: 100%;
-  margin-bottom: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.verify-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
 }
 
 .verify-button:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+.verify-button:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .verify-button:disabled {
@@ -183,9 +283,10 @@
 
 .verification-hint {
   color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  line-height: 1.4;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
   margin: 0;
+  text-align: center;
 }
 
 .resend-link {
@@ -194,9 +295,10 @@
   color: var(--accent-gold);
   text-decoration: underline;
   cursor: pointer;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   margin-left: var(--space-xs);
   padding: 0;
+  font-weight: var(--font-weight-semibold);
 }
 
 .resend-link:hover:not(:disabled) {
@@ -208,7 +310,7 @@
   cursor: not-allowed;
 }
 
-/* Riot Account Section */
+/* ===== ENHANCED RIOT ACCOUNT SECTION ===== */
 .riot-account-section {
   margin-top: var(--space-xl);
   padding-top: var(--space-xl);
@@ -218,15 +320,38 @@
 .riot-account-section h4 {
   color: var(--text-primary);
   margin-bottom: var(--space-lg);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  justify-content: center;
 }
 
-/* Linked Account Styles - COMPACT VERSION */
+.riot-account-section h4::before {
+  content: '⚔️';
+  font-size: 1.2em;
+}
+
+/* ===== ENHANCED LINKED ACCOUNT STYLES ===== */
 .linked-account-container {
   background: var(--bg-tertiary);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   border: 1px solid var(--border-color);
   margin-bottom: var(--space-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.linked-account-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-blue));
 }
 
 .account-header {
@@ -252,6 +377,12 @@
   border-radius: var(--radius-md);
   border: 2px solid var(--accent-gold);
   flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.summoner-icon:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(200, 155, 60, 0.3);
 }
 
 .account-details {
@@ -268,12 +399,21 @@
   color: var(--text-primary);
   display: block;
   word-wrap: break-word;
+  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .account-level {
   font-size: var(--font-size-sm);
-  color: var(--text-secondary);
+  color: var(--accent-blue);
   display: block;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
 .account-status {
@@ -283,10 +423,12 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   flex-shrink: 0;
-}
-
-.account-status.verified {
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(0, 201, 141, 0.1);
+  border: 1px solid rgba(0, 201, 141, 0.3);
+  border-radius: var(--radius-full);
   color: var(--success);
+  white-space: nowrap;
 }
 
 .account-region {
@@ -295,9 +437,18 @@
   margin-bottom: var(--space-md);
   padding: var(--space-sm) 0;
   border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
-/* Compact Ranked Information */
+.account-region::before {
+  content: '🌎';
+}
+
+/* ===== ENHANCED RANKED INFORMATION ===== */
 .ranked-section {
   margin: var(--space-lg) 0;
 }
@@ -309,6 +460,7 @@
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-weight: var(--font-weight-semibold);
 }
 
 .ranked-container {
@@ -340,7 +492,7 @@
 }
 
 .rank-card:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   border-color: var(--accent-gold);
 }
@@ -371,6 +523,7 @@
   text-transform: capitalize;
   margin-bottom: 2px;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .queue-label {
@@ -378,6 +531,7 @@
   color: var(--text-secondary);
   margin-bottom: var(--space-xs);
   font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
 .stats {
@@ -394,27 +548,29 @@
   border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
   line-height: 1.2;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
 .lp {
   color: var(--accent-gold);
-  border: 1px solid var(--accent-gold);
+  border-color: var(--accent-gold);
 }
 
 .winrate {
   color: var(--success);
-  border: 1px solid var(--success);
+  border-color: var(--success);
 }
 
 .games {
   color: var(--text-secondary);
-  border: 1px solid var(--border-color);
 }
 
 .record {
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
   margin-top: 2px;
+  white-space: nowrap;
 }
 
 .unranked {
@@ -433,7 +589,7 @@
   min-height: 60px;
 }
 
-/* Compact Unlink Button */
+/* ===== ENHANCED BUTTON STYLES ===== */
 .unlink-account-btn {
   background: linear-gradient(135deg, var(--error), var(--error-light));
   color: white;
@@ -446,20 +602,49 @@
   font-size: var(--font-size-sm);
   width: 100%;
   margin-top: var(--space-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.unlink-account-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
 }
 
 .unlink-account-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   background: linear-gradient(135deg, var(--error-light), var(--error));
 }
 
-/* Form Styles */
+.unlink-account-btn:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+/* ===== ENHANCED FORM STYLES ===== */
 .link-account-form {
   background: var(--bg-tertiary);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.link-account-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-blue));
 }
 
 .form-group {
@@ -472,6 +657,9 @@
   color: var(--text-primary);
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .riot-id-input {
@@ -483,41 +671,66 @@
   color: var(--text-primary);
   font-size: var(--font-size-sm);
   transition: all 0.3s ease;
+  font-weight: var(--font-weight-medium);
 }
 
 .riot-id-input:focus {
   outline: none;
   border-color: var(--accent-gold);
-  box-shadow: 0 0 0 2px var(--accent-gold-light);
+  box-shadow: 0 0 0 3px rgba(200, 155, 60, 0.1);
+  background: var(--bg-tertiary);
 }
 
 select.riot-id-input {
   cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c89b3c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
 }
 
 .input-hint {
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
   margin-top: var(--space-xs);
+  font-weight: var(--font-weight-medium);
 }
 
-/* Button Styles */
 .link-account-btn {
   background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
   color: var(--text-dark);
   border: none;
   padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: var(--font-size-sm);
   width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.link-account-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
 }
 
 .link-account-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+.link-account-btn:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .link-account-btn:disabled {
@@ -526,7 +739,19 @@ select.riot-id-input {
   transform: none;
 }
 
-/* Account Management Section */
+.link-account-btn:disabled::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border: 2px solid transparent;
+  border-top: 2px solid var(--bg-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ===== ENHANCED ACCOUNT TERMINATION SECTION ===== */
 .termination-section {
   margin-top: var(--space-xl);
 }
@@ -534,6 +759,17 @@ select.riot-id-input {
 .termination-section h4 {
   color: var(--text-primary);
   margin-bottom: var(--space-lg);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+.termination-section h4::before {
+  content: '⚠️';
+  font-size: 1.2em;
 }
 
 .termination-card {
@@ -546,6 +782,18 @@ select.riot-id-input {
   align-items: center;
   gap: var(--space-lg);
   flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.termination-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--error), var(--error-light));
 }
 
 .termination-warning {
@@ -570,6 +818,7 @@ select.riot-id-input {
   color: var(--error);
   margin-bottom: var(--space-xs);
   font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
 }
 
 .warning-content p {
@@ -579,38 +828,150 @@ select.riot-id-input {
   word-wrap: break-word;
 }
 
+/* ===== ENHANCED TERMINATION BUTTON ===== */
 .terminate-account-btn {
   background: linear-gradient(135deg, var(--error), var(--error-light));
   color: white;
   border: none;
   padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: var(--font-size-sm);
   white-space: nowrap;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.terminate-account-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
 }
 
 .terminate-account-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-/* Modal Styles */
+.terminate-account-btn:hover::before {
+  left: 100%;
+}
+
+/* Active state when clicked/selected */
+.terminate-account-btn:active,
+.terminate-account-btn.active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--shadow-sm);
+  background: linear-gradient(135deg, var(--error-dark), var(--error));
+  border: 2px solid var(--error-light);
+}
+
+.terminate-account-btn:active::before,
+.terminate-account-btn.active::before {
+  left: 100%;
+  transition: left 0.1s;
+}
+
+/* Focus state for accessibility */
+.terminate-account-btn:focus {
+  outline: 2px solid var(--error-light);
+  outline-offset: 2px;
+}
+
+/* Disabled state */
+.terminate-account-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+}
+
+.terminate-account-btn:disabled:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+/* Pulsing animation for attention */
+.terminate-account-btn.pulse {
+  animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Ripple effect for termination button */
+.terminate-account-btn .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(0);
+  animation: ripple-animation 0.6s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Modal button active states */
+.confirm-delete-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--shadow-sm);
+  background: linear-gradient(135deg, var(--error-dark), var(--error));
+}
+
+/* Termination card active state when button is clicked */
+.termination-card:has(.terminate-account-btn:active) {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.termination-card:has(.terminate-account-btn:active)::before {
+  background: linear-gradient(90deg, var(--error-dark), var(--error));
+  height: 3px;
+}
+
+/* ===== MODAL STYLES ===== */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
   padding: var(--space-lg);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .delete-modal, .reauth-modal {
@@ -621,12 +982,26 @@ select.riot-id-input {
   width: 100%;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-xl);
+  animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .delete-modal h3, .reauth-modal h3 {
   color: var(--error);
   margin-bottom: var(--space-lg);
   text-align: center;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
 }
 
 .delete-warning, .reauth-warning {
@@ -637,6 +1012,7 @@ select.riot-id-input {
   padding: var(--space-lg);
   background: var(--bg-tertiary);
   border-radius: var(--radius-md);
+  border-left: 4px solid var(--error);
 }
 
 .delete-icon, .reauth-icon {
@@ -648,6 +1024,7 @@ select.riot-id-input {
   color: var(--text-primary);
   margin-bottom: var(--space-md);
   line-height: 1.6;
+  font-weight: var(--font-weight-medium);
 }
 
 .delete-warning ul {
@@ -658,6 +1035,7 @@ select.riot-id-input {
 .delete-warning li {
   margin-bottom: var(--space-xs);
   font-size: var(--font-size-sm);
+  line-height: 1.5;
 }
 
 .modal-actions {
@@ -680,7 +1058,8 @@ select.riot-id-input {
 }
 
 .cancel-btn:hover:not(:disabled) {
-  background: var(--bg-hover);
+  background: var(--bg-secondary);
+  transform: translateY(-1px);
 }
 
 .confirm-delete-btn {
@@ -693,11 +1072,28 @@ select.riot-id-input {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: var(--font-size-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.confirm-delete-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
 }
 
 .confirm-delete-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+.confirm-delete-btn:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .confirm-delete-btn:disabled {
@@ -727,7 +1123,7 @@ select.riot-id-input {
   display: block;
   margin-bottom: var(--space-sm);
   color: var(--text-primary);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
 }
 
@@ -745,7 +1141,7 @@ select.riot-id-input {
 .reauth-modal .riot-id-input:focus {
   outline: none;
   border-color: var(--accent-gold);
-  box-shadow: 0 0 0 2px var(--accent-gold-light);
+  box-shadow: 0 0 0 3px rgba(200, 155, 60, 0.1);
 }
 
 .reauth-modal .error-message {
@@ -757,9 +1153,10 @@ select.riot-id-input {
   font-size: var(--font-size-sm);
   border-left: 4px solid var(--error);
   text-align: center;
+  font-weight: var(--font-weight-semibold);
 }
 
-/* Loading State */
+/* ===== LOADING STATE ===== */
 .loading {
   display: flex;
   align-items: center;
@@ -767,30 +1164,45 @@ select.riot-id-input {
   min-height: 400px;
   color: var(--text-secondary);
   font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  position: relative;
 }
 
-/* Error and Success Messages */
+.loading::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--accent-gold);
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: var(--space-md);
+}
+
+/* ===== ERROR AND SUCCESS MESSAGES ===== */
 .error-message {
   background: var(--error-light);
   color: var(--error);
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
   margin: var(--space-md) 0;
   font-size: var(--font-size-sm);
   border-left: 4px solid var(--error);
+  font-weight: var(--font-weight-semibold);
 }
 
 .success-message {
   background: var(--success-light);
   color: var(--success);
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
   margin: var(--space-md) 0;
   font-size: var(--font-size-sm);
   border-left: 4px solid var(--success);
+  font-weight: var(--font-weight-semibold);
 }
 
-/* Responsive Design */
+/* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
   .profile-page {
     padding: var(--space-md);
@@ -800,15 +1212,21 @@ select.riot-id-input {
     padding: var(--space-md);
   }
   
-  .profile-header {
+  .profile-detail {
     flex-direction: column;
     text-align: center;
-    gap: var(--space-lg);
+    gap: var(--space-sm);
+    white-space: normal;
   }
   
-  .profile-detail {
+  .detail-label {
+    min-width: auto;
     justify-content: center;
+  }
+  
+  .detail-value {
     text-align: center;
+    white-space: normal;
   }
   
   .ranked-container {
@@ -819,7 +1237,7 @@ select.riot-id-input {
   .termination-card {
     flex-direction: column;
     text-align: center;
-    gap: var(--space-md);
+    gap: var(--space-lg);
   }
   
   .modal-actions {
@@ -882,4 +1300,13 @@ select.riot-id-input {
   .linked-account-container {
     padding: var(--space-md);
   }
+  
+  .termination-card {
+    padding: var(--space-lg);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
