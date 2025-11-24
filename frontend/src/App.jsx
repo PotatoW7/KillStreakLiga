@@ -7,7 +7,8 @@ import Summoner from "./components/Summoner";
 import FinishSignIn from "./components/FinishSignIn";
 import FriendsList from "./components/FriendsList";
 import Chat from "./components/Chat";
-import QueueSystem from "./components/QueueSystem"; 
+import QueueSystem from "./components/QueueSystem";
+import Home from "./components/Home";
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import "./styles/index.css";
@@ -74,14 +75,17 @@ function App() {
   if (loading) return <div className="loading">Checking authentication...</div>;
 
   return (
-    <div className="app"> {/* Added main app wrapper */}
+    <div className="app">
       <nav>
         {!user ? (
           <>
+            <Link className="nav-link" to="/">
+              Home
+            </Link>
             <Link className="nav-link" to="/summoner">
               Summoner Lookup
             </Link>
-            <Link className="nav-link" to="/">
+            <Link className="nav-link" to="/login">
               Login
             </Link>
             <Link className="nav-link" to="/register">
@@ -90,13 +94,16 @@ function App() {
           </>
         ) : (
           <>
+            <Link className="nav-link" to="/">
+              Home
+            </Link>
             <Link className="nav-link" to="/profile">
               {user.displayName ? `Welcome, ${user.displayName}` : "Profile"}
             </Link>
             <Link className="nav-link" to="/summoner">
               Summoner Lookup
             </Link>
-            <Link className="nav-link" to="/queue"> 
+            <Link className="nav-link" to="/queue">
               Find Queue
             </Link>
             <button className="nav-link logout-btn" onClick={handleLogout}>
@@ -106,16 +113,17 @@ function App() {
         )}
       </nav>
 
-      <div className="app-container"> {/* This should have proper styling */}
+      <div className="app-container">
         <Routes>
-          <Route
-            path="/"
-            element={user ? <Navigate to="/profile" /> : <Login />}
+          <Route path="/" element={<Home />} />
+          <Route 
+            path="/login" 
+            element={user ? <Navigate to="/profile" /> : <Login />} 
           />
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/summoner" element={<Summoner />} />
-          <Route path="/queue" element={<QueueSystem />} /> 
+          <Route path="/queue" element={<QueueSystem />} />
           <Route path="/finishSignIn" element={<FinishSignIn />} />
           <Route
             path="*"
@@ -130,7 +138,7 @@ function App() {
               onClick={toggleSocial}
               title={showSocial ? "Close Chat" : "Open Friends & Chat"}
             >
-             💬
+              💬
             </button>
 
             <div className={`social-container-wrapper ${showSocial ? "open" : ""}`}>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import RankedInfo from "./RankedInfo";
 import MatchHistory from "./MatchHistory";
 import ChampionMastery from "./ChampionMastery";
 import { fetchDDragon } from "../utils/fetchDDragon";
-// slab 2 
+
 function Summoner() {
   const [riotId, setRiotId] = useState("");
   const [region, setRegion] = useState("euw1");
@@ -18,20 +19,34 @@ function Summoner() {
   const [error, setError] = useState(null);
   const [recentSearches, setRecentSearches] = useState([]);
 
-useEffect(() => {
-  const handleSearchPlayer = (event) => {
-    const { riotId, region } = event.detail;
-    setRiotId(riotId);
-    setRegion(region);
-    searchPlayer(riotId, region);
-  };
+  const location = useLocation();
 
-  window.addEventListener('searchPlayer', handleSearchPlayer);
-  
-  return () => {
-    window.removeEventListener('searchPlayer', handleSearchPlayer);
-  };
-}, []);
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const search = searchParams.get('search');
+    const regionParam = searchParams.get('region');
+
+    if (search && regionParam) {
+      setRiotId(search);
+      setRegion(regionParam);
+      searchPlayer(search, regionParam);
+    }
+  }, [location]);
+
+  useEffect(() => {
+    const handleSearchPlayer = (event) => {
+      const { riotId, region } = event.detail;
+      setRiotId(riotId);
+      setRegion(region);
+      searchPlayer(riotId, region);
+    };
+
+    window.addEventListener('searchPlayer', handleSearchPlayer);
+    
+    return () => {
+      window.removeEventListener('searchPlayer', handleSearchPlayer);
+    };
+  }, []);
 
   useEffect(() => {
     const savedSearches = localStorage.getItem("lolRecentSearches");
@@ -162,6 +177,7 @@ useEffect(() => {
           value={riotId} 
           onChange={(e) => setRiotId(e.target.value)} 
           onKeyPress={handleKeyPress} 
+          placeholder="Enter Riot ID (name#tag)"
         />
         <select value={region} onChange={(e) => setRegion(e.target.value)}>
           <option value="euw1">EUW</option>
