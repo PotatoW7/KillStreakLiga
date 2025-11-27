@@ -1285,3 +1285,131 @@
     grid-template-columns: 1fr;
   }
 }
+.add-friend-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+}
+
+.add-friend-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.add-friend-btn:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.add-friend-btn.sent {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+/* Current User Queue Status */
+.current-user-queue-status {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.current-user-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.current-user-header h4 {
+  color: #f1f5f9;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.queue-position {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
+}
+
+.current-user-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.current-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.user-name {
+  color: #f8fafc;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.user-roles, .user-party, .queue-mode {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.current-user-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.wait-time {
+  color: #6366f1;
+  font-weight: 700;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .current-user-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .current-user-stats {
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .current-user-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .queue-position {
+    align-self: flex-start;
+  }
+}

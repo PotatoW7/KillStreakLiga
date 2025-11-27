@@ -132,8 +132,17 @@ router.get('/status/:userId', (req, res) => {
 
 router.get('/players', (req, res) => {
   try {
+    const { excludeUserId } = req.query; 
+    
+    let filteredPlayers = queue;
+
+    if (excludeUserId) {
+      filteredPlayers = queue.filter(player => player.userId !== excludeUserId);
+    }
+    
     res.json({
-      players: queue.map(player => ({
+      players: filteredPlayers.map(player => ({
+        userId: player.userId, 
         playerName: player.playerName,
         riotAccount: player.riotAccount,
         region: player.region,

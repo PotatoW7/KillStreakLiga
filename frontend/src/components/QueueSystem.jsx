@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { 
+  collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDocs, orderBy, getDoc 
+} from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
 const QueueSystem = () => {
@@ -8,6 +10,7 @@ const QueueSystem = () => {
   const [queueTime, setQueueTime] = useState(0);
   const [currentMatch, setCurrentMatch] = useState(null);
   const [availablePlayers, setAvailablePlayers] = useState([]);
+  const [currentUserInQueue, setCurrentUserInQueue] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [queuePosition, setQueuePosition] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -18,6 +21,7 @@ const QueueSystem = () => {
     preferredRoles: [],
     communicationPrefs: { voice: false, text: true }
   });
+  const [friendRequestsSent, setFriendRequestsSent] = useState(new Set());
   const navigate = useNavigate();
 
   const GAME_MODES = {
@@ -151,6 +155,32 @@ const QueueSystem = () => {
       setQueuePosition(data.queuePosition);
       setQueueStats(data.queueStats);
       
+      // Only show current user in queue for THIS user, not others
+      if (data.inQueue && userProfile && auth.currentUser?.uid === userId) {
+        setCurrentUserInQueue(prev => {
+          const existingData = prev || {
+            userId: userId,
+            playerName: userProfile.username || auth.currentUser.displayName || 'You',
+            riotAccount: userProfile.riotAccount,
+            region: userProfile.riotAccount?.region || 'na1',
+            preferredRoles: getSafePreferredRoles(),
+            queueType: queuePreferences.queueType,
+            partySize: queuePreferences.partySize,
+            rank: userProfile.rank,
+            communicationPrefs: queuePreferences.communicationPrefs,
+            waitTime: queueTime,
+            queuePosition: data.queuePosition
+          };
+          
+          return {
+            ...existingData,
+            queuePosition: data.queuePosition
+          };
+        });
+      } else if (!data.inQueue && auth.currentUser?.uid === userId) {
+        setCurrentUserInQueue(null);
+      }
+      
       setCurrentMatch(null);
       if (data.currentMatch) {
         console.log('Unexpected match found, ignoring...');
@@ -163,10 +193,21 @@ const QueueSystem = () => {
 
   const fetchAvailablePlayers = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/queue/players');
+      const currentUserId = auth.currentUser?.uid;
+      const response = await fetch(`http://localhost:3000/api/queue/players?excludeUserId=${currentUserId}`);
       const data = await response.json();
       
-      setAvailablePlayers(data.players || []);
+      // Ensure each player has proper structure
+      const playersWithIds = (data.players || []).map(player => ({
+        ...player,
+        userId: player.userId,
+        riotAccount: player.riotAccount || {
+          gameName: player.playerName || 'Unknown',
+          tagLine: player.tagLine || '0000'
+        }
+      }));
+      
+      setAvailablePlayers(playersWithIds);
     } catch (error) {
       console.error('Error fetching available players:', error);
       setAvailablePlayers([]);
@@ -183,6 +224,127 @@ const QueueSystem = () => {
       }
     } catch (error) {
       console.error('Error fetching queue stats:', error);
+    }
+  };
+
+  const findUserByRiotId = async (riotId) => {
+    try {
+      if (!riotId || riotId === 'No Riot ID') return null;
+      
+      const [gameName, tagLine] = riotId.split('#');
+      if (!gameName || !tagLine) return null;
+
+      const usersRef = collection(db, "users");
+      const q = query(
+        usersRef,
+        where("riotAccount.gameName", "==", gameName),
+        where("riotAccount.tagLine", "==", tagLine)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        return querySnapshot.docs[0].id;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error finding user by Riot ID:', error);
+      return null;
+    }
+  };
+
+  const findUserByDisplayName = async (displayName) => {
+    try {
+      if (!displayName) return null;
+
+      const usersRef = collection(db, "users");
+      const q = query(
+        usersRef,
+        where("username", ">=", displayName),
+        where("username", "<=", displayName + '\uf8ff')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        return querySnapshot.docs[0].id;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error finding user by display name:', error);
+      return null;
+    }
+  };
+
+  const sendFriendRequest = async (player) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const targetUsername = getPlayerName(player);
+      const playerRiotId = getRiotId(player);
+      
+      let targetUserId = player.userId;
+
+      if (!targetUserId || targetUserId.startsWith('temp_')) {
+        targetUserId = await findUserByRiotId(playerRiotId);
+      }
+
+      if (!targetUserId) {
+        targetUserId = await findUserByDisplayName(targetUsername);
+      }
+
+      if (!targetUserId) {
+        alert(`Could not find user "${targetUsername}" in the system. They may need to link their Riot account in their profile.`);
+        return;
+      }
+
+      if (targetUserId === user.uid) {
+        alert("You cannot send a friend request to yourself!");
+        return;
+      }
+
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userData = userDoc.data();
+      const isAlreadyFriend = (userData.friends || []).some(friend => friend.id === targetUserId);
+      
+      if (isAlreadyFriend) {
+        alert(`You are already friends with ${targetUsername}!`);
+        return;
+      }
+
+      const targetUserDoc = await getDoc(doc(db, "users", targetUserId));
+      if (!targetUserDoc.exists()) {
+        alert(`User ${targetUsername} not found in the system.`);
+        return;
+      }
+
+      const targetUserData = targetUserDoc.data();
+      const hasPendingRequest = (targetUserData.pendingRequests || []).some(
+        req => req.from === user.uid
+      );
+
+      if (hasPendingRequest) {
+        alert(`Friend request already sent to ${targetUsername}!`);
+        return;
+      }
+
+      const targetUserRef = doc(db, "users", targetUserId);
+      await updateDoc(targetUserRef, {
+        pendingRequests: arrayUnion({
+          from: user.uid,
+          fromUsername: user.displayName || 'Anonymous',
+          timestamp: new Date()
+        })
+      });
+
+      setFriendRequestsSent(prev => new Set([...prev, targetUserId]));
+      alert(`Friend request sent to ${targetUsername}!`);
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      alert('Error sending friend request: ' + error.message);
     }
   };
 
@@ -233,6 +395,21 @@ const QueueSystem = () => {
         setCurrentMatch(null);
         saveQueuePreferences();
         fetchAvailablePlayers();
+        
+        // Set current user in queue data - ONLY for this user
+        setCurrentUserInQueue({
+          userId: user.uid,
+          playerName: userProfile.username || user.displayName || 'You',
+          riotAccount: userProfile.riotAccount,
+          region: userProfile.riotAccount?.region || 'na1',
+          preferredRoles: getSafePreferredRoles(),
+          queueType: queuePreferences.queueType,
+          partySize: queuePreferences.partySize,
+          rank: userProfile.rank,
+          communicationPrefs: queuePreferences.communicationPrefs,
+          waitTime: 0,
+          queuePosition: data.position
+        });
       } else {
         alert(data.error || 'Failed to join queue');
       }
@@ -261,6 +438,7 @@ const QueueSystem = () => {
       setQueueTime(0);
       setQueuePosition(0);
       setCurrentMatch(null);
+      setCurrentUserInQueue(null);
       fetchAvailablePlayers();
     } catch (error) {
       console.error('Error leaving queue:', error);
@@ -326,11 +504,17 @@ const QueueSystem = () => {
 
   const getRiotId = (player) => {
     if (!player?.riotAccount) return 'No Riot ID';
-    return `${player.riotAccount.gameName || 'Unknown'}#${player.riotAccount.tagLine || '0000'}`;
+    const gameName = player.riotAccount.gameName || 'Unknown';
+    const tagLine = player.riotAccount.tagLine || '0000';
+    return `${gameName}#${tagLine}`;
   };
 
   const getGameModeName = (queueType) => {
     return GAME_MODES[queueType]?.name || queueType || 'Unknown Mode';
+  };
+
+  const hasSentFriendRequest = (player) => {
+    return friendRequestsSent.has(player.userId);
   };
 
   if (loading) {
@@ -526,13 +710,32 @@ const QueueSystem = () => {
                     </div>
                   </div>
                   
+                  {currentUserInQueue && (
+                    <div className="current-user-queue-status">
+                      <div className="current-user-header">
+                        <h4>Your Queue Status</h4>
+                        <span className="queue-position">Position: #{currentUserInQueue.queuePosition}</span>
+                      </div>
+                      <div className="current-user-details">
+                        <div className="current-user-info">
+                          <span className="user-name">{currentUserInQueue.playerName}</span>
+                             <span className="queue-mode">{getGameModeName(currentUserInQueue.queueType)}</span>
+                          <span className="user-roles">{getPlayerRoles(currentUserInQueue).join(', ') || 'Any role'}</span>
+                          <span className="user-party">Party size: {currentUserInQueue.partySize}</span>
+                        </div>
+                        <div className="current-user-stats">
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="queue-info">
                     <div className="info-item">
                       <span className="label">Time in Queue</span>
                       <span className="value">{formatTime(queueTime)}</span>
                     </div>
                     <div className="info-item">
-                      <span className="label">Total Players Online</span>
+                      <span className="label">Available Teammates</span>
                       <span className="value">{availablePlayers.length}</span>
                     </div>
                     <div className="info-item">
@@ -547,7 +750,7 @@ const QueueSystem = () => {
 
                   {availablePlayers.length > 0 && (
                     <div className="available-players">
-                      <h4>All Players Looking for Teammates ({availablePlayers.length})</h4>
+                      <h4>Available Teammates ({availablePlayers.length})</h4>
                       <div className="players-grid">
                         {availablePlayers.map((player, index) => (
                           <div key={index} className="player-card">
@@ -575,9 +778,19 @@ const QueueSystem = () => {
                               <span className="player-roles">{getPlayerRoles(player).join(', ') || 'Any role'}</span>
                               <span className="player-party">Party: {player.partySize || 1}</span>
                             </div>
-                            <div className="player-comm">
-                              {player.communicationPrefs?.voice && <span className="comm-indicator">🎤</span>}
-                              {player.communicationPrefs?.text && <span className="comm-indicator">💬</span>}
+                            <div className="player-actions">
+                              <div className="player-comm">
+                                {player.communicationPrefs?.voice && <span className="comm-indicator">🎤</span>}
+                                {player.communicationPrefs?.text && <span className="comm-indicator">💬</span>}
+                              </div>
+                              <button 
+                                className={`add-friend-btn ${hasSentFriendRequest(player) ? 'sent' : ''}`}
+                                onClick={() => sendFriendRequest(player)}
+                                disabled={hasSentFriendRequest(player)}
+                                title={hasSentFriendRequest(player) ? 'Request Sent' : `Send friend request to ${getPlayerName(player)}`}
+                              >
+                                {hasSentFriendRequest(player) ? 'Request Sent' : 'Add Friend'}
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -591,7 +804,7 @@ const QueueSystem = () => {
 
           {availablePlayers.length > 0 && !inQueue && (
             <div className="available-players">
-              <h4>All Players Looking for Teammates ({availablePlayers.length})</h4>
+              <h4>Players Looking for Teammates ({availablePlayers.length})</h4>
               <div className="players-grid">
                 {availablePlayers.map((player, index) => (
                   <div key={index} className="player-card">
@@ -619,9 +832,19 @@ const QueueSystem = () => {
                       <span className="player-roles">{getPlayerRoles(player).join(', ') || 'Any role'}</span>
                       <span className="player-party">Party: {player.partySize || 1}</span>
                     </div>
-                    <div className="player-comm">
-                      {player.communicationPrefs?.voice && <span className="comm-indicator">🎤</span>}
-                      {player.communicationPrefs?.text && <span className="comm-indicator">💬</span>}
+                    <div className="player-actions">
+                      <div className="player-comm">
+                        {player.communicationPrefs?.voice && <span className="comm-indicator">🎤</span>}
+                        {player.communicationPrefs?.text && <span className="comm-indicator">💬</span>}
+                      </div>
+                      <button 
+                        className={`add-friend-btn ${hasSentFriendRequest(player) ? 'sent' : ''}`}
+                        onClick={() => sendFriendRequest(player)}
+                        disabled={hasSentFriendRequest(player)}
+                        title={hasSentFriendRequest(player) ? 'Request Sent' : `Send friend request to ${getPlayerName(player)}`}
+                      >
+                        {hasSentFriendRequest(player) ? 'Request Sent' : 'Add Friend'}
+                      </button>
                     </div>
                   </div>
                 ))}
