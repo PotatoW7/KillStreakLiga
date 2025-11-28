@@ -22,6 +22,8 @@ const QueueSystem = () => {
     communicationPrefs: { voice: false, text: true }
   });
   const [friendRequestsSent, setFriendRequestsSent] = useState(new Set());
+  const [playerProfiles, setPlayerProfiles] = useState({});
+  const [friendsList, setFriendsList] = useState(new Set()); 
   const navigate = useNavigate();
 
   const GAME_MODES = {
@@ -79,6 +81,7 @@ const QueueSystem = () => {
     if (user) {
       loadUserProfile(user.uid);
       checkQueueStatus(user.uid);
+      loadFriendsList(); 
       
       const interval = setInterval(() => {
         if (user.uid) {
@@ -133,6 +136,41 @@ const QueueSystem = () => {
     }
   };
 
+  const loadFriendsList = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const friends = userData.friends || [];
+        const friendIds = new Set(friends.map(friend => friend.id));
+        setFriendsList(friendIds);
+      }
+    } catch (error) {
+      console.error('Error loading friends list:', error);
+    }
+  };
+
+  const fetchUserProfile = async (userId) => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setPlayerProfiles(prev => ({
+          ...prev,
+          [userId]: {
+            profileImage: userData.profileImage,
+            username: userData.username
+          }
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
+
   const saveQueuePreferences = async () => {
     const user = auth.currentUser;
     if (!user) return;
@@ -155,7 +193,6 @@ const QueueSystem = () => {
       setQueuePosition(data.queuePosition);
       setQueueStats(data.queueStats);
       
-      // Only show current user in queue for THIS user, not others
       if (data.inQueue && userProfile && auth.currentUser?.uid === userId) {
         setCurrentUserInQueue(prev => {
           const existingData = prev || {
@@ -197,7 +234,6 @@ const QueueSystem = () => {
       const response = await fetch(`http://localhost:3000/api/queue/players?excludeUserId=${currentUserId}`);
       const data = await response.json();
       
-      // Ensure each player has proper structure
       const playersWithIds = (data.players || []).map(player => ({
         ...player,
         userId: player.userId,
@@ -208,6 +244,12 @@ const QueueSystem = () => {
       }));
       
       setAvailablePlayers(playersWithIds);
+      
+      playersWithIds.forEach(player => {
+        if (player.userId && !playerProfiles[player.userId]) {
+          fetchUserProfile(player.userId);
+        }
+      });
     } catch (error) {
       console.error('Error fetching available players:', error);
       setAvailablePlayers([]);
@@ -275,6 +317,35 @@ const QueueSystem = () => {
     } catch (error) {
       console.error('Error finding user by display name:', error);
       return null;
+    }
+  };
+
+  const isAlreadyFriend = async (player) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return false;
+
+      const targetUsername = getPlayerName(player);
+      const playerRiotId = getRiotId(player);
+      
+      let targetUserId = player.userId;
+
+      if (!targetUserId || targetUserId.startsWith('temp_')) {
+        targetUserId = await findUserByRiotId(playerRiotId);
+      }
+
+      if (!targetUserId) {
+        targetUserId = await findUserByDisplayName(targetUsername);
+      }
+
+      if (!targetUserId) return false;
+
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userData = userDoc.data();
+      return (userData.friends || []).some(friend => friend.id === targetUserId);
+    } catch (error) {
+      console.error('Error checking friend status:', error);
+      return false;
     }
   };
 
@@ -396,7 +467,6 @@ const QueueSystem = () => {
         saveQueuePreferences();
         fetchAvailablePlayers();
         
-        // Set current user in queue data - ONLY for this user
         setCurrentUserInQueue({
           userId: user.uid,
           playerName: userProfile.username || user.displayName || 'You',
@@ -515,6 +585,13 @@ const QueueSystem = () => {
 
   const hasSentFriendRequest = (player) => {
     return friendRequestsSent.has(player.userId);
+  };
+
+  const getPlayerProfileImage = (player) => {
+    if (player.userId && playerProfiles[player.userId]?.profileImage) {
+      return playerProfiles[player.userId].profileImage;
+    }
+    return "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
   };
 
   if (loading) {
@@ -717,6 +794,15 @@ const QueueSystem = () => {
                         <span className="queue-position">Position: #{currentUserInQueue.queuePosition}</span>
                       </div>
                       <div className="current-user-details">
+                       <div className="current-user-avatar">
+                        <img
+                          src={userProfile?.profileImage|| "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                          alt="Your Profile" 
+                          className="current-user-profile-image"
+                          onError={(e) => {
+                            e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}}
+                            />
+                            </div>
                         <div className="current-user-info">
                           <span className="user-name">{currentUserInQueue.playerName}</span>
                              <span className="queue-mode">{getGameModeName(currentUserInQueue.queueType)}</span>
@@ -727,8 +813,9 @@ const QueueSystem = () => {
                         </div>
                       </div>
                     </div>
+                   
                   )}
-
+              
                   <div className="queue-info">
                     <div className="info-item">
                       <span className="label">Time in Queue</span>
@@ -756,7 +843,14 @@ const QueueSystem = () => {
                           <div key={index} className="player-card">
                             <div className="player-header">
                               <div className="player-avatar">
-                                {getPlayerName(player).charAt(0).toUpperCase()}
+                                <img
+                                  src={getPlayerProfileImage(player)}
+                                  alt={getPlayerName(player)}
+                                  className="player-profile-image"
+                                  onError={(e) => {
+                                    e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                                  }}
+                                />
                               </div>
                               <div className="player-main">
                                 <strong 
@@ -784,12 +878,20 @@ const QueueSystem = () => {
                                 {player.communicationPrefs?.text && <span className="comm-indicator">💬</span>}
                               </div>
                               <button 
-                                className={`add-friend-btn ${hasSentFriendRequest(player) ? 'sent' : ''}`}
+                                className={`add-friend-btn ${
+                                  hasSentFriendRequest(player) ? 'sent' : 
+                                  friendsList.has(player.userId) ? 'already-friends' : ''
+                                }`}
                                 onClick={() => sendFriendRequest(player)}
-                                disabled={hasSentFriendRequest(player)}
-                                title={hasSentFriendRequest(player) ? 'Request Sent' : `Send friend request to ${getPlayerName(player)}`}
+                                disabled={hasSentFriendRequest(player) || friendsList.has(player.userId)}
+                                title={
+                                  friendsList.has(player.userId) ? 'Already Friends' :
+                                  hasSentFriendRequest(player) ? 'Request Sent' : 
+                                  `Send friend request to ${getPlayerName(player)}`
+                                }
                               >
-                                {hasSentFriendRequest(player) ? 'Request Sent' : 'Add Friend'}
+                                {friendsList.has(player.userId) ? 'Already Friends' :
+                                 hasSentFriendRequest(player) ? 'Request Sent' : 'Add Friend'}
                               </button>
                             </div>
                           </div>
@@ -810,7 +912,14 @@ const QueueSystem = () => {
                   <div key={index} className="player-card">
                     <div className="player-header">
                       <div className="player-avatar">
-                        {getPlayerName(player).charAt(0).toUpperCase()}
+                        <img
+                          src={getPlayerProfileImage(player)}
+                          alt={getPlayerName(player)}
+                          className="player-profile-image"
+                          onError={(e) => {
+                            e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                          }}
+                        />
                       </div>
                       <div className="player-main">
                         <strong 
@@ -838,12 +947,20 @@ const QueueSystem = () => {
                         {player.communicationPrefs?.text && <span className="comm-indicator">💬</span>}
                       </div>
                       <button 
-                        className={`add-friend-btn ${hasSentFriendRequest(player) ? 'sent' : ''}`}
+                        className={`add-friend-btn ${
+                          hasSentFriendRequest(player) ? 'sent' : 
+                          friendsList.has(player.userId) ? 'already-friends' : ''
+                        }`}
                         onClick={() => sendFriendRequest(player)}
-                        disabled={hasSentFriendRequest(player)}
-                        title={hasSentFriendRequest(player) ? 'Request Sent' : `Send friend request to ${getPlayerName(player)}`}
+                        disabled={hasSentFriendRequest(player) || friendsList.has(player.userId)}
+                        title={
+                          friendsList.has(player.userId) ? 'Already Friends' :
+                          hasSentFriendRequest(player) ? 'Request Sent' : 
+                          `Send friend request to ${getPlayerName(player)}`
+                        }
                       >
-                        {hasSentFriendRequest(player) ? 'Request Sent' : 'Add Friend'}
+                        {friendsList.has(player.userId) ? 'Already Friends' :
+                         hasSentFriendRequest(player) ? 'Request Sent' : 'Add Friend'}
                       </button>
                     </div>
                   </div>
