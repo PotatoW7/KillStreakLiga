@@ -79,12 +79,69 @@
   text-align: center;
 }
 
+.title-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
 .hero-title {
+  position: relative;
   font-size: 5rem;
   font-weight: 900;
   margin-bottom: 1rem;
   letter-spacing: -2px;
   animation: titleSlideIn 1s ease-out;
+}
+
+.gradient-text {
+  background: linear-gradient(120deg, #1e90ff 0%, #ff1493 50%, #ffd700 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 3s ease infinite;
+  position: relative;
+  z-index: 2;
+}
+
+/* Simple spinning shurikens with red glow */
+.shuriken {
+  position: absolute;
+  top: 25%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  background: #dc143c;
+  clip-path: polygon(0 0, 50% 15%, 100% 0, 85% 50%, 100% 100%, 50% 85%, 0 100%, 15% 50%);
+  -webkit-mask:
+    radial-gradient(circle closest-side, #0000 92%, #000) top / 100% 33.4%,
+    radial-gradient(circle closest-side, #0000 92%, #000) left / 33.4% 33.4%,
+    radial-gradient(circle 5px, #0000 92%, #000) center / 33.3% 33.3%,
+    radial-gradient(circle closest-side, #0000 92%, #000) right / 33.4% 33.4%,
+    radial-gradient(circle closest-side, #0000 92%, #000) bottom / 100% 33.4%;
+  -webkit-mask-repeat: no-repeat;
+  animation: spin 5s linear infinite;
+  z-index: 3;
+  filter: drop-shadow(0 0 10px #dc143c) drop-shadow(0 0 20px #dc143c);
+  opacity: 0.9;
+}
+
+.shuriken-left {
+  left: -75px;
+}
+
+.shuriken-right {
+  right: -75px;
+}
+
+@keyframes spin {
+  0% {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-50%) rotate(360deg);
+  }
 }
 
 @keyframes titleSlideIn {
@@ -96,15 +153,6 @@
     opacity: 1;
     transform: scale(1);
   }
-}
-
-.gradient-text {
-  background: linear-gradient(120deg, #1e90ff 0%, #ff1493 50%, #ffd700 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: gradientShift 3s ease infinite;
 }
 
 @keyframes gradientShift {
@@ -331,29 +379,32 @@
   margin-bottom: 2rem;
 }
 
-.profile-avatar {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  border: 3px solid #1e90ff;
-  transition: all 0.3s ease;
-  animation: rotateIn 1s ease-out;
+/* Square level badge */
+.avatar-level-badge {
+  position: absolute;
+  bottom: 5px;
+  right: -2px;
+  background: linear-gradient(135deg, #1e90ff 0%, #4169e1 100%);
+  color: white;
+  border-radius: 6px; /* Square with slight rounding */
+  width: 31px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 3px solid #0a1428;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  animation: pulseLevel 2s ease-in-out infinite;
 }
 
-@keyframes rotateIn {
-  from {
-    opacity: 0;
-    transform: rotate(-180deg) scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: rotate(0) scale(1);
-  }
-}
 
-.profile-avatar:hover {
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 8px 24px rgba(30, 144, 255, 0.5);
+
+.profile-avatar-container {
+  position: relative;
+  display: inline-block;
 }
 
 .profile-info h3 {
@@ -409,12 +460,47 @@
 }
 
 .profile-action-btn.secondary {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.2) 100%);
+  background: linear-gradient(135deg, #1e90ff 0%, #4169e1 100%);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.profile-action-btn.secondary:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.3) 100%);
+/* Find Duo Button */
+.find-duo-btn {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #1e90ff 0%, #4169e1 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.find-duo-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.find-duo-btn:hover::before {
+  left: 100%;
+}
+
+.find-duo-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 20, 147, 0.4);
+}
+
+.find-duo-btn:active {
+  transform: translateY(0);
 }
 
 .features-section {
@@ -611,6 +697,19 @@
 
   .hero-subtitle {
     font-size: 1rem;
+  }
+
+  .shuriken {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .shuriken-left {
+    left: -60px;
+  }
+  
+  .shuriken-right {
+    right: -60px;
   }
 
   .search-input-group {

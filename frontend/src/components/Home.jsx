@@ -59,21 +59,23 @@ function Home() {
 
   return (
     <div className="home-page">
-      {/* Hero Search Section */}
       <section className="hero-search-section">
         <div className="hero-background">
           <div className="hero-overlay"></div>
         </div>
         <div className="hero-content">
           <div className="hero-text">
-            <h1 className="hero-title">
-              <span className="gradient-text">Killstreak</span>
-            </h1>
+            <div className="title-container">
+              <div className="shuriken shuriken-left fly-through"></div>
+              <div className="shuriken shuriken-right fly-through"></div>
+              <h1 className="hero-title">
+                <span className="gradient-text">Killstreak</span>
+              </h1>
+            </div>
             <p className="hero-subtitle">
               Advanced League of Legends statistics and teammate finder
             </p>
             
-            {/* Main Search Form */}
             <form onSubmit={handleSearch} className="search-form-large">
               <div className="search-input-group">
                 <input
@@ -105,21 +107,24 @@ function Home() {
         </div>
       </section>
 
-      {/* User Profile Section */}
       {user && riotAccount && (
         <section className="user-profile-section">
           <div className="container">
             <h2 className="section-title">Your Profile</h2>
             <div className="user-profile-card">
               <div className="profile-header">
-                <img 
-                  src={`https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/${riotAccount.profileIconId}.png`}
-                  alt="Profile"
-                  className="profile-avatar"
-                />
+                <div className="profile-avatar-container">
+                  <img 
+                    src={`https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/${riotAccount.profileIconId}.png`}
+                    alt="Profile"
+                    className="profile-avatar"
+                  />
+                  <div className="avatar-level-badge">
+                    {riotAccount.summonerLevel}
+                  </div>
+                </div>
                 <div className="profile-info">
                   <h3>{riotAccount.gameName}#{riotAccount.tagLine}</h3>
-                  <p className="profile-level">Level {riotAccount.summonerLevel}</p>
                   <p className="profile-region">{riotAccount.region.toUpperCase()}</p>
                 </div>
               </div>
@@ -129,6 +134,9 @@ function Home() {
                 </Link>
                 <Link to="/summoner" className="profile-action-btn secondary">
                   Search Players
+                </Link>
+                <Link to="/find-duo" className="find-duo-btn">
+                  Find Duo
                 </Link>
               </div>
             </div>
@@ -164,7 +172,6 @@ function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="cta-section">
         <div className="container">
           <div className="cta-content">
@@ -185,8 +192,8 @@ function Home() {
                   <Link to="/summoner" className="cta-button primary">
                     Search Players
                   </Link>
-                  <Link to="/queue" className="cta-button secondary">
-                    Find Teammates
+                  <Link to="/find-duo" className="cta-button secondary">
+                    Find Duo
                   </Link>
                 </>
               )}
