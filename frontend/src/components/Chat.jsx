@@ -330,7 +330,14 @@ function Chat({ selectedFriend, onBack }) {
             alt={friendProfile?.username}
             className="chat-friend-avatar"
           />
-          <h3>{friendProfile?.username}</h3>
+          <h3 
+            className="friend-username-clickable"
+            onClick={() => navigate(`/profile/${selectedFriend.id}`)}
+            style={{ cursor: 'pointer' }}
+            title="View Profile"
+          >
+            {friendProfile?.username}
+          </h3>
         </div>
       </div>
 

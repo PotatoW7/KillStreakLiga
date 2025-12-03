@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom"; 
 import { auth, db } from "../firebase";
 import { 
   sendEmailVerification, 
@@ -9,57 +10,113 @@ import {
 import { doc, updateDoc, getDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { fetchDDragon } from "../utils/fetchDDragon"; 
 
+const REGIONS = [
+  { value: "na1", label: "NA" },
+  { value: "euw1", label: "EUW" },
+  { value: "eun1", label: "EUNE"},
+  { value: "kr", label: "KR" },
+  { value: "br1", label: "BR" },
+  { value: "la1", label: "LAN" },
+  { value: "la2", label: "LAS" },
+  { value: "oc1", label: "OCE" },
+  { value: "ru", label: "RU" },
+  { value: "tr1", label: "TR" },
+  { value: "jp1", label: "JP" },
+  { value: "ph2", label: "PH" },
+  { value: "sg2", label: "SG" },
+  { value: "th2", label: "TH" },
+  { value: "tw2", label: "TW" },
+  { value: "vn2", label: "VN" }
+];
+
+const RankedInfo = ({ rankedData }) => {
+  const getRankIcon = (tier) => tier ? `/rank-icons/Rank=${tier.charAt(0).toUpperCase()+tier.slice(1).toLowerCase()}.png` : null;
+
+  const getQueueData = (queueType) => {
+    return rankedData?.find(queue => queue.queueType === queueType);
+  };
+
+  const renderRankCard = (queue, queueName) => {
+    if (!queue) return (
+      <div className="rank-card">
+        <div className="queue-name">{queueName}</div>
+        <div className="unranked">Unranked</div>
+      </div>
+    );
+    const totalGames = queue.wins + queue.losses;
+    const winRate = totalGames > 0 ? Math.round((queue.wins/totalGames)*100) : 0;
+    return (
+      <div className="rank-card">
+        <div className="rank-info">
+          {getRankIcon(queue.tier) && <img src={getRankIcon(queue.tier)} alt={`${queue.tier} icon`} className="rank-icon"/>}
+          <div className="rank-details">
+            <div className="tier">{queue.tier} {queue.rank}</div>
+            <div className="queue-label">{queueName}</div>
+            <div className="stats">
+              <div className="lp">{queue.leaguePoints} LP</div>
+              <div className="winrate">{winRate}% WR</div>
+              <div className="games">{totalGames}G</div>
+            </div>
+            <div className="record">{queue.wins}W {queue.losses}L</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const rankedSolo = getQueueData('RANKED_SOLO_5x5');
+  const rankedFlex = getQueueData('RANKED_FLEX_SR');
+
+  return (
+    <div className="ranked-container">
+      {renderRankCard(rankedSolo, "Solo/Duo")}
+      {renderRankCard(rankedFlex, "Flex")}
+    </div>
+  );
+};
+
 function Profile() {
-  const [user, setUser] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
-  const [showContextMenu, setShowContextMenu] = useState(false);
-  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
-  const [linkingAccount, setLinkingAccount] = useState(false);
-  const [riotId, setRiotId] = useState("");
-  const [region, setRegion] = useState("euw1");
-  const [linkedAccount, setLinkedAccount] = useState(null);
-  const [linkError, setLinkError] = useState("");
-  const [linkSuccess, setLinkSuccess] = useState("");
-  const [rankedData, setRankedData] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showReauthModal, setShowReauthModal] = useState(false);
-  const [password, setPassword] = useState("");
-  const [reauthError, setReauthError] = useState("");
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [latestVersion, setLatestVersion] = useState("25.12"); 
-  const [verificationLoading, setVerificationLoading] = useState(false);
-  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
-  const [terminationButtonActive, setTerminationButtonActive] = useState(false);
-  const [ripple, setRipple] = useState(false);
+  const { userId } = useParams();
+  const navigate = useNavigate();
+  const [state, setState] = useState({
+    user: null,
+    uploading: false,
+    profileImage: null,
+    contextMenuPosition: null,
+    linkingAccount: false,
+    riotId: "",
+    region: "euw1",
+    linkedAccount: null,
+    linkError: "",
+    linkSuccess: "",
+    rankedData: null,
+    showDeleteConfirm: false,
+    showReauthModal: false,
+    password: "",
+    reauthError: "",
+    deletingAccount: false,
+    latestVersion: "25.12",
+    verificationLoading: false,
+    emailVerificationSent: false,
+    terminationButtonActive: false,
+    ripple: false,
+    profileData: null,
+    isOwnProfile: true,
+    aboutMe: "",
+    isEditingAbout: false,
+    tempAbout: "",
+    menuOpen: false
+  });
 
   const contextMenuRef = useRef(null);
   const fileInputRef = useRef(null);
-
-  const regions = [
-    { value: "na1", label: "NA" },
-    { value: "euw1", label: "EUW" },
-    { value: "eun1", label: "EUNE"},
-    { value: "kr", label: "KR" },
-    { value: "br1", label: "BR" },
-    { value: "la1", label: "LAN" },
-    { value: "la2", label: "LAS" },
-    { value: "oc1", label: "OCE" },
-    { value: "ru", label: "RU" },
-    { value: "tr1", label: "TR" },
-    { value: "jp1", label: "JP" },
-    { value: "ph2", label: "PH" },
-    { value: "sg2", label: "SG" },
-    { value: "th2", label: "TH" },
-    { value: "tw2", label: "TW" },
-    { value: "vn2", label: "VN" }
-  ];
+  const profileIconRef = useRef(null);
 
   useEffect(() => {
     const loadLatestVersion = async () => {
       try {
         const ddragonData = await fetchDDragon();
-        setLatestVersion(ddragonData.latestVersion);
+        setState(prev => ({ ...prev, latestVersion: ddragonData.latestVersion }));
       } catch (error) {
         console.error("Failed to load latest version:", error);
       }
@@ -67,26 +124,60 @@ function Profile() {
 
     loadLatestVersion();
 
-    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        const docSnap = await getDoc(doc(db, "users", currentUser.uid));
+    const checkProfileType = async () => {
+      const currentUser = auth.currentUser;
+      const targetUserId = userId || currentUser?.uid;
+      
+      if (!targetUserId) return;
+      
+      const isOwn = !userId || targetUserId === currentUser?.uid;
+      
+      try {
+        const docSnap = await getDoc(doc(db, "users", targetUserId));
         if (docSnap.exists()) {
           const userData = docSnap.data();
-          setProfileImage(userData.profileImage || null);
-          setLinkedAccount(userData.riotAccount || null);
-          setEmailVerificationSent(userData.emailVerificationSent || false);
+          setState(prev => ({ 
+            ...prev, 
+            profileData: userData,
+            aboutMe: userData.aboutMe || "",
+            isOwnProfile: isOwn
+          }));
+          
+          if (isOwn && currentUser) {
+            setState(prev => ({ 
+              ...prev, 
+              user: currentUser,
+              profileImage: userData.profileImage || null,
+              linkedAccount: userData.riotAccount || null,
+              emailVerificationSent: userData.emailVerificationSent || false
+            }));
+          } else {
+            setState(prev => ({ ...prev, 
+              profileImage: userData.profileImage || null,
+              linkedAccount: userData.riotAccount || null
+            }));
+          }
           
           if (userData.riotAccount) {
             fetchRankedData(userData.riotAccount);
           }
         }
+      } catch (error) {
+        console.error("Error loading profile data:", error);
       }
+    };
+
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      if (currentUser) {
+        setState(prev => ({ ...prev, user: currentUser }));
+      }
+      await checkProfileType();
     });
 
     const handleClickOutside = (e) => {
-      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target)) {
-        setShowContextMenu(false);
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target) && 
+          profileIconRef.current && !profileIconRef.current.contains(e.target)) {
+        setState(prev => ({ ...prev, contextMenuPosition: null }));
       }
     };
 
@@ -95,89 +186,38 @@ function Profile() {
       unsubscribe();
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
-
-  const getProfileIconUrl = (profileIconId) => {
-    return `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/${profileIconId}.png`;
-  };
+  }, [userId]);
 
   const fetchRankedData = async (account) => {
     try {
       const response = await fetch(`http://localhost:3000/summoner-info/${account.region}/${encodeURIComponent(account.gameName)}/${encodeURIComponent(account.tagLine)}`);
-      
       if (response.ok) {
         const summonerData = await response.json();
-        setRankedData(summonerData.ranked || []);
+        setState(prev => ({ ...prev, rankedData: summonerData.ranked || [] }));
       }
     } catch (error) {
       console.error("Error fetching ranked data:", error);
     }
   };
 
-  const fileToBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (err) => reject(err);
-    });
-
   const updateProfileImage = async (newImage) => {
-    if (!user) return;
-    const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, {
-      profileImage: newImage,
-      profileImageUpdated: newImage ? new Date() : null,
-    });
-    setProfileImage(newImage);
-  };
-
-  const verifyEmail = async () => {
-    if (!user) return;
-    
-    try {
-      setVerificationLoading(true);
-      
-      await sendEmailVerification(user);
-      
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
-        emailVerificationSent: true,
-        lastVerificationSent: new Date()
-      });
-      
-      setEmailVerificationSent(true);
-      alert("Verification email sent! Please check your inbox and spam folder.");
-    } catch (error) {
-      console.error("Error sending verification:", error);
-      
-      let errorMessage = "Error sending verification email. Please try again.";
-      if (error.code === 'auth/too-many-requests') {
-        errorMessage = "Too many verification requests. Please wait a few minutes before trying again.";
-      }
-      
-      alert(errorMessage);
-    } finally {
-      setVerificationLoading(false);
-    }
-  };
-
-  const handleRightClick = (e) => {
-    e.preventDefault();
-    setContextMenuPosition({ x: e.clientX, y: e.clientY });
-    setShowContextMenu(true);
+    if (!state.user) return;
+    const userRef = doc(db, "users", state.user.uid);
+    await updateDoc(userRef, { profileImage: newImage, profileImageUpdated: newImage ? new Date() : null });
+    setState(prev => ({ ...prev, profileImage: newImage }));
   };
 
   const handleFileSelect = async (e) => {
+    if (!state.isOwnProfile) return;
+    
     const file = e.target.files[0];
-    if (!file) return alert("No file selected");
-
+    if (!file) return;
+    
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     if (!validTypes.includes(file.type)) return alert("Invalid file type (JPEG, PNG, GIF, WebP)");
     if (file.size > 1 * 1024 * 1024) return alert("Max 1MB allowed");
 
-    setUploading(true);
-    setShowContextMenu(false);
+    setState(prev => ({ ...prev, uploading: true, contextMenuPosition: null }));
 
     try {
       const base64 = await fileToBase64(file);
@@ -187,215 +227,140 @@ function Profile() {
       console.error(err);
       alert("Error updating profile image");
     } finally {
-      setUploading(false);
+      setState(prev => ({ ...prev, uploading: false }));
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-    setShowContextMenu(false);
-  };
-
-  const removeProfileImage = async () => {
-    setShowContextMenu(false);
-    try {
-      await updateProfileImage(null);
-      alert("Profile image removed!");
-    } catch (err) {
-      console.error(err);
-      alert("Error removing profile image");
-    }
-  };
+  const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (err) => reject(err);
+  });
 
   const validateRiotId = async (riotId, region) => {
     const parts = riotId.split('#');
-    if (parts.length !== 2) {
-      throw new Error('Invalid Riot ID format. Use: name#tag');
-    }
-
-    const [gameName, tagLine] = parts;
+    if (parts.length !== 2) throw new Error('Invalid Riot ID format. Use: name#tag');
     
-    if (!gameName.trim() || !tagLine.trim()) {
-      throw new Error('Both name and tag are required');
-    }
-
-    if (tagLine.length > 5) {
-      throw new Error('Tag line cannot be longer than 5 characters');
-    }
-
-    if (gameName.length < 3) {
-      throw new Error('Game name must be at least 3 characters long');
-    }
-
-    if (gameName.length > 16) {
-      throw new Error('Game name cannot be longer than 16 characters');
-    }
+    const [gameName, tagLine] = parts;
+    if (!gameName.trim() || !tagLine.trim()) throw new Error('Both name and tag are required');
+    if (tagLine.length > 5) throw new Error('Tag line cannot be longer than 5 characters');
+    if (gameName.length < 3) throw new Error('Game name must be at least 3 characters long');
+    if (gameName.length > 16) throw new Error('Game name cannot be longer than 16 characters');
 
     try {
       const response = await fetch(`http://localhost:3000/summoner-info/${region}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
-      
       if (!response.ok) {
         let errorMessage = 'Summoner not found';
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-        } catch (parseError) {
-          errorMessage = response.statusText || errorMessage;
-        }
+        } catch (parseError) {}
         throw new Error(errorMessage);
       }
 
       const summonerData = await response.json();
-      return {
-        gameName,
-        tagLine,
-        region,
-        puuid: summonerData.puuid,
-        summonerLevel: summonerData.summonerLevel,
-        profileIconId: summonerData.profileIconId,
-        verified: true
-      };
+      return { gameName, tagLine, region, puuid: summonerData.puuid, summonerLevel: summonerData.summonerLevel, profileIconId: summonerData.profileIconId, verified: true };
     } catch (error) {
-      if (error.message.includes('Summoner not found') || error.message.includes('404')) {
-        throw new Error('Riot account not found. Please check the Riot ID and region.');
-      }
-      if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-        throw new Error('Cannot connect to server. Please make sure the backend is running on port 3000.');
-      }
+      if (error.message.includes('Summoner not found') || error.message.includes('404')) throw new Error('Riot account not found. Please check the Riot ID and region.');
+      if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) throw new Error('Cannot connect to server. Please make sure the backend is running on port 3000.');
       throw new Error('Failed to validate Riot account. Please try again.');
     }
   };
 
   const handleRiotAccountLink = async (e) => {
     e.preventDefault();
-    setLinkError("");
-    setLinkSuccess("");
+    if (!state.isOwnProfile) return;
     
-    if (!riotId.trim()) {
-      setLinkError("Please enter your Riot ID (name#tag)");
-      return;
-    }
+    setState(prev => ({ ...prev, linkError: "", linkSuccess: "" }));
+    
+    if (!state.riotId.trim()) return setState(prev => ({ ...prev, linkError: "Please enter your Riot ID (name#tag)" }));
+    if (!state.riotId.includes('#')) return setState(prev => ({ ...prev, linkError: "Invalid format. Use: name#tag" }));
 
-    if (!riotId.includes('#')) {
-      setLinkError("Invalid format. Use: name#tag");
-      return;
-    }
-
-    setLinkingAccount(true);
+    setState(prev => ({ ...prev, linkingAccount: true }));
 
     try {
-      const validatedAccount = await validateRiotId(riotId, region);
+      const validatedAccount = await validateRiotId(state.riotId, state.region);
+      const userRef = doc(db, "users", state.user.uid);
+      const accountData = { ...validatedAccount, linkedAt: new Date() };
 
-      const userRef = doc(db, "users", user.uid);
-      const accountData = {
-        ...validatedAccount,
-        linkedAt: new Date()
-      };
-
-      await updateDoc(userRef, {
-        riotAccount: accountData
-      });
-
-      setLinkedAccount(accountData);
-      setLinkSuccess(`Riot account ${validatedAccount.gameName}#${validatedAccount.tagLine} linked successfully!`);
+      await updateDoc(userRef, { riotAccount: accountData });
+      
+      setState(prev => ({ 
+        ...prev, 
+        linkedAccount: accountData, 
+        linkSuccess: `Riot account ${validatedAccount.gameName}#${validatedAccount.tagLine} linked successfully!`,
+        riotId: "", region: "na1", linkingAccount: false
+      }));
       
       fetchRankedData(accountData);
-      
-      setRiotId("");
-      setRegion("na1");
-      
     } catch (error) {
       console.error("Error linking Riot account:", error);
-      setLinkError(error.message);
-    } finally {
-      setLinkingAccount(false);
+      setState(prev => ({ ...prev, linkError: error.message, linkingAccount: false }));
     }
   };
 
   const unlinkRiotAccount = async () => {
-    if (!window.confirm("Are you sure you want to unlink your Riot account?")) {
-      return;
-    }
-
+    if (!state.isOwnProfile) return;
+    if (!window.confirm("Are you sure you want to unlink your Riot account?")) return;
+    
     try {
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
-        riotAccount: null
-      });
-      
-      setLinkedAccount(null);
-      setRankedData(null);
-      setLinkSuccess("Riot account unlinked successfully!");
+      const userRef = doc(db, "users", state.user.uid);
+      await updateDoc(userRef, { riotAccount: null });
+      setState(prev => ({ ...prev, linkedAccount: null, rankedData: null, linkSuccess: "Riot account unlinked successfully!" }));
     } catch (error) {
       console.error("Error unlinking Riot account:", error);
-      setLinkError("Failed to unlink Riot account. Please try again.");
+      setState(prev => ({ ...prev, linkError: "Failed to unlink Riot account. Please try again." }));
     }
   };
 
-  const handleTerminationClick = () => {
-    setTerminationButtonActive(true);
-    setRipple(true);
-    setShowDeleteConfirm(true);
+  const verifyEmail = async () => {
+    if (!state.user) return;
     
-    // Remove active state after animation completes
-    setTimeout(() => {
-      setTerminationButtonActive(false);
-    }, 300);
-    
-    setTimeout(() => {
-      setRipple(false);
-    }, 600);
+    try {
+      setState(prev => ({ ...prev, verificationLoading: true }));
+      await sendEmailVerification(state.user);
+      
+      const userRef = doc(db, "users", state.user.uid);
+      await updateDoc(userRef, { emailVerificationSent: true, lastVerificationSent: new Date() });
+      
+      setState(prev => ({ ...prev, emailVerificationSent: true, verificationLoading: false }));
+      alert("Verification email sent! Please check your inbox and spam folder.");
+    } catch (error) {
+      console.error("Error sending verification:", error);
+      alert(error.code === 'auth/too-many-requests' ? "Too many verification requests. Please wait a few minutes." : "Error sending verification email. Please try again.");
+      setState(prev => ({ ...prev, verificationLoading: false }));
+    }
   };
 
   const handleReauthentication = async () => {
-    if (!user || !user.email) {
-      setReauthError("No user email found");
-      return;
-    }
+    if (!state.user || !state.user.email) return setState(prev => ({ ...prev, reauthError: "No user email found" }));
 
     try {
-      const credential = EmailAuthProvider.credential(user.email, password);
-      await reauthenticateWithCredential(user, credential);
+      const credential = EmailAuthProvider.credential(state.user.email, state.password);
+      await reauthenticateWithCredential(state.user, credential);
       
-      setShowReauthModal(false);
-      setPassword("");
-      setReauthError("");
+      setState(prev => ({ ...prev, showReauthModal: false, password: "", reauthError: "" }));
       await performAccountDeletion();
     } catch (error) {
       console.error("Reauthentication error:", error);
-      if (error.code === 'auth/wrong-password') {
-        setReauthError("Incorrect password. Please try again.");
-      } else if (error.code === 'auth/invalid-credential') {
-        setReauthError("Invalid credentials. Please check your password.");
-      } else {
-        setReauthError("Reauthentication failed. Please try again.");
-      }
+      const errorMsg = error.code === 'auth/wrong-password' ? "Incorrect password. Please try again." : 
+                      error.code === 'auth/invalid-credential' ? "Invalid credentials. Please check your password." : 
+                      "Reauthentication failed. Please try again.";
+      setState(prev => ({ ...prev, reauthError: errorMsg }));
     }
   };
 
   const performAccountDeletion = async () => {
-    setDeletingAccount(true);
+    setState(prev => ({ ...prev, deletingAccount: true }));
     try {
-      const userId = user.uid;
+      const userId = state.user.uid;
       
-      console.log("Starting account deletion for user:", userId);
-
       try {
-        const queueResponse = await fetch('http://localhost:3000/api/queue/leave', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: userId
-          })
+        await fetch('http://localhost:3000/api/queue/leave', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
         });
-        if (queueResponse.ok) {
-          console.log("Removed user from queue system");
-        }
-      } catch (queueError) {
-        console.log("Could not remove from queue system, continuing...");
-      }
+      } catch (error) { console.log("Could not remove from queue system, continuing..."); }
 
       const allUsersQuery = query(collection(db, "users"));
       const allUsersSnapshot = await getDocs(allUsersQuery);
@@ -406,214 +371,282 @@ function Profile() {
           const otherUserData = otherUserDoc.data();
           const updates = {};
           
-          if (otherUserData.friends?.some(friend => friend.id === userId)) {
-            updates.friends = otherUserData.friends.filter(friend => friend.id !== userId);
-          }
-          
-          if (otherUserData.pendingRequests?.some(req => req.from === userId)) {
-            updates.pendingRequests = otherUserData.pendingRequests.filter(req => req.from !== userId);
-          }
-          
-          if (Object.keys(updates).length > 0) {
-            updatePromises.push(
-              updateDoc(doc(db, "users", otherUserDoc.id), updates)
-            );
-          }
+          if (otherUserData.friends?.some(friend => friend.id === userId)) updates.friends = otherUserData.friends.filter(friend => friend.id !== userId);
+          if (otherUserData.pendingRequests?.some(req => req.from === userId)) updates.pendingRequests = otherUserData.pendingRequests.filter(req => req.from !== userId);
+          if (Object.keys(updates).length > 0) updatePromises.push(updateDoc(doc(db, "users", otherUserDoc.id), updates));
         }
       });
 
-      if (updatePromises.length > 0) {
-        await Promise.all(updatePromises);
-      }
-      console.log("Finished updating friend lists");
+      if (updatePromises.length > 0) await Promise.all(updatePromises);
 
       try {
-        const chatsQuery = query(
-          collection(db, "chats"),
-          where("participants", "array-contains", userId)
-        );
-        
+        const chatsQuery = query(collection(db, "chats"), where("participants", "array-contains", userId));
         const chatsSnapshot = await getDocs(chatsQuery);
-        const chatDeletionPromises = chatsSnapshot.docs.map(chatDoc => 
-          deleteDoc(doc(db, "chats", chatDoc.id))
-        );
+        const chatDeletionPromises = chatsSnapshot.docs.map(chatDoc => deleteDoc(doc(db, "chats", chatDoc.id)));
+        if (chatDeletionPromises.length > 0) await Promise.all(chatDeletionPromises);
+      } catch (error) { console.log("Could not delete chat documents, continuing..."); }
 
-        if (chatDeletionPromises.length > 0) {
-          await Promise.all(chatDeletionPromises);
-          console.log("Deleted chat documents");
-        }
-      } catch (chatError) {
-        console.log("Could not delete chat documents (may not have permission), continuing...");
-      }
-      const userRef = doc(db, "users", userId);
-      await deleteDoc(userRef);
-      console.log("Deleted user document");
-
-      await deleteUser(user);
+      await deleteDoc(doc(db, "users", userId));
+      await deleteUser(state.user);
       
       alert("Account terminated successfully! Your profile has been deleted. Goodbye!");
       window.location.href = "/";
     } catch (error) {
       console.error("Error during account deletion:", error);
-      
-      if (error.code === 'permission-denied') {
-        alert("Permission denied. This might be because chat deletion failed. Your profile was still deleted.");
-      } else if (error.code === 'unavailable') {
-        alert("Network error. Please check your connection and try again.");
-      } else {
-        alert("Error terminating account. Please try again.");
-      }
-      
-      setDeletingAccount(false);
-      setShowDeleteConfirm(false);
+      alert(error.code === 'permission-denied' ? "Permission denied. Your profile was still deleted." :
+            error.code === 'unavailable' ? "Network error. Please check your connection." :
+            "Error terminating account. Please try again.");
+      setState(prev => ({ ...prev, deletingAccount: false, showDeleteConfirm: false }));
     }
   };
 
-  const initiateAccountDeletion = () => {
-    setShowDeleteConfirm(false);
-    setShowReauthModal(true);
+  const saveAboutMe = async () => {
+    if (!state.isOwnProfile || !state.user) return;
+    
+    try {
+      const userRef = doc(db, "users", state.user.uid);
+      await updateDoc(userRef, {
+        aboutMe: state.tempAbout,
+        aboutMeUpdated: new Date()
+      });
+      
+      setState(prev => ({ ...prev, aboutMe: state.tempAbout, isEditingAbout: false }));
+      alert("About me updated successfully!");
+    } catch (error) {
+      console.error("Error updating about me:", error);
+      alert("Error updating about me. Please try again.");
+    }
   };
 
-  const RankedInfo = ({ rankedData }) => {
-    const getRankIcon = (tier) => tier ? `/rank-icons/Rank=${tier.charAt(0).toUpperCase()+tier.slice(1).toLowerCase()}.png` : null;
-
-    const getQueueData = (queueType) => {
-      return rankedData?.find(queue => queue.queueType === queueType);
-    };
-
-    const rankedSolo = getQueueData('RANKED_SOLO_5x5');
-    const rankedFlex = getQueueData('RANKED_FLEX_SR');
-
-    const renderRankCard = (queue, queueName) => {
-      if (!queue) return (
-        <div className="rank-card">
-          <div className="queue-name">{queueName}</div>
-          <div className="unranked">Unranked</div>
-        </div>
-      );
-      const totalGames = queue.wins + queue.losses;
-      const winRate = totalGames > 0 ? Math.round((queue.wins/totalGames)*100) : 0;
-      return (
-        <div className="rank-card">
-          <div className="rank-info">
-            {getRankIcon(queue.tier) && <img src={getRankIcon(queue.tier)} alt={`${queue.tier} icon`} className="rank-icon"/>}
-            <div className="rank-details">
-              <div className="tier">{queue.tier} {queue.rank}</div>
-              <div className="queue-label">{queueName}</div>
-              <div className="stats">
-                <div className="lp">{queue.leaguePoints} LP</div>
-                <div className="winrate">{winRate}% WR</div>
-                <div className="games">{totalGames}G</div>
-              </div>
-              <div className="record">{queue.wins}W {queue.losses}L</div>
-            </div>
-          </div>
-        </div>
-      );
-    };
-
-    return (
-      <div className="ranked-container">
-        {renderRankCard(rankedSolo, "Solo/Duo")}
-        {renderRankCard(rankedFlex, "Flex")}
-      </div>
-    );
+  const startEditingAbout = () => {
+    if (!state.isOwnProfile) return;
+    setState(prev => ({ ...prev, tempAbout: state.aboutMe, isEditingAbout: true }));
   };
 
-  if (!user) return <div className="loading">Loading user info...</div>;
+  const getProfileIconUrl = (profileIconId) => `https://ddragon.leagueoflegends.com/cdn/${state.latestVersion}/img/profileicon/${profileIconId}.png`;
 
-  const joinedDate = new Date(user.metadata.creationTime);
+  if (!state.profileData) return <div className="loading">Loading profile...</div>;
+
+  const displayUser = state.isOwnProfile ? state.user : { displayName: state.profileData?.username || "Anonymous User" };
+  const displayEmail = state.isOwnProfile ? state.user?.email : null;
+  const joinedDate = state.profileData?.createdAt ? new Date(state.profileData.createdAt.seconds * 1000) : new Date();
   const accountAgeDays = Math.floor((Date.now() - joinedDate) / 86400000);
-  const currentProfileImage =
-    profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+  const currentProfileImage = state.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
 
   return (
     <div className="profile-page">
       <div className="profile-container">
-        <h2 className="profile-title">Your Profile</h2>
+        <h2 className="profile-title">
+          {state.isOwnProfile ? "Your Profile" : `${state.profileData.username || "Anonymous User"}'s Profile`}
+        </h2>
 
         <div className="profile-card">
+          {state.isOwnProfile && (
+            <div className="profile-actions-menu">
+              <button 
+                className={`hamburger-menu ${state.menuOpen ? 'active' : ''}`}
+                onClick={() => setState(prev => ({ ...prev, menuOpen: !prev.menuOpen }))}
+              >
+                <span></span>
+                <span></span>
+                <span></span>
+              </button>
+              
+              {state.menuOpen && (
+                <div className="menu-dropdown">
+                  <button 
+                    onClick={() => {
+                      setState(prev => ({ 
+                        ...prev, 
+                        menuOpen: false,
+                        terminationButtonActive: true, 
+                        ripple: true, 
+                        showDeleteConfirm: true 
+                      }));
+                      setTimeout(() => setState(prev => ({ ...prev, terminationButtonActive: false })), 300);
+                      setTimeout(() => setState(prev => ({ ...prev, ripple: false })), 600);
+                    }}
+                    className={`menu-item terminate-menu-btn ${state.terminationButtonActive ? 'active' : ''}`}
+                  >
+                    🗑️ Terminate Account
+                    {state.ripple && <span className="ripple"></span>}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="profile-header">
-            <div className="profile-icon-container">
+            <div className="profile-icon-container" ref={profileIconRef}>
               <img
                 src={currentProfileImage}
                 alt="Profile"
                 className="profile-avatar"
-                onContextMenu={handleRightClick}
-                style={{ cursor: "pointer" }}
+                onContextMenu={state.isOwnProfile ? (e) => {
+                  e.preventDefault();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const profileCardRect = e.currentTarget.closest('.profile-card').getBoundingClientRect();
+                  
+                  const x = rect.right - profileCardRect.left + 10;
+                  const y = rect.top - profileCardRect.top;
+                  
+                  setState(prev => ({ 
+                    ...prev, 
+                    contextMenuPosition: { 
+                      x: x,
+                      y: y
+                    } 
+                  }));
+                } : undefined}
+                style={{ cursor: state.isOwnProfile ? "pointer" : "default" }}
               />
 
-              {showContextMenu && (
-                <div
-                  ref={contextMenuRef}
-                  className="context-menu"
-                  style={{ position: "fixed", left: contextMenuPosition.x, top: contextMenuPosition.y, zIndex: 1000 }}
+              {state.isOwnProfile && state.contextMenuPosition && (
+                <div 
+                  ref={contextMenuRef} 
+                  className="context-menu" 
+                  style={{ 
+                    position: "absolute", 
+                    left: `${state.contextMenuPosition.x}px`, 
+                    top: `${state.contextMenuPosition.y}px`, 
+                    zIndex: 1000 
+                  }}
                 >
-                  <button onClick={triggerFileInput} disabled={uploading} className="context-menu-btn">
-                    {uploading ? "⏳ Uploading..." : "📁 Upload Image"}
+                  <button 
+                    onClick={() => { 
+                      fileInputRef.current?.click(); 
+                      setState(prev => ({ ...prev, contextMenuPosition: null })); 
+                    }} 
+                    disabled={state.uploading} 
+                    className="context-menu-btn"
+                  >
+                    📁 {state.uploading ? "Uploading..." : "Upload Image"}
                   </button>
-                  {profileImage && (
-                    <button onClick={removeProfileImage} className="context-menu-btn delete-btn">
+                  {state.profileImage && (
+                    <button 
+                      onClick={() => { 
+                        updateProfileImage(null); 
+                        setState(prev => ({ ...prev, contextMenuPosition: null })); 
+                        alert("Profile image removed!"); 
+                      }} 
+                      className="context-menu-btn delete-btn"
+                    >
                       🗑️ Delete Image
                     </button>
                   )}
                 </div>
               )}
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileSelect}
-                accept="image/*"
-                style={{ display: "none" }}
-              />
+              {state.isOwnProfile && (
+                <input 
+                  ref={fileInputRef} 
+                  type="file" 
+                  onChange={handleFileSelect} 
+                  accept="image/*" 
+                  style={{ display: "none" }} 
+                />
+              )}
             </div>
+            
             <div className="profile-info">
-              <h3 className="profile-display-name">{user.displayName || "Anonymous Summoner"}</h3>
-              <div className="profile-details">
-                <div className="profile-detail">
-                  <span className="detail-label">Email:</span>
-                  <span className="detail-value">{user.email || "No email"}</span>
-                </div>
-                <div className="profile-detail">
-                  <span className="detail-label">Verified:</span>
-                  <span className={`detail-value ${user.emailVerified ? "verified" : "not-verified"}`}>
-                    {user.emailVerified ? "✅ Yes" : "❌ No"}
-                  </span>
-                </div>
-                {!user.emailVerified && (
-                  <div className="verification-section">
-                    <button 
-                      onClick={verifyEmail} 
-                      className="verify-button"
-                      disabled={verificationLoading || emailVerificationSent}
-                    >
-                      {verificationLoading ? "Sending..." : emailVerificationSent ? "Verification Sent" : "Verify Email"}
-                    </button>
-                    {emailVerificationSent && !user.emailVerified && (
-                      <p className="verification-hint">
-                        Check your email for the verification link. Didn't receive it? 
+              <h3 className="profile-display-name">{displayUser?.displayName || "Anonymous User"}</h3>
+              
+              <div className="about-me-section">
+                {state.isEditingAbout ? (
+                  <div className="about-me-edit">
+                    <textarea
+                      value={state.tempAbout}
+                      onChange={(e) => {
+                        const text = e.target.value;
+                        if (text.length <= 200) {
+                          setState(prev => ({ ...prev, tempAbout: text }));
+                        }
+                      }}
+                      placeholder="Tell us about yourself..."
+                      className="about-me-textarea"
+                      maxLength={200}
+                    />
+                    <div className={`char-counter ${state.tempAbout.length >= 450 ? 'warning' : ''} ${state.tempAbout.length >= 490 ? 'error' : ''}`}>
+                      {state.tempAbout.length}/200
+                    </div>
+                    <div className="about-me-edit-actions">
+                      <div>
                         <button 
-                          onClick={verifyEmail} 
-                          className="resend-link"
-                          disabled={verificationLoading}
+                          onClick={saveAboutMe} 
+                          className="save-about-btn"
+                          disabled={state.tempAbout === state.aboutMe || state.tempAbout.length === 0}
                         >
-                          {verificationLoading ? "Sending..." : "Resend"}
+                          Save
                         </button>
-                      </p>
+                        <button onClick={() => setState(prev => ({ ...prev, isEditingAbout: false }))} className="cancel-about-btn">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="about-me-display">
+                    <p>{state.aboutMe || (state.isOwnProfile ? "Click edit to add about me section..." : "No about me yet.")}</p>
+                    {state.isOwnProfile && (
+                      <button onClick={startEditingAbout} className="edit-about-btn">
+                        ✏️ Edit
+                      </button>
                     )}
                   </div>
                 )}
+              </div>
+              
+              {state.isOwnProfile && state.user && (
+                <div className="profile-details">
+                  <div className="profile-detail">
+                    <span className="detail-label">Email:</span>
+                    <span className="detail-value">{displayEmail || "No email"}</span>
+                  </div>
+                  <div className="profile-detail">
+                    <span className="detail-label">Verified:</span>
+                    <span className={`detail-value ${state.user?.emailVerified ? "verified" : "not-verified"}`}>
+                      {state.user?.emailVerified ? "✅ Yes" : "❌ No"}
+                    </span>
+                  </div>
+                  {!state.user?.emailVerified && (
+                    <div className="verification-section">
+                      <button 
+                        onClick={verifyEmail} 
+                        className="verify-button"
+                        disabled={state.verificationLoading || state.emailVerificationSent}
+                      >
+                        {state.verificationLoading ? "Sending..." : state.emailVerificationSent ? "Verification Sent" : "Verify Email"}
+                      </button>
+                      {state.emailVerificationSent && !state.user?.emailVerified && (
+                        <p className="verification-hint">
+                          Check your email for the verification link. Didn't receive it? 
+                          <button 
+                            onClick={verifyEmail} 
+                            className="resend-link"
+                            disabled={state.verificationLoading}
+                          >
+                            {state.verificationLoading ? "Sending..." : "Resend"}
+                          </button>
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="profile-details">
                 <div className="profile-detail">
                   <span className="detail-label">Joined:</span>
                   <span className="detail-value">
                     {joinedDate.toLocaleDateString()} ({accountAgeDays} days ago)
                   </span>
                 </div>
-                <div className="profile-detail">
-                  <span className="detail-label">Last Login:</span>
-                  <span className="detail-value">{new Date(user.metadata.lastSignInTime).toLocaleString()}</span>
-                </div>
+                {state.isOwnProfile && state.user?.metadata?.lastSignInTime && (
+                  <div className="profile-detail">
+                    <span className="detail-label">Last Login:</span>
+                    <span className="detail-value">{new Date(state.user.metadata.lastSignInTime).toLocaleString()}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -621,119 +654,82 @@ function Profile() {
           <div className="riot-account-section">
             <h4>Riot Games Account</h4>
             
-            {linkedAccount ? (
+            {state.linkedAccount ? (
               <div className="linked-account-container">
                 <div className="linked-account-info">
                   <div className="account-header">
                     <div className="account-icon-name">
                       <img 
-                        src={getProfileIconUrl(linkedAccount.profileIconId)} 
+                        src={getProfileIconUrl(state.linkedAccount.profileIconId)} 
                         alt="Summoner icon"
                         className="summoner-icon"
                         onError={(e) => {
-                          e.target.src = `https://ddragon.leagueoflegends.com/cdn/25.22/img/profileicon/${linkedAccount.profileIconId}.png`;
+                          e.target.src = `https://ddragon.leagueoflegends.com/cdn/25.22/img/profileicon/${state.linkedAccount.profileIconId}.png`;
                         }}
                       />
                       <div>
                         <span className="account-name">
-                          {linkedAccount.gameName}#{linkedAccount.tagLine}
+                          {state.linkedAccount.gameName}#{state.linkedAccount.tagLine}
                         </span>
-                        <span className="account-level">Level {linkedAccount.summonerLevel}</span>
+                        <span className="account-level">Level {state.linkedAccount.summonerLevel}</span>
                       </div>
                     </div>
-                    <span className="account-status verified">
-                      ✅ Verified
-                    </span>
+                    <span className="account-status verified">✅ Verified</span>
                   </div>
                   <span className="account-region">
-                    Region: {regions.find(r => r.value === linkedAccount.region)?.label || linkedAccount.region}
+                    Region: {REGIONS.find(r => r.value === state.linkedAccount.region)?.label || state.linkedAccount.region}
                   </span>
                 </div>
 
-                {rankedData && (
+                {state.rankedData && (
                   <div className="ranked-section">
                     <h5>Ranked Information</h5>
-                    <RankedInfo rankedData={rankedData} />
+                    <RankedInfo rankedData={state.rankedData} />
                   </div>
                 )}
 
-                <button 
-                  onClick={unlinkRiotAccount} 
-                  className="unlink-account-btn"
-                >
-                  Unlink Account
-                </button>
+                {state.isOwnProfile && (
+                  <button onClick={unlinkRiotAccount} className="unlink-account-btn">
+                    🗑️ Unlink Account
+                  </button>
+                )}
               </div>
-            ) : (
+            ) : state.isOwnProfile ? (
               <form onSubmit={handleRiotAccountLink} className="link-account-form">
                 <div className="form-group">
                   <label htmlFor="riotId">Riot ID</label>
-                  <input
-                    type="text"
-                    id="riotId"
-                    value={riotId}
-                    onChange={(e) => setRiotId(e.target.value)}
-                    placeholder="Enter your Riot ID"
-                    className="riot-id-input"
-                    maxLength={25} 
-                  />
-                  <div className="input-hint">
-                    Format: Name#Tag
-                  </div>
+                  <input type="text" id="riotId" value={state.riotId} onChange={(e) => setState(prev => ({ ...prev, riotId: e.target.value }))} placeholder="Enter your Riot ID" className="riot-id-input" maxLength={25} />
+                  <div className="input-hint">Format: Name#Tag</div>
                 </div>
                 
                 <div className="form-group">
                   <label htmlFor="region">Region</label>
-                  <select
-                    id="region"
-                    value={region}
-                    onChange={(e) => setRegion(e.target.value)}
-                    className="riot-id-input"
+                  <select 
+                    id="region" 
+                    value={state.region} 
+                    onChange={(e) => setState(prev => ({ ...prev, region: e.target.value }))} 
+                    className="region-select"
                   >
-                    {regions.map(region => (
-                      <option key={region.value} value={region.value}>
-                        {region.label}
-                      </option>
-                    ))}
+                    {REGIONS.map(region => <option key={region.value} value={region.value}>{region.label}</option>)}
                   </select>
                 </div>
                 
-                {linkError && <div className="error-message">{linkError}</div>}
-                {linkSuccess && <div className="success-message">{linkSuccess}</div>}
+                {state.linkError && <div className="error-message">{state.linkError}</div>}
+                {state.linkSuccess && <div className="success-message">{state.linkSuccess}</div>}
                 
-                <button 
-                  type="submit" 
-                  disabled={linkingAccount}
-                  className="link-account-btn"
-                >
-                  {linkingAccount ? "Validating..." : "Link Riot Account"}
+                <button type="submit" disabled={state.linkingAccount} className="link-account-btn">
+                  {state.linkingAccount ? "Validating..." : "Link Riot Account"}
                 </button>
               </form>
+            ) : (
+              <div className="no-riot-account">
+                <p>This user hasn't linked a Riot account yet.</p>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="termination-section">
-          <h4>Account Management</h4>
-          <div className="termination-card">
-            <div className="termination-warning">
-              <span className="warning-icon">⚠️</span>
-              <div className="warning-content">
-                <h5>Terminate Account</h5>
-                <p>This action cannot be undone. All your data, including profile, chats, and linked accounts will be permanently deleted.</p>
-              </div>
-            </div>
-            <button 
-              onClick={handleTerminationClick}
-              className={`terminate-account-btn ${terminationButtonActive ? 'active' : ''}`}
-            >
-              Terminate Account
-              {ripple && <span className="ripple"></span>}
-            </button>
-          </div>
-        </div>
-
-        {showDeleteConfirm && (
+        {state.isOwnProfile && state.showDeleteConfirm && (
           <div className="modal-overlay">
             <div className="delete-modal">
               <h3>Confirm Account Termination</h3>
@@ -751,26 +747,16 @@ function Profile() {
                 </div>
               </div>
               <div className="modal-actions">
-                <button 
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="cancel-btn"
-                  disabled={deletingAccount}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={initiateAccountDeletion}
-                  className="confirm-delete-btn"
-                  disabled={deletingAccount}
-                >
-                  {deletingAccount ? "Deleting..." : "Yes, Delete My Account"}
+                <button onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false }))} className="cancel-btn" disabled={state.deletingAccount}>Cancel</button>
+                <button onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false, showReauthModal: true }))} className="confirm-delete-btn" disabled={state.deletingAccount}>
+                  {state.deletingAccount ? "Deleting..." : "Yes, Delete My Account"}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {showReauthModal && (
+        {state.isOwnProfile && state.showReauthModal && (
           <div className="modal-overlay">
             <div className="reauth-modal">
               <h3>Verify Your Identity</h3>
@@ -780,34 +766,13 @@ function Profile() {
               </div>
               <div className="form-group">
                 <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="riot-id-input"
-                />
-                {reauthError && <div className="error-message">{reauthError}</div>}
+                <input id="password" type="password" value={state.password} onChange={(e) => setState(prev => ({ ...prev, password: e.target.value }))} placeholder="Enter your password" className="riot-id-input" />
+                {state.reauthError && <div className="error-message">{state.reauthError}</div>}
               </div>
               <div className="modal-actions">
-                <button 
-                  onClick={() => {
-                    setShowReauthModal(false);
-                    setPassword("");
-                    setReauthError("");
-                  }}
-                  className="cancel-btn"
-                  disabled={deletingAccount}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleReauthentication}
-                  className="confirm-delete-btn"
-                  disabled={deletingAccount || !password}
-                >
-                  {deletingAccount ? "Deleting..." : "Confirm Deletion"}
+                <button onClick={() => setState(prev => ({ ...prev, showReauthModal: false, password: "", reauthError: "" }))} className="cancel-btn" disabled={state.deletingAccount}>Cancel</button>
+                <button onClick={handleReauthentication} className="confirm-delete-btn" disabled={state.deletingAccount || !state.password}>
+                  {state.deletingAccount ? "Deleting..." : "Confirm Deletion"}
                 </button>
               </div>
             </div>

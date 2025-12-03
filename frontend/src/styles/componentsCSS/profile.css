@@ -91,6 +91,7 @@
   padding: var(--space-xs);
   box-shadow: var(--shadow-lg);
   min-width: 160px;
+  margin-left: -140px;
   z-index: 1000;
 }
 
@@ -1309,4 +1310,288 @@ select.riot-id-input {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+/* ===== HAMBURGER MENU ADDITIONS ===== */
+.profile-actions-menu {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+}
+
+.hamburger-menu {
+  width: 45px;
+  height: 45px;
+  border: 2px solid rgba(200, 170, 110, 0.3);
+  border-radius: 8px;
+  background: rgba(13, 23, 43, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 101;
+}
+
+.hamburger-menu:hover {
+  background: rgba(13, 23, 43, 0.95);
+  box-shadow: 0 0 15px rgba(200, 155, 60, 0.3);
+  border-color: #c8aa6e;
+}
+
+.hamburger-menu span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #c8aa6e;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-menu.active {
+  border-color: #c8aa6e;
+  background: rgba(13, 23, 43, 0.95);
+}
+
+.hamburger-menu.active span:nth-child(1) {
+  transform: rotate(45deg) translate(4px, 4px);
+}
+
+.hamburger-menu.active span:nth-child(2) {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+
+.hamburger-menu.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* Menu Dropdown */
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  background: rgba(20, 30, 48, 0.98);
+  border: 2px solid #c8aa6e;
+  border-radius: 12px;
+  min-width: 200px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  animation: slideDown 0.2s ease-out;
+  overflow: hidden;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-item {
+  width: 100%;
+  background: transparent;
+  color: #f0f0f0;
+  border: none;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  text-align: left;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-item:hover:not(.terminate-menu-btn) {
+  background: rgba(200, 170, 110, 0.1);
+  color: #c8aa6e;
+}
+
+/* Termination Menu Button */
+.terminate-menu-btn {
+  color: #ff6b6b;
+  border-top: 1px solid rgba(255, 107, 107, 0.2);
+  font-weight: 600;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.terminate-menu-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: #ff6b6b;
+  border-radius: 0 2px 2px 0;
+  transition: all 0.3s ease;
+}
+
+.terminate-menu-btn:hover {
+  background: rgba(255, 107, 107, 0.1);
+  color: #ff5252;
+  padding-left: 1.8rem;
+}
+
+.terminate-menu-btn:hover::before {
+  width: 6px;
+  background: #ff5252;
+}
+
+.terminate-menu-btn.active {
+  animation: terminatePulse 0.3s ease-out;
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff3838;
+}
+
+@keyframes terminatePulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ===== FIXED CONTEXT MENU (Right side of profile image) ===== */
+/* Add this to your existing .profile-icon-container styles */
+.profile-icon-container {
+  position: relative;
+}
+
+/* Add or update these context menu styles */
+.context-menu {
+  background: rgba(20, 30, 48, 0.98);
+  border: 2px solid #c8aa6e;
+  border-radius: 12px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 180px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+  position: absolute;
+  left: calc(100% + 10px); /* Position to the RIGHT of the image */
+  top: 0;
+  animation: slideInRight 0.2s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.context-menu-btn {
+  background: transparent;
+  color: #f0f0f0;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.context-menu-btn:hover:not(:disabled) {
+  background: rgba(200, 170, 110, 0.15);
+  color: #c8aa6e;
+}
+
+.context-menu-btn.delete-btn:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+}
+
+/* ===== FIXED ABOUT ME SECTION (100 character limit) ===== */
+/* Add these styles to fix the about me editing */
+.about-me-textarea {
+  max-height: 100px !important;
+  min-height: 100px !important;
+  resize: none !important;
+  overflow-y: auto !important;
+}
+
+.char-counter {
+  position: absolute;
+  bottom: 10px;
+  right: 15px;
+  font-size: 0.8rem;
+  color: #888;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.char-counter.warning {
+  color: #ff9900;
+}
+
+.char-counter.error {
+  color: #ff3333;
+  font-weight: bold;
+}
+
+/* Make sure about me section doesn't expand too much */
+.about-me-section {
+  min-height: 120px !important;
+  max-height: 200px !important;
+  overflow: hidden !important;
+}
+
+/* ===== RIPPLE EFFECT FOR TERMINATE BUTTON ===== */
+.terminate-menu-btn .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  transform: scale(0);
+  animation: rippleEffect 0.6s linear;
+}
+
+@keyframes rippleEffect {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ===== MOBILE FIX FOR CONTEXT MENU ===== */
+@media (max-width: 768px) {
+  .context-menu {
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: auto !important;
+    bottom: 20px !important;
+    margin: 0 !important;
+    min-width: 250px !important;
+  }
 }

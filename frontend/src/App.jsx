@@ -122,6 +122,7 @@ function App() {
           />
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:userId" element={<Profile />} /> {/* Same component! */}
           <Route path="/summoner" element={<Summoner />} />
           <Route path="/queue" element={<QueueSystem />} />
           <Route path="/finishSignIn" element={<FinishSignIn />} />
