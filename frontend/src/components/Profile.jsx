@@ -550,66 +550,80 @@ function Profile() {
             
             <div className="profile-info">
               <h3 className="profile-display-name">{displayUser?.displayName || "Anonymous User"}</h3>
-              
               <div className="about-me-section">
+                <div className="about-me-header">
+                  <h4 className="about-me-label">About Me</h4>
+                  {!state.isEditingAbout && state.isOwnProfile && (
+                    <button onClick={startEditingAbout} className="edit-about-btn">
+                      ✏️ Edit
+                    </button>
+                  )}
+                </div>
+                
                 {state.isEditingAbout ? (
-                  <div className="about-me-edit">
-                    <textarea
-                      value={state.tempAbout}
-                      onChange={(e) => {
-                        const text = e.target.value;
-                        if (text.length <= 200) {
-                          setState(prev => ({ ...prev, tempAbout: text }));
-                        }
-                      }}
-                      placeholder="Tell us about yourself..."
-                      className="about-me-textarea"
-                      maxLength={200}
-                    />
-                    <div className={`char-counter ${state.tempAbout.length >= 450 ? 'warning' : ''} ${state.tempAbout.length >= 490 ? 'error' : ''}`}>
-                      {state.tempAbout.length}/200
-                    </div>
-                    <div className="about-me-edit-actions">
-                      <div>
-                        <button 
-                          onClick={saveAboutMe} 
-                          className="save-about-btn"
-                          disabled={state.tempAbout === state.aboutMe || state.tempAbout.length === 0}
-                        >
-                          Save
-                        </button>
-                        <button onClick={() => setState(prev => ({ ...prev, isEditingAbout: false }))} className="cancel-about-btn">
-                          Cancel
-                        </button>
+                  <div className="about-me-edit-container">
+                    <div className="about-me-textarea-container">
+                      <textarea
+                        value={state.tempAbout}
+                        onChange={(e) => {
+                          const text = e.target.value;
+                          if (text.length <= 200) {
+                            setState(prev => ({ ...prev, tempAbout: text }));
+                          }
+                        }}
+                        placeholder="Tell us about yourself, your gaming preferences, favorite champions, etc..."
+                        className="about-me-textarea"
+                        maxLength={200}
+                        autoFocus
+                        rows={4}
+                      />
+                      <div className={`char-counter ${state.tempAbout.length >= 180 ? 'warning' : ''} ${state.tempAbout.length >= 195 ? 'error' : ''}`}>
+                        {state.tempAbout.length}/200
                       </div>
+                    </div>
+                    <div className="about-me-edit-buttons">
+                      <button 
+                        onClick={saveAboutMe} 
+                        className="save-about-btn"
+                        disabled={state.tempAbout === state.aboutMe}
+                      >
+                        Save Changes
+                      </button>
+                      <button 
+                        onClick={() => setState(prev => ({ ...prev, isEditingAbout: false }))} 
+                        className="cancel-about-btn"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="about-me-display">
-                    <p>{state.aboutMe || (state.isOwnProfile ? "Click edit to add about me section..." : "No about me yet.")}</p>
-                    {state.isOwnProfile && (
-                      <button onClick={startEditingAbout} className="edit-about-btn">
-                        ✏️ Edit
-                      </button>
-                    )}
+                  <div className="about-me-content">
+                    <p className="about-me-text">
+                      {state.aboutMe || (state.isOwnProfile ? "No about me yet. Click edit to add a bio." : "No about me yet.")}
+                    </p>
                   </div>
                 )}
               </div>
-              
               {state.isOwnProfile && state.user && (
                 <div className="profile-details">
                   <div className="profile-detail">
                     <span className="detail-label">Email:</span>
                     <span className="detail-value">{displayEmail || "No email"}</span>
                   </div>
-                  <div className="profile-detail">
-                    <span className="detail-label">Verified:</span>
-                    <span className={`detail-value ${state.user?.emailVerified ? "verified" : "not-verified"}`}>
+                </div>
+              )}
+              
+              {state.isOwnProfile && state.user && (
+                <div className="verification-section">
+                  <div className="verification-detail">
+                    <span className="verification-label">Verified:</span>
+                    <span className={`verification-value ${state.user?.emailVerified ? "verified" : "not-verified"}`}>
                       {state.user?.emailVerified ? "✅ Yes" : "❌ No"}
                     </span>
                   </div>
                   {!state.user?.emailVerified && (
-                    <div className="verification-section">
+                    <>
                       <button 
                         onClick={verifyEmail} 
                         className="verify-button"
@@ -629,11 +643,10 @@ function Profile() {
                           </button>
                         </p>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               )}
-              
               <div className="profile-details">
                 <div className="profile-detail">
                   <span className="detail-label">Joined:</span>
