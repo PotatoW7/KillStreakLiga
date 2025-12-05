@@ -56,7 +56,7 @@ function Login() {
   };
 
   return (
-    <div className="auth-page"> {/* ← CHANGED FROM "min-h-screen" */}
+    <div className="auth-page"> 
       <div className="auth-container">
         <h2>Login</h2>
         <p>Welcome to Killstreak</p>

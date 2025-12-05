@@ -1,999 +1,909 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { 
-  collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDocs, orderBy, getDoc 
-} from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, getDoc, orderBy, deleteDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
-const QueueSystem = () => {
-  const [inQueue, setInQueue] = useState(false);
-  const [queueTime, setQueueTime] = useState(0);
-  const [currentMatch, setCurrentMatch] = useState(null);
-  const [availablePlayers, setAvailablePlayers] = useState([]);
-  const [currentUserInQueue, setCurrentUserInQueue] = useState(null);
+function QueueSystem() {
+  const [isPostingGame, setIsPostingGame] = useState(false);
+  const [isEditingGame, setIsEditingGame] = useState(null);
+  const [gameListings, setGameListings] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
-  const [queuePosition, setQueuePosition] = useState(0);
+  const [userFriends, setUserFriends] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [queueStats, setQueueStats] = useState(null);
-  const [queuePreferences, setQueuePreferences] = useState({
-    queueType: 'solo_duo',
-    partySize: 2,
-    preferredRoles: [],
-    communicationPrefs: { voice: false, text: true }
-  });
-  const [friendRequestsSent, setFriendRequestsSent] = useState(new Set());
-  const [playerProfiles, setPlayerProfiles] = useState({});
-  const [friendsList, setFriendsList] = useState(new Set()); 
   const navigate = useNavigate();
 
-  const GAME_MODES = {
-    solo_duo: {
-      name: 'Ranked Solo/Duo',
-      maxPlayers: 2,
-      minPlayers: 2,
-      description: 'Competitive ranked play for solo players or duos',
-      ranked: true,
-      map: "Summoner's Rift",
-      validSizes: [2]
-    },
-    ranked_flex: {
-      name: 'Ranked Flex',
-      maxPlayers: 5,
-      minPlayers: 1,
-      description: 'Ranked play with flexible team sizes',
-      ranked: true,
-      map: "Summoner's Rift",
-      validSizes: [1, 2, 3, 5]
-    },
-    draft: {
-      name: 'Normal Draft',
-      maxPlayers: 5,
-      minPlayers: 1,
-      description: 'Casual draft mode with team coordination',
-      ranked: false,
-      map: "Summoner's Rift",
-      validSizes: [1, 2, 3, 4, 5]
-    },
-    swiftplay: {
-      name: 'Swiftplay',
-      maxPlayers: 5,
-      minPlayers: 1,
-      description: 'Shorter matches for quick games',
-      ranked: false,
-      map: "Summoner's Rift",
-      validSizes: [1, 2, 3, 4, 5]
-    },
-    aram: {
-      name: 'ARAM',
-      maxPlayers: 5,
-      minPlayers: 1,
-      description: 'All Random All Mid - Fast-paced fun',
-      ranked: false,
-      map: "Howling Abyss",
-      validSizes: [1, 2, 3, 4, 5]
-    }
-  };
+  const [playerProfiles, setPlayerProfiles] = useState({});
 
-  const ROLES = ['Top', 'Jungle', 'Mid', 'ADC', 'Support'];
+  const [gameData, setGameData] = useState({
+    role: 'any',
+    queueType: 'ranked_solo_duo',
+    communication: 'text',
+    preferredDuoRole: 'any',
+    description: '',
+  });
+
+  const roles = [
+    { id: 'any', name: 'Any', icon: '🔄' },
+    { id: 'top', name: 'Top', icon: '⚔️' },
+    { id: 'jungle', name: 'Jungle', icon: '🌲' },
+    { id: 'mid', name: 'Mid', icon: '✨' },
+    { id: 'adc', name: 'ADC', icon: '🎯' },
+    { id: 'support', name: 'Support', icon: '🛡️' }
+  ];
+
+  const queueTypes = [
+    { id: 'ranked_solo_duo', name: 'Ranked Solo/Duo', icon: '🥇' },
+    { id: 'ranked_flex', name: 'Ranked Flex', icon: '👥' },
+    { id: 'normal_draft', name: 'Normal Draft', icon: '⚔️' },
+    { id: 'aram', name: 'ARAM', icon: '🎲' },
+    { id: 'swiftplay', name: 'Swiftplay', icon: '⚡' }
+  ];
+
+  const communicationTypes = [
+    { id: 'text', name: 'Text Chat', icon: '💬' },
+    { id: 'voice', name: 'Voice Chat', icon: '🎤' },
+  ];
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (user) {
-      loadUserProfile(user.uid);
-      checkQueueStatus(user.uid);
-      loadFriendsList(); 
-      
-      const interval = setInterval(() => {
-        if (user.uid) {
-          checkQueueStatus(user.uid);
-          fetchAvailablePlayers();
-          fetchQueueStats();
-        }
-      }, 1000);
-      
-      return () => clearInterval(interval);
+    if (!auth.currentUser) {
+      navigate('/login');
+      return;
     }
+
+    fetchUserProfile();
+    fetchUserFriends();
+    fetchGameListings();
+    
+    return () => {
+      const unsubscribe = fetchGameListings();
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    let interval;
-    if (inQueue) {
-      interval = setInterval(() => {
-        setQueueTime(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [inQueue, queueTime]);
-
-  const loadUserProfile = async (userId) => {
-    try {
-      const userDoc = await getDoc(doc(db, "users", userId));
-      if (userDoc.exists()) {
-        const profile = userDoc.data();
-        setUserProfile(profile);
-        
-        if (profile.queuePreferences) {
-          const validQueueType = GAME_MODES[profile.queuePreferences.queueType] 
-            ? profile.queuePreferences.queueType 
-            : 'solo_duo';
-          
-          const preferredRoles = Array.isArray(profile.queuePreferences.preferredRoles) 
-            ? profile.queuePreferences.preferredRoles 
-            : [];
-          
-          setQueuePreferences({
-            ...profile.queuePreferences,
-            queueType: validQueueType,
-            preferredRoles: preferredRoles,
-            partySize: validQueueType === 'solo_duo' ? 2 : (profile.queuePreferences.partySize || 1)
-          });
+    if (gameListings.length > 0) {
+      gameListings.forEach(game => {
+        if (game.userId && !playerProfiles[game.userId]) {
+          fetchUserProfileById(game.userId);
         }
-      }
-    } catch (error) {
-      console.error("Error loading user profile:", error);
-    } finally {
-      setLoading(false);
+      });
     }
-  };
+  }, [gameListings]);
 
-  const loadFriendsList = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
+  const fetchUserProfile = async () => {
     try {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      
       if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const friends = userData.friends || [];
-        const friendIds = new Set(friends.map(friend => friend.id));
-        setFriendsList(friendIds);
-      }
-    } catch (error) {
-      console.error('Error loading friends list:', error);
-    }
-  };
+        const data = userDoc.data();
+        
+        let riotAccountDisplay = 'Not linked';
+        let riotAccountObject = null;
+        let profileImage = null;
+        let aboutMe = '';
+        let rankedData = null;
+        let displayName = auth.currentUser.displayName || 'Anonymous';
+        
+        if (data.riotAccount && typeof data.riotAccount === 'object') {
+          riotAccountObject = data.riotAccount;
+          const { gameName, tagLine } = data.riotAccount;
+          if (gameName && tagLine) {
+            riotAccountDisplay = `${gameName}#${tagLine}`;
+          } else if (gameName) {
+            riotAccountDisplay = gameName;
+          } else {
+            riotAccountDisplay = 'Linked (no name)';
+          }
+        } else if (data.riotAccount) {
+          riotAccountDisplay = data.riotAccount;
+        }
+        
+        profileImage = data.profileImage || null;
+        
+        aboutMe = data.aboutMe || '';
+        rankedData = data.rankedData || null;
+        displayName = auth.currentUser.displayName || data.username || 'Anonymous';
 
-  const fetchUserProfile = async (userId) => {
-    try {
-      const userDoc = await getDoc(doc(db, "users", userId));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+        setUserProfile({
+          displayName: displayName,
+          riotAccount: riotAccountDisplay,
+          riotAccountData: riotAccountObject,
+          profileImage: profileImage,
+          rankedData: rankedData,
+          aboutMe: aboutMe,
+          userData: data
+        });
+
         setPlayerProfiles(prev => ({
           ...prev,
-          [userId]: {
-            profileImage: userData.profileImage,
-            username: userData.username
+          [auth.currentUser.uid]: {
+            profileImage: profileImage,
+            username: displayName
           }
         }));
       }
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.error('Error fetching user profile:', error);
     }
   };
 
-  const saveQueuePreferences = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
+  const fetchUserProfileById = async (userId) => {
     try {
-      await updateDoc(doc(db, "users", user.uid), {
-        queuePreferences: queuePreferences
+      const userDoc = await getDoc(doc(db, "users", userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        
+        const profileImage = userData.profileImage || null;
+        const username = userData.username || userData.displayName || 'Anonymous';
+        
+        setPlayerProfiles(prev => ({
+          ...prev,
+          [userId]: {
+            profileImage: profileImage,
+            username: username
+          }
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching user profile by ID:", error);
+    }
+  };
+
+  const fetchUserFriends = async () => {
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setUserFriends(data.friends || []);
+      }
+    } catch (error) {
+      console.error('Error fetching user friends:', error);
+    }
+  };
+
+  const fetchGameListings = () => {
+    try {
+      const q = query(
+        collection(db, 'gameListings'),
+        where('status', '==', 'active'),
+        orderBy('createdAt', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const listings = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date()
+        }));
+        setGameListings(listings);
+        setLoading(false);
       });
+
+      return unsubscribe;
     } catch (error) {
-      console.error("Error saving queue preferences:", error);
+      console.error('Error in fetchGameListings:', error);
+      
+      const q = query(collection(db, 'gameListings'));
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const allListings = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date()
+        }));
+        
+        const activeListings = allListings
+          .filter(listing => listing.status === 'active')
+          .sort((a, b) => b.createdAt - a.createdAt);
+        
+        setGameListings(activeListings);
+        setLoading(false);
+      });
+
+      return unsubscribe;
     }
   };
 
-  const checkQueueStatus = async (userId) => {
+  const getProfileImage = (game) => {
+    if (game.userProfileImage) {
+      if (typeof game.userProfileImage === 'string' && game.userProfileImage.startsWith('data:image')) {
+        return game.userProfileImage;
+      }
+    }
+    
+    if (game.userId && playerProfiles[game.userId]?.profileImage) {
+      const image = playerProfiles[game.userId].profileImage;
+      if (image && typeof image === 'string' && image.startsWith('data:image')) {
+        return image;
+      }
+    }
+    
+    return null;
+  };
+
+  const getQueueData = (rankedData, queueType) => {
+    if (!rankedData || !Array.isArray(rankedData)) return null;
+    return rankedData.find(queue => queue.queueType === queueType);
+  };
+
+  const calculateWinRate = (queue) => {
+    if (!queue) return 'N/A';
+    const totalGames = queue.wins + queue.losses;
+    if (totalGames === 0) return '0%';
+    const winRate = Math.round((queue.wins / totalGames) * 100);
+    return `${winRate}%`;
+  };
+
+  const getRankIcon = (tier) => {
+    if (!tier) return null;
+    return `/rank-icons/Rank=${tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()}.png`;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === 'description' && value.length > 100) {
+      return;
+    }
+    
+    setGameData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCommunicationSelect = (commType) => {
+    setGameData(prev => ({
+      ...prev,
+      communication: commType
+    }));
+  };
+
+  const handleEditGame = (game) => {
+    setIsEditingGame(game.id);
+    setGameData({
+      role: game.role,
+      queueType: game.queueType,
+      communication: game.communication,
+      preferredDuoRole: game.preferredDuoRole,
+      description: game.description,
+    });
+    setIsPostingGame(true);
+  };
+
+  const handleUpdateGame = async () => {
+    if (!isEditingGame) return;
+
+    if (!gameData.description.trim()) {
+      alert('Please add a description for your game');
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:3000/api/queue/status/${userId}`);
-      const data = await response.json();
+      const gameRef = doc(db, 'gameListings', isEditingGame);
       
-      setInQueue(data.inQueue);
-      setQueuePosition(data.queuePosition);
-      setQueueStats(data.queueStats);
+      await updateDoc(gameRef, {
+        role: gameData.role,
+        queueType: gameData.queueType,
+        communication: gameData.communication,
+        preferredDuoRole: gameData.preferredDuoRole,
+        description: gameData.description.trim(),
+        updatedAt: serverTimestamp()
+      });
       
-      if (data.inQueue && userProfile && auth.currentUser?.uid === userId) {
-        setCurrentUserInQueue(prev => {
-          const existingData = prev || {
-            userId: userId,
-            playerName: userProfile.username || auth.currentUser.displayName || 'You',
-            riotAccount: userProfile.riotAccount,
-            region: userProfile.riotAccount?.region || 'na1',
-            preferredRoles: getSafePreferredRoles(),
-            queueType: queuePreferences.queueType,
-            partySize: queuePreferences.partySize,
-            rank: userProfile.rank,
-            communicationPrefs: queuePreferences.communicationPrefs,
-            waitTime: queueTime,
-            queuePosition: data.queuePosition
-          };
-          
-          return {
-            ...existingData,
-            queuePosition: data.queuePosition
-          };
-        });
-      } else if (!data.inQueue && auth.currentUser?.uid === userId) {
-        setCurrentUserInQueue(null);
-      }
+      setGameData({
+        role: 'any',
+        queueType: 'ranked_solo_duo',
+        communication: 'text',
+        preferredDuoRole: 'any',
+        description: '',
+      });
       
-      setCurrentMatch(null);
-      if (data.currentMatch) {
-        console.log('Unexpected match found, ignoring...');
-        setCurrentMatch(null);
-      }
+      setIsEditingGame(null);
+      setIsPostingGame(false);
+      alert('Game updated successfully!');
     } catch (error) {
-      console.error('Error checking queue status:', error);
+      console.error('Error updating game:', error);
+      alert('Error updating game. Please try again.');
     }
   };
 
-  const fetchAvailablePlayers = async () => {
+  const handlePostGame = async () => {
+    if (!auth.currentUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (!userProfile?.riotAccountData) {
+      alert('Please link your Riot account first in your Profile!');
+      navigate('/profile');
+      return;
+    }
+
+    if (!gameData.description.trim()) {
+      alert('Please add a description for your game');
+      return;
+    }
+
     try {
-      const currentUserId = auth.currentUser?.uid;
-      const response = await fetch(`http://localhost:3000/api/queue/players?excludeUserId=${currentUserId}`);
-      const data = await response.json();
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userDoc = await getDoc(userRef);
       
-      const playersWithIds = (data.players || []).map(player => ({
-        ...player,
-        userId: player.userId,
-        riotAccount: player.riotAccount || {
-          gameName: player.playerName || 'Unknown',
-          tagLine: player.tagLine || '0000'
+      if (!userDoc.exists()) {
+        alert('User data not found!');
+        return;
+      }
+      
+      const userData = userDoc.data();
+      
+      let riotAccountDisplay = 'Not linked';
+      let riotAccountObject = null;
+      let profileImage = null;
+      let aboutMe = '';
+      let rankedData = null;
+      let displayName = auth.currentUser.displayName || 'Anonymous';
+      
+      if (userData.riotAccount && typeof userData.riotAccount === 'object') {
+        riotAccountObject = userData.riotAccount;
+        const { gameName, tagLine } = userData.riotAccount;
+        if (gameName && tagLine) {
+          riotAccountDisplay = `${gameName}#${tagLine}`;
+        } else if (gameName) {
+          riotAccountDisplay = gameName;
+        } else {
+          riotAccountDisplay = 'Linked (no name)';
+        }
+      } else if (userData.riotAccount) {
+        riotAccountDisplay = userData.riotAccount;
+      }
+      
+      profileImage = userData.profileImage || null;
+      
+      aboutMe = userData.aboutMe || '';
+      rankedData = userData.rankedData || null;
+      displayName = auth.currentUser.displayName || userData.username || 'Anonymous';
+
+      const gameListing = {
+        userId: auth.currentUser.uid,
+        userDisplayName: displayName,
+        userProfileImage: profileImage,
+        userRiotAccount: riotAccountDisplay,
+        userRiotAccountObject: riotAccountObject,
+        userAboutMe: aboutMe,
+        userRankedData: rankedData,
+        
+        role: gameData.role,
+        queueType: gameData.queueType,
+        communication: gameData.communication,
+        preferredDuoRole: gameData.preferredDuoRole,
+        description: gameData.description.trim(),
+        
+        status: 'active',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        applicants: [],
+        acceptedPlayers: []
+      };
+      
+      await addDoc(collection(db, 'gameListings'), gameListing);
+      
+      setGameData({
+        role: 'any',
+        queueType: 'ranked_solo_duo',
+        communication: 'text',
+        preferredDuoRole: 'any',
+        description: '',
+      });
+      
+      setIsPostingGame(false);
+      alert('Game posted successfully!');
+      
+      setPlayerProfiles(prev => ({
+        ...prev,
+        [auth.currentUser.uid]: {
+          profileImage: profileImage,
+          username: displayName
         }
       }));
       
-      setAvailablePlayers(playersWithIds);
+      fetchGameListings();
+    } catch (error) {
+      console.error('Error posting game:', error);
+      alert('Error posting game. Please try again.');
+    }
+  };
+
+  const handleJoinQueue = async (gameId) => {
+    if (!auth.currentUser) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const gameRef = doc(db, 'gameListings', gameId);
+      const gameDoc = await getDoc(gameRef);
       
-      playersWithIds.forEach(player => {
-        if (player.userId && !playerProfiles[player.userId]) {
-          fetchUserProfile(player.userId);
-        }
+      if (!gameDoc.exists()) {
+        alert('This game listing no longer exists.');
+        return;
+      }
+
+      const gameData = gameDoc.data();
+      
+      const alreadyApplied = gameData.applicants?.some(
+        applicant => applicant.userId === auth.currentUser.uid
+      );
+      
+      if (alreadyApplied) {
+        alert('You have already requested to join this queue.');
+        return;
+      }
+
+      const userData = {
+        userId: auth.currentUser.uid,
+        displayName: userProfile?.displayName || auth.currentUser.displayName || 'Anonymous',
+        riotAccount: userProfile?.riotAccount || 'Not linked',
+        profileImage: userProfile?.profileImage,
+        appliedAt: new Date().toISOString(),
+        status: 'pending'
+      };
+
+      await updateDoc(gameRef, {
+        applicants: arrayUnion(userData)
       });
+
+      alert('Request to join sent! The host will review your request.');
     } catch (error) {
-      console.error('Error fetching available players:', error);
-      setAvailablePlayers([]);
+      console.error('Error joining queue:', error);
+      alert('Error joining queue. Please try again.');
     }
   };
 
-  const fetchQueueStats = async () => {
+  const handleDeleteListing = async (gameId) => {
+    if (!window.confirm('Are you sure you want to delete this game listing?')) {
+      return;
+    }
+
     try {
-      const region = userProfile?.riotAccount?.region || 'na1';
-      const response = await fetch(`http://localhost:3000/api/queue/analytics?region=${region}`);
-      if (response.ok) {
-        const data = await response.json();
-        setQueueStats(data);
-      }
+      await deleteDoc(doc(db, 'gameListings', gameId));
+      alert('Game listing deleted successfully!');
     } catch (error) {
-      console.error('Error fetching queue stats:', error);
+      console.error('Error deleting listing:', error);
+      alert('Error deleting listing. Please try again.');
     }
   };
 
-  const findUserByRiotId = async (riotId) => {
+  const handleAddFriend = async (userId) => {
+    if (!auth.currentUser || userId === auth.currentUser.uid) return;
+
     try {
-      if (!riotId || riotId === 'No Riot ID') return null;
-      
-      const [gameName, tagLine] = riotId.split('#');
-      if (!gameName || !tagLine) return null;
-
-      const usersRef = collection(db, "users");
-      const q = query(
-        usersRef,
-        where("riotAccount.gameName", "==", gameName),
-        where("riotAccount.tagLine", "==", tagLine)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        return querySnapshot.docs[0].id;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error finding user by Riot ID:', error);
-      return null;
-    }
-  };
-
-  const findUserByDisplayName = async (displayName) => {
-    try {
-      if (!displayName) return null;
-
-      const usersRef = collection(db, "users");
-      const q = query(
-        usersRef,
-        where("username", ">=", displayName),
-        where("username", "<=", displayName + '\uf8ff')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        return querySnapshot.docs[0].id;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error finding user by display name:', error);
-      return null;
-    }
-  };
-
-  const isAlreadyFriend = async (player) => {
-    try {
-      const user = auth.currentUser;
-      if (!user) return false;
-
-      const targetUsername = getPlayerName(player);
-      const playerRiotId = getRiotId(player);
-      
-      let targetUserId = player.userId;
-
-      if (!targetUserId || targetUserId.startsWith('temp_')) {
-        targetUserId = await findUserByRiotId(playerRiotId);
-      }
-
-      if (!targetUserId) {
-        targetUserId = await findUserByDisplayName(targetUsername);
-      }
-
-      if (!targetUserId) return false;
-
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      const userData = userDoc.data();
-      return (userData.friends || []).some(friend => friend.id === targetUserId);
-    } catch (error) {
-      console.error('Error checking friend status:', error);
-      return false;
-    }
-  };
-
-  const sendFriendRequest = async (player) => {
-    try {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const targetUsername = getPlayerName(player);
-      const playerRiotId = getRiotId(player);
-      
-      let targetUserId = player.userId;
-
-      if (!targetUserId || targetUserId.startsWith('temp_')) {
-        targetUserId = await findUserByRiotId(playerRiotId);
-      }
-
-      if (!targetUserId) {
-        targetUserId = await findUserByDisplayName(targetUsername);
-      }
-
-      if (!targetUserId) {
-        alert(`Could not find user "${targetUsername}" in the system. They may need to link their Riot account in their profile.`);
-        return;
-      }
-
-      if (targetUserId === user.uid) {
-        alert("You cannot send a friend request to yourself!");
-        return;
-      }
-
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      const userData = userDoc.data();
-      const isAlreadyFriend = (userData.friends || []).some(friend => friend.id === targetUserId);
-      
-      if (isAlreadyFriend) {
-        alert(`You are already friends with ${targetUsername}!`);
-        return;
-      }
-
-      const targetUserDoc = await getDoc(doc(db, "users", targetUserId));
-      if (!targetUserDoc.exists()) {
-        alert(`User ${targetUsername} not found in the system.`);
-        return;
-      }
-
-      const targetUserData = targetUserDoc.data();
-      const hasPendingRequest = (targetUserData.pendingRequests || []).some(
-        req => req.from === user.uid
-      );
-
-      if (hasPendingRequest) {
-        alert(`Friend request already sent to ${targetUsername}!`);
-        return;
-      }
-
-      const targetUserRef = doc(db, "users", targetUserId);
+      const targetUserRef = doc(db, 'users', userId);
       await updateDoc(targetUserRef, {
         pendingRequests: arrayUnion({
-          from: user.uid,
-          fromUsername: user.displayName || 'Anonymous',
+          from: auth.currentUser.uid,
+          fromUsername: userProfile?.displayName || auth.currentUser.displayName || 'Anonymous',
           timestamp: new Date()
         })
       });
-
-      setFriendRequestsSent(prev => new Set([...prev, targetUserId]));
-      alert(`Friend request sent to ${targetUsername}!`);
+      
+      alert('Friend request sent!');
     } catch (error) {
       console.error('Error sending friend request:', error);
       alert('Error sending friend request: ' + error.message);
     }
   };
 
-  const joinQueue = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    if (!userProfile?.riotAccount?.gameName) {
-      alert("Please link your Riot account in your profile before joining the queue!");
+  const handleCopyRiotAccount = (riotAccount) => {
+    if (!riotAccount || riotAccount === 'Not linked') return;
+    
+    if (riotAccount.includes('Not linked') || riotAccount.includes('Linked (no name)') || riotAccount === 'Linked') {
+      alert('No Riot account to copy');
       return;
     }
-
-    const modeConfig = GAME_MODES[queuePreferences.queueType];
-    if (!modeConfig) {
-      alert("Invalid game mode selected");
-      return;
-    }
-
-    if (!modeConfig.validSizes.includes(queuePreferences.partySize)) {
-      alert(`For ${modeConfig.name}, valid party sizes are: ${modeConfig.validSizes.join(', ')}`);
-      return;
-    }
-
-    try {
-      const response = await fetch('http://localhost:3000/api/queue/join', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.uid,
-          playerName: user.displayName || 'Anonymous',
-          riotAccount: userProfile.riotAccount,
-          region: userProfile.riotAccount?.region || 'na1',
-          queueType: queuePreferences.queueType,
-          partySize: queuePreferences.partySize,
-          preferredRoles: getSafePreferredRoles(),
-          rank: userProfile.rank || null,
-          communicationPrefs: queuePreferences.communicationPrefs
-        })
+    
+    navigator.clipboard.writeText(riotAccount)
+      .then(() => {
+        alert('Riot account copied to clipboard: ' + riotAccount);
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+        alert('Failed to copy Riot account');
       });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setInQueue(true);
-        setQueueTime(0);
-        setCurrentMatch(null);
-        saveQueuePreferences();
-        fetchAvailablePlayers();
-        
-        setCurrentUserInQueue({
-          userId: user.uid,
-          playerName: userProfile.username || user.displayName || 'You',
-          riotAccount: userProfile.riotAccount,
-          region: userProfile.riotAccount?.region || 'na1',
-          preferredRoles: getSafePreferredRoles(),
-          queueType: queuePreferences.queueType,
-          partySize: queuePreferences.partySize,
-          rank: userProfile.rank,
-          communicationPrefs: queuePreferences.communicationPrefs,
-          waitTime: 0,
-          queuePosition: data.position
-        });
-      } else {
-        alert(data.error || 'Failed to join queue');
-      }
-    } catch (error) {
-      console.error('Error joining queue:', error);
-      alert('Failed to join queue');
-    }
   };
 
-  const leaveQueue = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      await fetch('http://localhost:3000/api/queue/leave', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.uid
-        })
-      });
-
-      setInQueue(false);
-      setQueueTime(0);
-      setQueuePosition(0);
-      setCurrentMatch(null);
-      setCurrentUserInQueue(null);
-      fetchAvailablePlayers();
-    } catch (error) {
-      console.error('Error leaving queue:', error);
-    }
+  const isAlreadyFriend = (userId) => {
+    return userFriends.some(friend => friend.id === userId);
   };
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getRankIcon = (rank) => {
-    if (!rank?.tier) return '/rank-icons/Rank=Unranked.png';
-    const tier = rank.tier.charAt(0).toUpperCase() + rank.tier.slice(1).toLowerCase();
-    return `/rank-icons/Rank=${tier}.png`;
-  };
-
-  const handlePlayerClick = (playerRiotId) => {
-    navigate('/summoner');
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('searchPlayer', { 
-        detail: { riotId: playerRiotId, region: userProfile?.riotAccount?.region || 'euw1' }
-      }));
-    }, 100);
-  };
-
-  const getValidPartySizes = (queueType) => {
-    const mode = GAME_MODES[queueType];
-    if (!mode) return [1];
-    return mode.validSizes;
-  };
-
-  const getSafePreferredRoles = () => {
-    return Array.isArray(queuePreferences.preferredRoles) ? queuePreferences.preferredRoles : [];
-  };
-
-  const toggleRole = (role) => {
-    setQueuePreferences(prev => {
-      const currentRoles = getSafePreferredRoles();
-      const roleIndex = currentRoles.indexOf(role);
-      
-      if (roleIndex > -1) {
-        currentRoles.splice(roleIndex, 1);
-      } else {
-        currentRoles.push(role);
-      }
-      
-      return {
-        ...prev,
-        preferredRoles: currentRoles
-      };
+  const handleCancelEdit = () => {
+    setIsEditingGame(null);
+    setGameData({
+      role: 'any',
+      queueType: 'ranked_solo_duo',
+      communication: 'text',
+      preferredDuoRole: 'any',
+      description: '',
     });
+    setIsPostingGame(false);
   };
 
-  const getPlayerRoles = (player) => {
-    return Array.isArray(player?.preferredRoles) ? player.preferredRoles : [];
-  };
-
-  const getPlayerName = (player) => {
-    return player?.playerName || 'Unknown Player';
-  };
-
-  const getRiotId = (player) => {
-    if (!player?.riotAccount) return 'No Riot ID';
-    const gameName = player.riotAccount.gameName || 'Unknown';
-    const tagLine = player.riotAccount.tagLine || '0000';
-    return `${gameName}#${tagLine}`;
-  };
-
-  const getGameModeName = (queueType) => {
-    return GAME_MODES[queueType]?.name || queueType || 'Unknown Mode';
-  };
-
-  const hasSentFriendRequest = (player) => {
-    return friendRequestsSent.has(player.userId);
-  };
-
-  const getPlayerProfileImage = (player) => {
-    if (player.userId && playerProfiles[player.userId]?.profileImage) {
-      return playerProfiles[player.userId].profileImage;
-    }
-    return "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+  const formatTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
   };
 
   if (loading) {
     return (
       <div className="queue-container">
         <div className="queue-loading">
-          <div className="spinner">⚔️</div>
-          <p>Loading queue system...</p>
+          <div className="spinner">🌀</div>
+          <p>Loading game listings...</p>
         </div>
       </div>
     );
   }
 
-  const currentMode = GAME_MODES[queuePreferences.queueType];
-  const safePreferredRoles = getSafePreferredRoles();
+  if (!auth.currentUser) {
+    return (
+      <div className="queue-container">
+        <div className="queue-warning">
+          <div className="warning-icon">⚠️</div>
+          <p>Please login to use the queue system</p>
+          <button onClick={() => navigate('/login')} className="link-profile-btn">
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="queue-container">
       <div className="queue-header">
-        <div className="header-icon">🎮</div>
-        <h1>League of Legends Queue</h1>
-        <p>Find your perfect teammates and dominate the Rift</p>
+        <h1>Find League Teammates</h1>
+        <p>Post your game or join others to find the perfect duo partner</p>
+        
+        <button 
+          className="post-game-btn"
+          onClick={() => {
+            setIsEditingGame(null);
+            setIsPostingGame(!isPostingGame);
+          }}
+        >
+          {isPostingGame ? '✖ Cancel' : '➕ Post a Game'}
+        </button>
       </div>
-      
-      {!userProfile?.riotAccount?.gameName ? (
-        <div className="queue-warning">
-          <div className="warning-icon">⚠️</div>
-          <p>You need to link your Riot account in your profile before queuing!</p>
-          <button 
-            onClick={() => navigate('/profile')}
-            className="link-profile-btn"
-          >
-            Go to Profile
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="queue-content">
-            <div className="preferences-section">
-              <div className="section-card">
-                <h3>Queue Settings</h3>
-                
-                <div className="preference-group">
-                  <label>Game Mode</label>
-                  <div className="modes-grid">
-                    {Object.entries(GAME_MODES).map(([key, mode]) => (
-                      <button
-                        key={key}
-                        className={`mode-btn ${queuePreferences.queueType === key ? 'active' : ''}`}
-                        onClick={() => {
-                          const defaultPartySize = key === 'solo_duo' ? 2 : 1;
-                          setQueuePreferences(prev => ({ 
-                            ...prev, 
-                            queueType: key,
-                            partySize: defaultPartySize
-                          }));
-                        }}
-                      >
-                        <div className="mode-icon">
-                          {mode.ranked ? '🏆' : '🎯'}
-                        </div>
-                        <div className="mode-info">
-                          <div className="mode-name">{mode.name}</div>
-                          <div className="mode-desc">{mode.description}</div>
-                          <div className="mode-map">🗺️ {mode.map}</div>
-                          <div className="mode-players">
-                            {mode.validSizes.join(', ')} players
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
-                <div className="preference-group">
-                  <label>Party Size</label>
-                  <div className="party-size-selector">
-                    {getValidPartySizes(queuePreferences.queueType).map(size => (
-                      <button
-                        key={size}
-                        className={`party-size-btn ${queuePreferences.partySize === size ? 'active' : ''}`}
-                        onClick={() => setQueuePreferences(prev => ({ ...prev, partySize: size }))}
-                      >
-                        {size} {size === 1 ? 'Player' : 'Players'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="preference-group">
-                  <label>Preferred Roles</label>
-                  <div className="roles-grid">
-                    {ROLES.map(role => (
-                      <button
-                        key={role}
-                        className={`role-btn ${safePreferredRoles.includes(role) ? 'active' : ''}`}
-                        onClick={() => toggleRole(role)}
-                      >
-                        {role}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="preference-group">
-                  <label>Communication</label>
-                  <div className="communication-options">
-                    <label className="comm-option">
-                      <input
-                        type="checkbox"
-                        checked={queuePreferences.communicationPrefs.text}
-                        onChange={(e) => setQueuePreferences(prev => ({
-                          ...prev,
-                          communicationPrefs: { ...prev.communicationPrefs, text: e.target.checked }
-                        }))}
-                      />
-                      <span className="comm-icon">💬</span>
-                      <span className="comm-label">Text Chat</span>
-                    </label>
-                    <label className="comm-option">
-                      <input
-                        type="checkbox"
-                        checked={queuePreferences.communicationPrefs.voice}
-                        onChange={(e) => setQueuePreferences(prev => ({
-                          ...prev,
-                          communicationPrefs: { ...prev.communicationPrefs, voice: e.target.checked }
-                        }))}
-                      />
-                      <span className="comm-icon">🎤</span>
-                      <span className="comm-label">Voice Chat</span>
-                    </label>
-                  </div>
-                </div>
-
-                {userProfile?.rank && (
-                  <div className="preference-group">
-                    <label>Your Rank</label>
-                    <div className="user-rank-display">
-                      <img 
-                        src={getRankIcon(userProfile.rank)} 
-                        alt={userProfile.rank.tier}
-                        className="rank-icon-large"
-                      />
-                      <div className="rank-info">
-                        <div className="rank-tier">{userProfile.rank.tier} {userProfile.rank.rank}</div>
-                        <div className="rank-lp">{userProfile.rank.leaguePoints} LP</div>
-                      </div>
-                    </div>
-                  </div>
+      {(isPostingGame || isEditingGame) && (
+        <div className="compact-post-form">
+          <h3>{isEditingGame ? 'Edit Your Game Post' : 'Create New Game Post'}</h3>
+          
+          <div className="form-grid-compact">
+            <div className="form-group-compact">
+              <label className="form-label-compact">Your Riot Account</label>
+              <div className="riot-account-compact">
+                <span className="riot-account-text">
+                  {userProfile?.riotAccountData ? userProfile.riotAccount : 'Not linked'}
+                </span>
+                {!userProfile?.riotAccountData && (
+                  <button 
+                    className="link-account-btn-compact"
+                    onClick={() => navigate('/profile')}
+                  >
+                    Link Account
+                  </button>
                 )}
               </div>
             </div>
 
-            <div className="queue-section">
-              {!inQueue ? (
-                <div className="queue-start">
-                  <div className="start-icon">⚔️</div>
-                  <h3>Ready to Queue?</h3>
-                  <div className="queue-summary">
-                    <div className="summary-item">
-                      <span className="label">Mode:</span>
-                      <span className="value">{currentMode?.name}</span>
-                    </div>
-                    <div className="summary-item">
-                      <span className="label">Map:</span>
-                      <span className="value">{currentMode?.map}</span>
-                    </div>
-                    <div className="summary-item">
-                      <span className="label">Party:</span>
-                      <span className="value">{queuePreferences.partySize} {queuePreferences.partySize === 1 ? 'player' : 'players'}</span>
-                    </div>
-                    <div className="summary-item">
-                      <span className="label">Preferred Roles:</span>
-                      <span className="value">
-                        {safePreferredRoles.length > 0 
-                          ? safePreferredRoles.join(', ')
-                          : 'Any role'
-                        }
-                      </span>
-                    </div>
-                  </div>
-                  <button onClick={joinQueue} className="join-btn">
-                    Find Teammates for {currentMode?.name}
-                  </button>
-                </div>
-              ) : (
-                <div className="queue-active">
-                  <div className="searching-header">
-                    <div className="search-icon">🔍</div>
-                    <h3>Finding Teammates...</h3>
-                    <div className="queue-type-badge">
-                      {currentMode?.name}
-                    </div>
-                  </div>
-                  
-                  {currentUserInQueue && (
-                    <div className="current-user-queue-status">
-                      <div className="current-user-header">
-                        <h4>Your Queue Status</h4>
-                        <span className="queue-position">Position: #{currentUserInQueue.queuePosition}</span>
-                      </div>
-                      <div className="current-user-details">
-                       <div className="current-user-avatar">
-                        <img
-                          src={userProfile?.profileImage|| "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
-                          alt="Your Profile" 
-                          className="current-user-profile-image"
-                          onError={(e) => {
-                            e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}}
-                            />
-                            </div>
-                        <div className="current-user-info">
-                          <span className="user-name">{currentUserInQueue.playerName}</span>
-                             <span className="queue-mode">{getGameModeName(currentUserInQueue.queueType)}</span>
-                          <span className="user-roles">{getPlayerRoles(currentUserInQueue).join(', ') || 'Any role'}</span>
-                          <span className="user-party">Party size: {currentUserInQueue.partySize}</span>
-                        </div>
-                        <div className="current-user-stats">
-                        </div>
-                      </div>
-                    </div>
-                   
-                  )}
-              
-                  <div className="queue-info">
-                    <div className="info-item">
-                      <span className="label">Time in Queue</span>
-                      <span className="value">{formatTime(queueTime)}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="label">Available Teammates</span>
-                      <span className="value">{availablePlayers.length}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="label">Your Region</span>
-                      <span className="value">{userProfile?.riotAccount?.region || 'Unknown'}</span>
-                    </div>
-                  </div>
-
-                  <button onClick={leaveQueue} className="leave-btn">
-                    Cancel Search
-                  </button>
-
-                  {availablePlayers.length > 0 && (
-                    <div className="available-players">
-                      <h4>Available Teammates ({availablePlayers.length})</h4>
-                      <div className="players-grid">
-                        {availablePlayers.map((player, index) => (
-                          <div key={index} className="player-card">
-                            <div className="player-header">
-                              <div className="player-avatar">
-                                <img
-                                  src={getPlayerProfileImage(player)}
-                                  alt={getPlayerName(player)}
-                                  className="player-profile-image"
-                                  onError={(e) => {
-                                    e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                                  }}
-                                />
-                              </div>
-                              <div className="player-main">
-                                <strong 
-                                  className="clickable-player"
-                                  onClick={() => handlePlayerClick(getRiotId(player))}
-                                >
-                                  {getPlayerName(player)}
-                                </strong>
-                                <span className="riot-id">{getRiotId(player)}</span>
-                              </div>
-                              <span className="queue-time">
-                                {formatTime(player.waitTime || 0)}
-                              </span>
-                            </div>
-                            <div className="player-details">
-                              <span className="queue-type-badge">
-                                {getGameModeName(player.queueType)}
-                              </span>
-                              <span className="player-roles">{getPlayerRoles(player).join(', ') || 'Any role'}</span>
-                              <span className="player-party">Party: {player.partySize || 1}</span>
-                            </div>
-                            <div className="player-actions">
-                              <div className="player-comm">
-                                {player.communicationPrefs?.voice && <span className="comm-indicator">🎤</span>}
-                                {player.communicationPrefs?.text && <span className="comm-indicator">💬</span>}
-                              </div>
-                              <button 
-                                className={`add-friend-btn ${
-                                  hasSentFriendRequest(player) ? 'sent' : 
-                                  friendsList.has(player.userId) ? 'already-friends' : ''
-                                }`}
-                                onClick={() => sendFriendRequest(player)}
-                                disabled={hasSentFriendRequest(player) || friendsList.has(player.userId)}
-                                title={
-                                  friendsList.has(player.userId) ? 'Already Friends' :
-                                  hasSentFriendRequest(player) ? 'Request Sent' : 
-                                  `Send friend request to ${getPlayerName(player)}`
-                                }
-                              >
-                                {friendsList.has(player.userId) ? 'Already Friends' :
-                                 hasSentFriendRequest(player) ? 'Request Sent' : 'Add Friend'}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+            <div className="form-group-compact">
+              <label className="form-label-compact">Queue Type</label>
+              <select 
+                name="queueType"
+                value={gameData.queueType}
+                onChange={handleInputChange}
+                className="select-compact"
+              >
+                {queueTypes.map(queue => (
+                  <option key={queue.id} value={queue.id}>
+                    {queue.icon} {queue.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {availablePlayers.length > 0 && !inQueue && (
-            <div className="available-players">
-              <h4>Players Looking for Teammates ({availablePlayers.length})</h4>
-              <div className="players-grid">
-                {availablePlayers.map((player, index) => (
-                  <div key={index} className="player-card">
-                    <div className="player-header">
-                      <div className="player-avatar">
-                        <img
-                          src={getPlayerProfileImage(player)}
-                          alt={getPlayerName(player)}
-                          className="player-profile-image"
-                          onError={(e) => {
-                            e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                          }}
-                        />
-                      </div>
-                      <div className="player-main">
-                        <strong 
-                          className="clickable-player"
-                          onClick={() => handlePlayerClick(getRiotId(player))}
-                        >
-                          {getPlayerName(player)}
-                        </strong>
-                        <span className="riot-id">{getRiotId(player)}</span>
-                      </div>
-                      <span className="queue-time">
-                        {formatTime(player.waitTime || 0)}
-                      </span>
-                    </div>
-                    <div className="player-details">
-                      <span className="queue-type-badge">
-                        {getGameModeName(player.queueType)}
-                      </span>
-                      <span className="player-roles">{getPlayerRoles(player).join(', ') || 'Any role'}</span>
-                      <span className="player-party">Party: {player.partySize || 1}</span>
-                    </div>
-                    <div className="player-actions">
-                      <div className="player-comm">
-                        {player.communicationPrefs?.voice && <span className="comm-indicator">🎤</span>}
-                        {player.communicationPrefs?.text && <span className="comm-indicator">💬</span>}
-                      </div>
-                      <button 
-                        className={`add-friend-btn ${
-                          hasSentFriendRequest(player) ? 'sent' : 
-                          friendsList.has(player.userId) ? 'already-friends' : ''
-                        }`}
-                        onClick={() => sendFriendRequest(player)}
-                        disabled={hasSentFriendRequest(player) || friendsList.has(player.userId)}
-                        title={
-                          friendsList.has(player.userId) ? 'Already Friends' :
-                          hasSentFriendRequest(player) ? 'Request Sent' : 
-                          `Send friend request to ${getPlayerName(player)}`
-                        }
-                      >
-                        {friendsList.has(player.userId) ? 'Already Friends' :
-                         hasSentFriendRequest(player) ? 'Request Sent' : 'Add Friend'}
-                      </button>
-                    </div>
-                  </div>
+          <div className="form-group-compact">
+            <label className="form-label-compact">My Role</label>
+            <div className="role-grid-compact">
+              {roles.map(role => (
+                <button
+                  key={role.id}
+                  type="button"
+                  className={`role-btn-compact ${gameData.role === role.id ? 'active' : ''}`}
+                  onClick={() => handleInputChange({ target: { name: 'role', value: role.id } })}
+                >
+                  <span className="role-icon-compact">{role.icon}</span>
+                  <span>{role.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group-compact">
+            <label className="form-label-compact">Looking For Role</label>
+            <div className="role-grid-compact">
+              {roles.map(role => (
+                <button
+                  key={role.id}
+                  type="button"
+                  className={`role-btn-compact ${gameData.preferredDuoRole === role.id ? 'active' : ''}`}
+                  onClick={() => handleInputChange({ target: { name: 'preferredDuoRole', value: role.id } })}
+                >
+                  <span className="role-icon-compact">{role.icon}</span>
+                  <span>{role.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-grid-compact">
+            <div className="form-group-compact">
+              <label className="form-label-compact">Communication</label>
+              <div className="comm-buttons-compact">
+                {communicationTypes.map(comm => (
+                  <button
+                    key={comm.id}
+                    type="button"
+                    className={`comm-btn-compact ${gameData.communication === comm.id ? 'active' : ''}`}
+                    onClick={() => handleCommunicationSelect(comm.id)}
+                  >
+                    <span>{comm.icon}</span>
+                    <span>{comm.name}</span>
+                  </button>
                 ))}
               </div>
             </div>
-          )}
 
-          {queueStats && !inQueue && (
-            <div className="stats-section">
-              <h4>Queue Statistics</h4>
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-value">{availablePlayers.length}</div>
-                  <div className="stat-label">Players Looking for Teammates</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">{formatTime(queueStats.averageWaitTime)}</div>
-                  <div className="stat-label">Avg Wait Time</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">
-                    {queueStats.modePreferences ? Object.keys(queueStats.modePreferences).length : 0}
-                  </div>
-                  <div className="stat-label">Active Game Modes</div>
-                </div>
+            <div className="form-group-compact">
+              <label className="form-label-compact">
+                Description ({gameData.description.length}/100)
+              </label>
+              <textarea
+                name="description"
+                value={gameData.description}
+                onChange={handleInputChange}
+                placeholder="Brief description about your playstyle..."
+                className="textarea-compact"
+                maxLength={100}
+              />
+              <div className="char-counter-compact">
+                {gameData.description.length}/100
               </div>
             </div>
-          )}
-        </>
+          </div>
+
+          <div className="form-actions-compact">
+            <button 
+              className="cancel-btn-compact"
+              onClick={isEditingGame ? handleCancelEdit : () => setIsPostingGame(false)}
+            >
+              Cancel
+            </button>
+            <button 
+              className="submit-btn-compact"
+              onClick={isEditingGame ? handleUpdateGame : handlePostGame}
+              disabled={!gameData.description.trim() || !userProfile?.riotAccountData}
+            >
+              {isEditingGame ? 'Update Post' : 'Create Post'}
+            </button>
+          </div>
+        </div>
       )}
+
+      <div className="listings-container">
+        <h3 className="listings-title">Available Games ({gameListings.length})</h3>
+        
+        {gameListings.length === 0 ? (
+          <div className="no-listings">
+            <p>No games posted yet. Be the first to post!</p>
+          </div>
+        ) : (
+          <div className="game-cards-grid">
+            {gameListings.map(game => {
+              const isOwnGame = game.userId === auth.currentUser?.uid;
+              const isFriend = isAlreadyFriend(game.userId);
+              
+              const rankedData = game.userRankedData || [];
+              const soloQueue = getQueueData(rankedData, 'RANKED_SOLO_5x5');
+              const flexQueue = getQueueData(rankedData, 'RANKED_FLEX_SR');
+              
+              const soloWinRate = calculateWinRate(soloQueue);
+              const flexWinRate = calculateWinRate(flexQueue);
+              
+              const soloGames = soloQueue ? soloQueue.wins + soloQueue.losses : 0;
+              const flexGames = flexQueue ? flexQueue.wins + flexQueue.losses : 0;
+              
+              const soloRankIcon = getRankIcon(soloQueue?.tier);
+              const flexRankIcon = getRankIcon(flexQueue?.tier);
+              
+              const soloRankText = soloQueue ? `${soloQueue.tier} ${soloQueue.rank || ''}`.trim() : 'Unranked';
+              const flexRankText = flexQueue ? `${flexQueue.tier} ${flexQueue.rank || ''}`.trim() : 'Unranked';
+              
+              const profileImage = getProfileImage(game);
+              
+              return (
+                <div key={game.id} className="game-card-compact">
+                  <div className="card-left-section">
+                    <div className="user-info-compact">
+                      <div className="user-avatar-small">
+                        {profileImage && profileImage.startsWith('data:image') ? (
+                          <img 
+                            src={profileImage} 
+                            alt={game.userDisplayName}
+                            className="avatar-img-small"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                            }}
+                          />
+                        ) : (
+                          <img 
+                            src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
+                            alt={game.userDisplayName}
+                            className="avatar-img-small"
+                          />
+                        )}
+                      </div>
+                      <div className="user-text-small">
+                        <div className="user-name-small">{game.userDisplayName}</div>
+                        <div className="riot-account-with-copy">
+                          <span className="riot-account-small">{game.userRiotAccount}</span>
+                          {game.userRiotAccount && game.userRiotAccount !== 'Not linked' && 
+                           game.userRiotAccount !== 'Linked (no name)' && game.userRiotAccount !== 'Linked' && (
+                            <button 
+                              className="copy-riot-btn"
+                              onClick={() => handleCopyRiotAccount(game.userRiotAccount)}
+                              title="Copy Riot ID"
+                            >
+                              📋
+                            </button>
+                          )}
+                        </div>
+                        {game.userAboutMe && (
+                          <div className="user-about-me-small" title={game.userAboutMe}>
+                            {game.userAboutMe.length > 50 ? game.userAboutMe.substring(0, 50) + '...' : game.userAboutMe}
+                          </div>
+                        )}
+                        
+                        <div className="rank-info-container">
+                          <div className="rank-info-item">
+                            {soloRankIcon && (
+                              <img 
+                                src={soloRankIcon} 
+                                alt={soloRankText} 
+                                className="rank-icon-small"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <div className="rank-details">
+                              <div className="rank-queue">Solo/Duo</div>
+                              <div className="rank-tier">{soloRankText}</div>
+                              <div className="rank-stats">
+                                <span className="winrate">{soloWinRate}</span>
+                                {soloGames > 0 && (
+                                  <span className="games">{soloGames}G</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="rank-info-item">
+                            {flexRankIcon && (
+                              <img 
+                                src={flexRankIcon} 
+                                alt={flexRankText} 
+                                className="rank-icon-small"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <div className="rank-details">
+                              <div className="rank-queue">Flex</div>
+                              <div className="rank-tier">{flexRankText}</div>
+                              <div className="rank-stats">
+                                <span className="winrate">{flexWinRate}</span>
+                                {flexGames > 0 && (
+                                  <span className="games">{flexGames}G</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="time-ago-compact">
+                      <span>⏰</span>
+                      {formatTimeAgo(game.createdAt)}
+                    </div>
+                  </div>
+
+                  <div className="card-middle-section">
+                    <div className="roles-grid-compact">
+                      <div className="role-tag">
+                        <span className="icon">{roles.find(r => r.id === game.role)?.icon}</span>
+                        <span>Role: {roles.find(r => r.id === game.role)?.name}</span>
+                      </div>
+                      <div className="role-tag">
+                        <span className="icon">{roles.find(r => r.id === game.preferredDuoRole)?.icon}</span>
+                        <span>LF: {roles.find(r => r.id === game.preferredDuoRole)?.name}</span>
+                      </div>
+                      <div className="role-tag">
+                        <span className="icon">{queueTypes.find(q => q.id === game.queueType)?.icon}</span>
+                        <span>{queueTypes.find(q => q.id === game.queueType)?.name}</span>
+                      </div>
+                      <div className="role-tag">
+                        <span className="icon">{game.communication === 'voice' ? '🎤' : '💬'}</span>
+                        <span>{game.communication === 'voice' ? 'Voice' : 'Text'}</span>
+                      </div>
+                    </div>
+                    <div className="description-compact">
+                      {game.description}
+                    </div>
+                  </div>
+
+                  <div className="card-right-section">
+                    {isOwnGame ? (
+                      <div className="owner-actions-compact">
+                        <button 
+                          className="edit-btn-compact"
+                          onClick={() => handleEditGame(game)}
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button 
+                          className="delete-btn-compact"
+                          onClick={() => handleDeleteListing(game.id)}
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="actions-compact">
+                        <button 
+                          className="join-btn-compact"
+                          onClick={() => handleJoinQueue(game.id)}
+                        >
+                          Request to Join
+                        </button>
+                        <button 
+                          className="friend-btn-compact"
+                          onClick={() => handleAddFriend(game.userId)}
+                          disabled={isFriend}
+                        >
+                          {isFriend ? '✓ Friends' : '+ Add Friend'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
-};
+}
 
 export default QueueSystem;

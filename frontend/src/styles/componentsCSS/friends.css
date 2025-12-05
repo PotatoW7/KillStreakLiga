@@ -387,3 +387,28 @@
 .chat-messages::-webkit-scrollbar-thumb:hover {
   background: var(--accent-gold);
 }
+.social-container-wrapper {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 350px;
+  height: 500px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden; /* Add this */
+  transform: translateY(20px) scale(0.95);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.social-container-wrapper.open {
+  opacity: 1;
+  visibility: visible; /* Add this */
+  transform: translateY(0) scale(1);
+}
