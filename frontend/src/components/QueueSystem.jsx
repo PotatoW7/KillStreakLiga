@@ -44,12 +44,27 @@ function QueueSystem() {
     { id: 'voice', name: 'Voice Chat', icon: '🎤' },
   ];
 
+  const handleTextareaResize = (e) => {
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+    
+    if (textarea.scrollHeight > 300) {
+      textarea.style.height = '300px';
+      textarea.style.overflowY = 'auto';
+    } else {
+      textarea.style.overflowY = 'hidden';
+    }
+  };
+
   useEffect(() => {
     if (!auth.currentUser) {
       navigate('/login');
       return;
     }
 
+    updateUserRankedData();
+    
     fetchUserProfile();
     fetchUserFriends();
     fetchGameListings();
@@ -69,6 +84,52 @@ function QueueSystem() {
       });
     }
   }, [gameListings]);
+
+  const updateUserRankedData = async () => {
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        
+        if (userData.riotAccount && userData.riotAccount.gameName && userData.riotAccount.tagLine) {
+          try {
+            const response = await fetch(`http://localhost:3000/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
+            if (response.ok) {
+              const summonerData = await response.json();
+              const rankedData = summonerData.ranked || [];
+              
+              await updateDoc(userRef, { 
+                rankedData: rankedData,
+                lastRankedUpdate: new Date(),
+                'riotAccount.summonerLevel': summonerData.summonerLevel,
+                'riotAccount.profileIconId': summonerData.profileIconId
+              });
+              
+              console.log("Ranked data updated from QueueSystem");
+              
+              if (userProfile) {
+                setUserProfile(prev => ({
+                  ...prev,
+                  rankedData: rankedData,
+                  riotAccountData: {
+                    ...prev.riotAccountData,
+                    summonerLevel: summonerData.summonerLevel,
+                    profileIconId: summonerData.profileIconId
+                  }
+                }));
+              }
+            }
+          } catch (error) {
+            console.error("Error updating ranked data from API:", error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error updating ranked data in QueueSystem:", error);
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -226,11 +287,31 @@ function QueueSystem() {
 
   const getQueueData = (rankedData, queueType) => {
     if (!rankedData || !Array.isArray(rankedData)) return null;
-    return rankedData.find(queue => queue.queueType === queueType);
+    
+    const queue = rankedData.find(queue => {
+      if (!queue.queueType) return false;
+      
+      if (queue.queueType === queueType) return true;
+      
+      if (queueType === 'RANKED_SOLO_5x5') {
+        return queue.queueType.includes('SOLO') || 
+               queue.queueType.includes('Solo') ||
+               queue.queueType === 'RANKED_SOLO/DUO';
+      }
+      
+      if (queueType === 'RANKED_FLEX_SR') {
+        return queue.queueType.includes('FLEX') || 
+               queue.queueType.includes('Flex');
+      }
+      
+      return false;
+    });
+    
+    return queue;
   };
 
   const calculateWinRate = (queue) => {
-    if (!queue) return 'N/A';
+    if (!queue || typeof queue.wins !== 'number' || typeof queue.losses !== 'number') return 'N/A';
     const totalGames = queue.wins + queue.losses;
     if (totalGames === 0) return '0%';
     const winRate = Math.round((queue.wins / totalGames) * 100);
@@ -239,13 +320,24 @@ function QueueSystem() {
 
   const getRankIcon = (tier) => {
     if (!tier) return null;
-    return `/rank-icons/Rank=${tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()}.png`;
+    const tierLower = tier.toLowerCase();
+    return `/rank-icons/Rank=${tierLower.charAt(0).toUpperCase() + tierLower.slice(1)}.png`;
+  };
+
+  const formatRankDisplay = (queue) => {
+    if (!queue) return 'Unranked';
+    const { tier, rank } = queue;
+    if (!tier) return 'Unranked';
+    if (tier === 'CHALLENGER' || tier === 'GRANDMASTER' || tier === 'MASTER') {
+      return `${tier} (${queue.leaguePoints || 0} LP)`;
+    }
+    return `${tier} ${rank || ''} (${queue.leaguePoints || 0} LP)`.trim();
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    if (name === 'description' && value.length > 100) {
+    if (name === 'description' && value.length > 200) {
       return;
     }
     
@@ -272,6 +364,13 @@ function QueueSystem() {
       description: game.description,
     });
     setIsPostingGame(true);
+    
+    setTimeout(() => {
+      const textarea = document.querySelector('.textarea-compact');
+      if (textarea) {
+        handleTextareaResize({ target: textarea });
+      }
+    }, 100);
   };
 
   const handleUpdateGame = async () => {
@@ -373,7 +472,7 @@ function QueueSystem() {
         userRiotAccount: riotAccountDisplay,
         userRiotAccountObject: riotAccountObject,
         userAboutMe: aboutMe,
-        userRankedData: rankedData,
+        userRankedData: rankedData, 
         
         role: gameData.role,
         queueType: gameData.queueType,
@@ -531,6 +630,8 @@ function QueueSystem() {
   };
 
   const formatTimeAgo = (date) => {
+    if (!date) return 'just now';
+    
     const seconds = Math.floor((new Date() - date) / 1000);
     
     if (seconds < 60) return 'just now';
@@ -674,18 +775,22 @@ function QueueSystem() {
 
             <div className="form-group-compact">
               <label className="form-label-compact">
-                Description ({gameData.description.length}/100)
+                Description ({gameData.description.length}/200)
               </label>
               <textarea
                 name="description"
                 value={gameData.description}
-                onChange={handleInputChange}
+                onChange={(e) => {
+                  handleInputChange(e);
+                  handleTextareaResize(e);
+                }}
                 placeholder="Brief description about your playstyle..."
                 className="textarea-compact"
-                maxLength={100}
+                maxLength={200}
+                rows="1"
               />
               <div className="char-counter-compact">
-                {gameData.description.length}/100
+                {gameData.description.length}/200
               </div>
             </div>
           </div>
@@ -734,8 +839,8 @@ function QueueSystem() {
               const soloRankIcon = getRankIcon(soloQueue?.tier);
               const flexRankIcon = getRankIcon(flexQueue?.tier);
               
-              const soloRankText = soloQueue ? `${soloQueue.tier} ${soloQueue.rank || ''}`.trim() : 'Unranked';
-              const flexRankText = flexQueue ? `${flexQueue.tier} ${flexQueue.rank || ''}`.trim() : 'Unranked';
+              const soloRankText = formatRankDisplay(soloQueue);
+              const flexRankText = formatRankDisplay(flexQueue);
               
               const profileImage = getProfileImage(game);
               
@@ -767,7 +872,7 @@ function QueueSystem() {
                         <div className="riot-account-with-copy">
                           <span className="riot-account-small">{game.userRiotAccount}</span>
                           {game.userRiotAccount && game.userRiotAccount !== 'Not linked' && 
-                           game.userRiotAccount !== 'Linked (no name)' && game.userRiotAccount !== 'Linked' && (
+                          game.userRiotAccount !== 'Linked (no name)' && game.userRiotAccount !== 'Linked' && (
                             <button 
                               className="copy-riot-btn"
                               onClick={() => handleCopyRiotAccount(game.userRiotAccount)}
@@ -842,11 +947,11 @@ function QueueSystem() {
                     <div className="roles-grid-compact">
                       <div className="role-tag">
                         <span className="icon">{roles.find(r => r.id === game.role)?.icon}</span>
-                        <span>Role: {roles.find(r => r.id === game.role)?.name}</span>
+                        <span>My Role: {roles.find(r => r.id === game.role)?.name}</span>
                       </div>
                       <div className="role-tag">
                         <span className="icon">{roles.find(r => r.id === game.preferredDuoRole)?.icon}</span>
-                        <span>LF: {roles.find(r => r.id === game.preferredDuoRole)?.name}</span>
+                        <span>Looking For: {roles.find(r => r.id === game.preferredDuoRole)?.name}</span>
                       </div>
                       <div className="role-tag">
                         <span className="icon">{queueTypes.find(q => q.id === game.queueType)?.icon}</span>
@@ -863,38 +968,48 @@ function QueueSystem() {
                   </div>
 
                   <div className="card-right-section">
-                    {isOwnGame ? (
-                      <div className="owner-actions-compact">
-                        <button 
-                          className="edit-btn-compact"
-                          onClick={() => handleEditGame(game)}
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button 
-                          className="delete-btn-compact"
-                          onClick={() => handleDeleteListing(game.id)}
-                        >
-                          🗑️ Delete
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="actions-compact">
-                        <button 
-                          className="join-btn-compact"
-                          onClick={() => handleJoinQueue(game.id)}
-                        >
-                          Request to Join
-                        </button>
-                        <button 
-                          className="friend-btn-compact"
-                          onClick={() => handleAddFriend(game.userId)}
-                          disabled={isFriend}
-                        >
-                          {isFriend ? '✓ Friends' : '+ Add Friend'}
-                        </button>
-                      </div>
-                    )}
+                    <div className="actions-container">
+                      {isOwnGame ? (
+                        <div className="owner-actions-compact">
+                          <div className="action-row">
+                            <button 
+                              className="edit-btn-compact"
+                              onClick={() => handleEditGame(game)}
+                            >
+                              ✏️ Edit
+                            </button>
+                          </div>
+                          <div className="action-row">
+                            <button 
+                              className="delete-btn-compact"
+                              onClick={() => handleDeleteListing(game.id)}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="actions-compact">
+                          <div className="action-row">
+                            <button 
+                              className="join-btn-compact"
+                              onClick={() => handleJoinQueue(game.id)}
+                            >
+                              Request to Join
+                            </button>
+                          </div>
+                          <div className="action-row">
+                            <button 
+                              className="friend-btn-compact"
+                              onClick={() => handleAddFriend(game.userId)}
+                              disabled={isFriend}
+                            >
+                              {isFriend ? '✓ Friends' : '+ Add Friend'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

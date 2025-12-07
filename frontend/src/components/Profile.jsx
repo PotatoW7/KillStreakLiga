@@ -105,12 +105,105 @@ function Profile() {
     aboutMe: "",
     isEditingAbout: false,
     tempAbout: "",
-    menuOpen: false
+    menuOpen: false,
+    rankedUpdateLoading: false,
+    lastUpdateTime: null
   });
 
   const contextMenuRef = useRef(null);
   const fileInputRef = useRef(null);
   const profileIconRef = useRef(null);
+  const updateIntervalRef = useRef(null);
+
+  const fetchRankedDataAndUpdate = async (account, userId, isManualUpdate = false) => {
+    if (!account || !userId) return;
+    
+    try {
+      setState(prev => ({ ...prev, rankedUpdateLoading: true }));
+      
+      const response = await fetch(`http://localhost:3000/summoner-info/${account.region}/${encodeURIComponent(account.gameName)}/${encodeURIComponent(account.tagLine)}`);
+      if (response.ok) {
+        const summonerData = await response.json();
+        const rankedData = summonerData.ranked || [];
+        
+        const userRef = doc(db, "users", userId);
+        await updateDoc(userRef, { 
+          rankedData: rankedData,
+          lastRankedUpdate: new Date(),
+          'riotAccount.summonerLevel': summonerData.summonerLevel,
+          'riotAccount.profileIconId': summonerData.profileIconId
+        });
+        
+        setState(prev => ({ 
+          ...prev, 
+          rankedData: rankedData,
+          rankedUpdateLoading: false,
+          lastUpdateTime: new Date(),
+          linkedAccount: prev.linkedAccount ? {
+            ...prev.linkedAccount,
+            summonerLevel: summonerData.summonerLevel,
+            profileIconId: summonerData.profileIconId
+          } : null
+        }));
+        
+        if (isManualUpdate) {
+          alert("Ranked data updated successfully!");
+        }
+        
+        return rankedData;
+      } else {
+        setState(prev => ({ ...prev, rankedUpdateLoading: false }));
+        throw new Error('Failed to fetch ranked data');
+      }
+    } catch (error) {
+      console.error("Error fetching ranked data:", error);
+      setState(prev => ({ ...prev, rankedUpdateLoading: false }));
+      
+      if (isManualUpdate) {
+        alert("Failed to update ranked data. Please try again.");
+      }
+      throw error;
+    }
+  };
+
+  const checkAndUpdateRankedData = async (userId, linkedAccount) => {
+    if (!userId || !linkedAccount) return;
+    
+    try {
+      const userRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const lastUpdate = userData.lastRankedUpdate?.toDate ? userData.lastRankedUpdate.toDate() : null;
+        const now = new Date();
+        
+       
+        if (!lastUpdate || (now - lastUpdate) > 1800000) { 
+          await fetchRankedDataAndUpdate(linkedAccount, userId);
+          console.log("Ranked data updated automatically (30 min interval)");
+        } else {
+          setState(prev => ({ 
+            ...prev, 
+            rankedData: userData.rankedData || [],
+            lastUpdateTime: lastUpdate
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error checking ranked data:", error);
+    }
+  };
+
+  const handleManualRankedUpdate = async () => {
+    if (!state.user || !state.linkedAccount || state.rankedUpdateLoading) return;
+    
+    try {
+      await fetchRankedDataAndUpdate(state.linkedAccount, state.user.uid, true);
+    } catch (error) {
+      console.error("Error updating ranked data:", error);
+    }
+  };
 
   useEffect(() => {
     const loadLatestVersion = async () => {
@@ -140,7 +233,9 @@ function Profile() {
             ...prev, 
             profileData: userData,
             aboutMe: userData.aboutMe || "",
-            isOwnProfile: isOwn
+            isOwnProfile: isOwn,
+            rankedData: userData.rankedData || [],
+            lastUpdateTime: userData.lastRankedUpdate?.toDate ? userData.lastRankedUpdate.toDate() : null
           }));
           
           if (isOwn && currentUser) {
@@ -151,15 +246,16 @@ function Profile() {
               linkedAccount: userData.riotAccount || null,
               emailVerificationSent: userData.emailVerificationSent || false
             }));
+            
+            if (userData.riotAccount) {
+              await checkAndUpdateRankedData(currentUser.uid, userData.riotAccount);
+            }
           } else {
-            setState(prev => ({ ...prev, 
+            setState(prev => ({ 
+              ...prev, 
               profileImage: userData.profileImage || null,
               linkedAccount: userData.riotAccount || null
             }));
-          }
-          
-          if (userData.riotAccount) {
-            fetchRankedData(userData.riotAccount);
           }
         }
       } catch (error) {
@@ -174,6 +270,12 @@ function Profile() {
       await checkProfileType();
     });
 
+    updateIntervalRef.current = setInterval(() => {
+      if (state.user && state.linkedAccount) {
+        checkAndUpdateRankedData(state.user.uid, state.linkedAccount);
+      }
+    }, 1800000); 
+
     const handleClickOutside = (e) => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(e.target) && 
           profileIconRef.current && !profileIconRef.current.contains(e.target)) {
@@ -182,28 +284,20 @@ function Profile() {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+    
     return () => {
       unsubscribe();
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+      }
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [userId]);
 
-  const fetchRankedData = async (account) => {
-    try {
-      const response = await fetch(`http://localhost:3000/summoner-info/${account.region}/${encodeURIComponent(account.gameName)}/${encodeURIComponent(account.tagLine)}`);
-      if (response.ok) {
-        const summonerData = await response.json();
-        setState(prev => ({ ...prev, rankedData: summonerData.ranked || [] }));
-      }
-    } catch (error) {
-      console.error("Error fetching ranked data:", error);
-    }
-  };
-
   const updateProfileImage = async (newImage) => {
     if (!state.user) return;
     const userRef = doc(db, "users", state.user.uid);
-    await updateDoc(userRef, { profileImage: newImage, profileImageUpdated: newImage ? new Date() : null });
+    await updateDoc(userRef, { profileImage: newImage, profileImageUpdated: new Date() });
     setState(prev => ({ ...prev, profileImage: newImage }));
   };
 
@@ -260,7 +354,15 @@ function Profile() {
       }
 
       const summonerData = await response.json();
-      return { gameName, tagLine, region, puuid: summonerData.puuid, summonerLevel: summonerData.summonerLevel, profileIconId: summonerData.profileIconId, verified: true };
+      return { 
+        gameName, 
+        tagLine, 
+        region, 
+        puuid: summonerData.puuid, 
+        summonerLevel: summonerData.summonerLevel, 
+        profileIconId: summonerData.profileIconId, 
+        verified: true 
+      };
     } catch (error) {
       if (error.message.includes('Summoner not found') || error.message.includes('404')) throw new Error('Riot account not found. Please check the Riot ID and region.');
       if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) throw new Error('Cannot connect to server. Please make sure the backend is running on port 3000.');
@@ -284,16 +386,23 @@ function Profile() {
       const userRef = doc(db, "users", state.user.uid);
       const accountData = { ...validatedAccount, linkedAt: new Date() };
 
-      await updateDoc(userRef, { riotAccount: accountData });
+      const rankedData = await fetchRankedDataAndUpdate(accountData, state.user.uid);
+      
+      await updateDoc(userRef, { 
+        riotAccount: accountData,
+        rankedData: rankedData || [],
+        lastRankedUpdate: new Date()
+      });
       
       setState(prev => ({ 
         ...prev, 
         linkedAccount: accountData, 
         linkSuccess: `Riot account ${validatedAccount.gameName}#${validatedAccount.tagLine} linked successfully!`,
-        riotId: "", region: "na1", linkingAccount: false
+        riotId: "", 
+        region: "na1", 
+        linkingAccount: false
       }));
       
-      fetchRankedData(accountData);
     } catch (error) {
       console.error("Error linking Riot account:", error);
       setState(prev => ({ ...prev, linkError: error.message, linkingAccount: false }));
@@ -306,8 +415,18 @@ function Profile() {
     
     try {
       const userRef = doc(db, "users", state.user.uid);
-      await updateDoc(userRef, { riotAccount: null });
-      setState(prev => ({ ...prev, linkedAccount: null, rankedData: null, linkSuccess: "Riot account unlinked successfully!" }));
+      await updateDoc(userRef, { 
+        riotAccount: null,
+        rankedData: null,
+        lastRankedUpdate: null
+      });
+      setState(prev => ({ 
+        ...prev, 
+        linkedAccount: null, 
+        rankedData: null,
+        lastUpdateTime: null,
+        linkSuccess: "Riot account unlinked successfully!" 
+      }));
     } catch (error) {
       console.error("Error unlinking Riot account:", error);
       setState(prev => ({ ...prev, linkError: "Failed to unlink Riot account. Please try again." }));
@@ -424,6 +543,18 @@ function Profile() {
   };
 
   const getProfileIconUrl = (profileIconId) => `https://ddragon.leagueoflegends.com/cdn/${state.latestVersion}/img/profileicon/${profileIconId}.png`;
+
+  const formatTimeAgo = (date) => {
+    if (!date) return "Never updated";
+    
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 60) return "just now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return date.toLocaleDateString();
+  };
 
   if (!state.profileData) return <div className="loading">Loading profile...</div>;
 
@@ -692,6 +823,26 @@ function Profile() {
                   <span className="account-region">
                     Region: {REGIONS.find(r => r.value === state.linkedAccount.region)?.label || state.linkedAccount.region}
                   </span>
+                  
+                  {state.isOwnProfile && (
+                    <div className="ranked-update-section">
+                      <div className="update-info">
+                        <span className="last-update">
+                          Last updated: {formatTimeAgo(state.lastUpdateTime)}
+                        </span>
+                        <button 
+                          onClick={handleManualRankedUpdate} 
+                          className="update-ranked-btn"
+                          disabled={state.rankedUpdateLoading}
+                        >
+                          {state.rankedUpdateLoading ? "🔄 Updating..." : "🔄 Update Ranked Data"}
+                        </button>
+                      </div>
+                      <span className="update-hint">
+                        Ranked data updates automatically every 30 minutes
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {state.rankedData && (
