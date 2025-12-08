@@ -9,6 +9,7 @@ import FriendsList from "./components/FriendsList";
 import Chat from "./components/Chat";
 import QueueSystem from "./components/QueueSystem";
 import Home from "./components/Home";
+import Announcement from "./components/Announcement"; 
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import "./styles/index.css";
@@ -122,7 +123,7 @@ function App() {
           />
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/:userId" element={<Profile />} /> {/* Same component! */}
+          <Route path="/profile/:userId" element={<Profile />} />
           <Route path="/summoner" element={<Summoner />} />
           <Route path="/queue" element={<QueueSystem />} />
           <Route path="/finishSignIn" element={<FinishSignIn />} />
@@ -131,6 +132,9 @@ function App() {
             element={<p className="error-box">404: Page not found</p>}
           />
         </Routes>
+
+        {/* Add Announcement component globally */}
+        {user && <Announcement />}
 
         {user && (
           <>

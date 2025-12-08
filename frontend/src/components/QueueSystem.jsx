@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, getDoc, orderBy, deleteDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { 
+  collection, query, where, onSnapshot, addDoc, 
+  serverTimestamp, doc, getDoc, orderBy, deleteDoc, 
+  updateDoc, arrayUnion, arrayRemove, getDocs
+} from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
 function QueueSystem() {
@@ -13,6 +17,13 @@ function QueueSystem() {
   const navigate = useNavigate();
 
   const [playerProfiles, setPlayerProfiles] = useState({});
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [selectedGame, setSelectedGame] = useState(null);
+  const [joinMessage, setJoinMessage] = useState('');
+  
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [myGameRequests, setMyGameRequests] = useState([]);
+  const [selectedManageGame, setSelectedManageGame] = useState(null);
 
   const [gameData, setGameData] = useState({
     role: 'any',
@@ -64,10 +75,10 @@ function QueueSystem() {
     }
 
     updateUserRankedData();
-    
     fetchUserProfile();
     fetchUserFriends();
     fetchGameListings();
+    fetchMyGameRequests();
     
     return () => {
       const unsubscribe = fetchGameListings();
@@ -265,6 +276,96 @@ function QueueSystem() {
       });
 
       return unsubscribe;
+    }
+  };
+
+  const fetchMyGameRequests = async () => {
+    if (!auth.currentUser) return;
+
+    try {
+      const q = query(
+        collection(db, 'gameListings'),
+        where('userId', '==', auth.currentUser.uid),
+        where('status', '==', 'active')
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const requests = [];
+        snapshot.forEach((docSnap) => {
+          const gameData = docSnap.data();
+          const applicants = gameData.applicants || [];
+          
+          const pendingRequests = applicants
+            .filter(applicant => applicant.status === 'pending')
+            .map(applicant => ({
+              id: `${docSnap.id}_${applicant.userId}`,
+              gameId: docSnap.id,
+              gameTitle: `${gameData.queueType} - ${gameData.role}`,
+              gameQueueType: gameData.queueType,
+              gameDescription: gameData.description,
+              ...applicant,
+              appliedAt: applicant.appliedAt || new Date().toISOString()
+            }));
+          
+          requests.push(...pendingRequests);
+        });
+        
+        setMyGameRequests(requests);
+      });
+
+      return unsubscribe;
+    } catch (error) {
+      console.error("Error fetching game requests:", error);
+    }
+  };
+
+  const addFriendOnAccept = async (hostUserId, applicantUserId, applicantName) => {
+    try {
+      const hostRef = doc(db, 'users', hostUserId);
+      const applicantRef = doc(db, 'users', applicantUserId);
+      
+      const [hostDoc, applicantDoc] = await Promise.all([
+        getDoc(hostRef),
+        getDoc(applicantRef)
+      ]);
+      
+      if (!hostDoc.exists() || !applicantDoc.exists()) {
+        console.log("User not found for auto-friend");
+        return;
+      }
+      
+      const hostData = hostDoc.data();
+      const applicantData = applicantDoc.data();
+      
+      const hostFriends = hostData.friends || [];
+      const applicantFriends = applicantData.friends || [];
+      
+      const alreadyFriends = hostFriends.some(friend => friend.id === applicantUserId) ||
+                            applicantFriends.some(friend => friend.id === hostUserId);
+      
+      if (!alreadyFriends) {
+        await updateDoc(hostRef, {
+          friends: arrayUnion({
+            id: applicantUserId,
+            username: applicantName,
+            profileImage: applicantData.profileImage || null,
+            addedAt: new Date()
+          })
+        });
+        
+        await updateDoc(applicantRef, {
+          friends: arrayUnion({
+            id: hostUserId,
+            username: hostData.username || auth.currentUser?.displayName || 'Host',
+            profileImage: hostData.profileImage || null,
+            addedAt: new Date()
+          })
+        });
+        
+        console.log("Auto-friended users after queue acceptance");
+      }
+    } catch (error) {
+      console.error("Error auto-friending users:", error);
     }
   };
 
@@ -515,7 +616,13 @@ function QueueSystem() {
     }
   };
 
-  const handleJoinQueue = async (gameId) => {
+  const openJoinModal = (game) => {
+    setSelectedGame(game);
+    setJoinMessage('');
+    setShowJoinModal(true);
+  };
+
+  const handleJoinQueue = async (gameId, message = '') => {
     if (!auth.currentUser) {
       navigate('/login');
       return;
@@ -547,18 +654,116 @@ function QueueSystem() {
         riotAccount: userProfile?.riotAccount || 'Not linked',
         profileImage: userProfile?.profileImage,
         appliedAt: new Date().toISOString(),
-        status: 'pending'
+        status: 'pending',
+        message: message.trim(),
+        role: userProfile?.preferredRole || 'any'
       };
 
       await updateDoc(gameRef, {
-        applicants: arrayUnion(userData)
+        applicants: arrayUnion(userData),
+        updatedAt: serverTimestamp()
       });
 
+      setShowJoinModal(false);
+      setJoinMessage('');
       alert('Request to join sent! The host will review your request.');
     } catch (error) {
       console.error('Error joining queue:', error);
-      alert('Error joining queue. Please try again.');
+      alert('Error joining queue. Please try again. Error: ' + error.message);
     }
+  };
+
+  const handleManageRequests = () => {
+    setShowRequestModal(true);
+  };
+
+  const handleAcceptRequest = async (gameId, applicantUserId, applicantName) => {
+    try {
+      const gameRef = doc(db, 'gameListings', gameId);
+      const gameDoc = await getDoc(gameRef);
+      
+      if (!gameDoc.exists()) {
+        alert('This game listing no longer exists.');
+        return;
+      }
+
+      const gameData = gameDoc.data();
+      const applicants = gameData.applicants || [];
+      
+      const updatedApplicants = applicants.map(applicant => 
+        applicant.userId === applicantUserId 
+          ? { ...applicant, status: 'accepted', acceptedAt: new Date().toISOString() }
+          : applicant
+      );
+      const acceptedPlayers = gameData.acceptedPlayers || [];
+      const applicantData = applicants.find(app => app.userId === applicantUserId);
+      
+      if (applicantData && !acceptedPlayers.some(p => p.userId === applicantUserId)) {
+        acceptedPlayers.push({
+          userId: applicantUserId,
+          displayName: applicantData.displayName,
+          riotAccount: applicantData.riotAccount,
+          profileImage: applicantData.profileImage,
+          joinedAt: new Date().toISOString()
+        });
+      }
+
+      await updateDoc(gameRef, {
+        applicants: updatedApplicants,
+        acceptedPlayers: acceptedPlayers,
+        updatedAt: serverTimestamp()
+      });
+
+      await addFriendOnAccept(gameData.userId, applicantUserId, applicantName);
+
+      alert(`Request accepted! ${applicantName} has been added to your game and as a friend.`);
+      
+      setMyGameRequests(prev => prev.filter(req => 
+        !(req.gameId === gameId && req.userId === applicantUserId)
+      ));
+    } catch (error) {
+      console.error('Error accepting request:', error);
+      alert('Error accepting request. Please try again.');
+    }
+  };
+
+  const handleDeclineRequest = async (gameId, applicantUserId, applicantName) => {
+    try {
+      const gameRef = doc(db, 'gameListings', gameId);
+      const gameDoc = await getDoc(gameRef);
+      
+      if (!gameDoc.exists()) {
+        alert('This game listing no longer exists.');
+        return;
+      }
+
+      const gameData = gameDoc.data();
+      const applicants = gameData.applicants || [];
+      
+      const updatedApplicants = applicants.map(applicant => 
+        applicant.userId === applicantUserId 
+          ? { ...applicant, status: 'declined', declinedAt: new Date().toISOString() }
+          : applicant
+      );
+
+      await updateDoc(gameRef, {
+        applicants: updatedApplicants,
+        updatedAt: serverTimestamp()
+      });
+
+      alert(`Request from ${applicantName} declined.`);
+      
+      setMyGameRequests(prev => prev.filter(req => 
+        !(req.gameId === gameId && req.userId === applicantUserId)
+      ));
+    } catch (error) {
+      console.error('Error declining request:', error);
+      alert('Error declining request. Please try again.');
+    }
+  };
+
+  const handleViewProfile = (userId) => {
+    window.open(`/profile/${userId}`, '_blank');
   };
 
   const handleDeleteListing = async (gameId) => {
@@ -640,6 +845,29 @@ function QueueSystem() {
     return `${Math.floor(seconds / 86400)}d ago`;
   };
 
+  const getQueueTypeName = (queueType) => {
+    const queueTypeMap = {
+      'ranked_solo_duo': 'Ranked Solo/Duo',
+      'ranked_flex': 'Ranked Flex',
+      'normal_draft': 'Normal Draft',
+      'aram': 'ARAM',
+      'swiftplay': 'Swiftplay'
+    };
+    return queueTypeMap[queueType] || queueType;
+  };
+
+  const getRoleIcon = (role) => {
+    const roleIcons = {
+      'top': '⚔️',
+      'jungle': '🌲',
+      'mid': '✨',
+      'adc': '🎯',
+      'support': '🛡️',
+      'any': '🔄'
+    };
+    return roleIcons[role] || '🎮';
+  };
+
   if (loading) {
     return (
       <div className="queue-container">
@@ -671,15 +899,26 @@ function QueueSystem() {
         <h1>Find League Teammates</h1>
         <p>Post your game or join others to find the perfect duo partner</p>
         
-        <button 
-          className="post-game-btn"
-          onClick={() => {
-            setIsEditingGame(null);
-            setIsPostingGame(!isPostingGame);
-          }}
-        >
-          {isPostingGame ? '✖ Cancel' : '➕ Post a Game'}
-        </button>
+        <div className="header-actions">
+          <button 
+            className="post-game-btn"
+            onClick={() => {
+              setIsEditingGame(null);
+              setIsPostingGame(!isPostingGame);
+            }}
+          >
+            {isPostingGame ? '✖ Cancel' : '➕ Post a Game'}
+          </button>
+          
+          {myGameRequests.length > 0 && (
+            <button 
+              className="manage-requests-btn"
+              onClick={handleManageRequests}
+            >
+              📨 Manage Requests ({myGameRequests.length})
+            </button>
+          )}
+        </div>
       </div>
 
       {(isPostingGame || isEditingGame) && (
@@ -993,7 +1232,7 @@ function QueueSystem() {
                           <div className="action-row">
                             <button 
                               className="join-btn-compact"
-                              onClick={() => handleJoinQueue(game.id)}
+                              onClick={() => openJoinModal(game)}
                             >
                               Request to Join
                             </button>
@@ -1017,6 +1256,187 @@ function QueueSystem() {
           </div>
         )}
       </div>
+
+      {showJoinModal && (
+        <div className="join-modal-overlay">
+          <div className="join-modal-content">
+            <div className="join-modal-header">
+              <h3>Request to Join Game</h3>
+              <button className="modal-close-btn" onClick={() => setShowJoinModal(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="join-modal-body">
+              {selectedGame && (
+                <>
+                  <p>You're requesting to join <strong>{selectedGame.userDisplayName}'s</strong> game:</p>
+                  <div className="game-info-preview">
+                    <div className="info-row">
+                      <span>Queue:</span>
+                      <span>{getQueueTypeName(selectedGame.queueType)}</span>
+                    </div>
+                    <div className="info-row">
+                      <span>Host Role:</span>
+                      <span>{roles.find(r => r.id === selectedGame.role)?.name}</span>
+                    </div>
+                    <div className="info-row">
+                      <span>Looking For:</span>
+                      <span>{roles.find(r => r.id === selectedGame.preferredDuoRole)?.name}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div className="message-input-container">
+                <label htmlFor="joinMessage">Add a message (optional):</label>
+                <textarea
+                  id="joinMessage"
+                  value={joinMessage}
+                  onChange={(e) => setJoinMessage(e.target.value)}
+                  placeholder="Tell the host why you want to join their game..."
+                  maxLength={200}
+                  rows={3}
+                />
+                <div className="char-counter">
+                  {joinMessage.length}/200 characters
+                </div>
+              </div>
+            </div>
+            <div className="join-modal-footer">
+              <button className="cancel-btn" onClick={() => setShowJoinModal(false)}>
+                Cancel
+              </button>
+              <button 
+                className="submit-btn"
+                onClick={() => handleJoinQueue(selectedGame.id, joinMessage)}
+                disabled={!selectedGame}
+              >
+                Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRequestModal && (
+        <div className="request-management-modal">
+          <div className="request-modal-content">
+            <div className="request-modal-header">
+              <h3 className="request-modal-title">
+                🎮 Manage Game Requests ({myGameRequests.length})
+              </h3>
+              <button className="request-modal-close" onClick={() => setShowRequestModal(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className="request-modal-body">
+              {myGameRequests.length === 0 ? (
+                <div className="no-requests">
+                  <div className="no-requests-icon">📭</div>
+                  <p>No pending requests</p>
+                  <p style={{ fontSize: '14px', color: '#7f8c8d' }}>
+                    Players who request to join your games will appear here
+                  </p>
+                </div>
+              ) : (
+                <div className="request-list">
+                  {myGameRequests.map(request => (
+                    <div key={request.id} className="request-item">
+                      <div className="request-user-info">
+                        <div className="request-user-avatar">
+                          {request.profileImage && request.profileImage.startsWith('data:image') ? (
+                            <img 
+                              src={request.profileImage} 
+                              alt={request.displayName}
+                              onError={(e) => {
+                                e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                              }}
+                            />
+                          ) : (
+                            <img 
+                              src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
+                              alt={request.displayName}
+                            />
+                          )}
+                        </div>
+                        <div className="request-user-details">
+                          <div className="request-user-name">
+                            {request.displayName}
+                            <span className="request-status-badge request-status-pending">
+                              ⏳ Pending
+                            </span>
+                          </div>
+                          <div className="request-riot-account">
+                            {request.riotAccount || 'No Riot account linked'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="request-game-info">
+                        <div className="request-info-tag">
+                          🎮 {getQueueTypeName(request.gameQueueType)}
+                        </div>
+                        <div className="request-info-tag">
+                          {getRoleIcon(request.role)} {request.role || 'Any role'}
+                        </div>
+                      </div>
+
+                      <div className="request-applied-time">
+                        ⏰ Applied {formatTimeAgo(new Date(request.appliedAt))}
+                      </div>
+
+                      {request.message && (
+                        <div className="request-message">
+                          "{request.message}"
+                        </div>
+                      )}
+
+                      <div className="request-actions">
+                        <button 
+                          className="request-profile-btn"
+                          onClick={() => handleViewProfile(request.userId)}
+                        >
+                          👤 View Profile
+                        </button>
+                        <button 
+                          className="request-decline-btn"
+                          onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                        >
+                          ❌ Decline
+                        </button>
+                        <button 
+                          className="request-accept-btn"
+                          onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                        >
+                          ✅ Accept
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="request-modal-footer">
+              <button 
+                onClick={() => setShowRequestModal(false)}
+                style={{
+                  background: 'rgba(52, 152, 219, 0.1)',
+                  color: '#3498db',
+                  border: '1px solid #3498db',
+                  padding: '10px 30px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
