@@ -11,10 +11,18 @@ function QueueSystem() {
   const [isPostingGame, setIsPostingGame] = useState(false);
   const [isEditingGame, setIsEditingGame] = useState(null);
   const [gameListings, setGameListings] = useState([]);
+  const [filteredListings, setFilteredListings] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [userFriends, setUserFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const [filters, setFilters] = useState({
+    role: 'all',
+    rank: 'all',
+    queueType: 'all',
+    region: 'all'
+  });
 
   const [playerProfiles, setPlayerProfiles] = useState({});
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -34,6 +42,7 @@ function QueueSystem() {
   });
 
   const roles = [
+    { id: 'all', name: 'All Roles', icon: '🔄' },
     { id: 'any', name: 'Any', icon: '🔄' },
     { id: 'top', name: 'Top', icon: '⚔️' },
     { id: 'jungle', name: 'Jungle', icon: '🌲' },
@@ -43,6 +52,7 @@ function QueueSystem() {
   ];
 
   const queueTypes = [
+    { id: 'all', name: 'All Queues', icon: '🎮' },
     { id: 'ranked_solo_duo', name: 'Ranked Solo/Duo', icon: '🥇' },
     { id: 'ranked_flex', name: 'Ranked Flex', icon: '👥' },
     { id: 'normal_draft', name: 'Normal Draft', icon: '⚔️' },
@@ -53,6 +63,35 @@ function QueueSystem() {
   const communicationTypes = [
     { id: 'text', name: 'Text Chat', icon: '💬' },
     { id: 'voice', name: 'Voice Chat', icon: '🎤' },
+  ];
+
+  const rankTiers = [
+    { id: 'all', name: 'All Ranks' },
+    { id: 'IRON', name: 'Iron' },
+    { id: 'BRONZE', name: 'Bronze' },
+    { id: 'SILVER', name: 'Silver' },
+    { id: 'GOLD', name: 'Gold' },
+    { id: 'PLATINUM', name: 'Platinum' },
+    { id: 'DIAMOND', name: 'Diamond' },
+    { id: 'MASTER', name: 'Master' },
+    { id: 'GRANDMASTER', name: 'Grandmaster' },
+    { id: 'CHALLENGER', name: 'Challenger' },
+    { id: 'unranked', name: 'Unranked' }
+  ];
+
+  const regions = [
+    { id: 'all', name: 'All Regions' },
+    { id: 'na', name: 'North America' },
+    { id: 'euw', name: 'EU West' },
+    { id: 'eune', name: 'EU Nordic & East' },
+    { id: 'kr', name: 'Korea' },
+    { id: 'jp', name: 'Japan' },
+    { id: 'br', name: 'Brazil' },
+    { id: 'las', name: 'Latin America South' },
+    { id: 'lan', name: 'Latin America North' },
+    { id: 'oce', name: 'Oceania' },
+    { id: 'ru', name: 'Russia' },
+    { id: 'tr', name: 'Turkey' }
   ];
 
   const handleTextareaResize = (e) => {
@@ -95,6 +134,64 @@ function QueueSystem() {
       });
     }
   }, [gameListings]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [filters, gameListings]);
+
+  const applyFilters = () => {
+    if (gameListings.length === 0) {
+      setFilteredListings([]);
+      return;
+    }
+
+    let filtered = [...gameListings];
+
+    if (filters.role !== 'all') {
+      filtered = filtered.filter(game => 
+        game.role === filters.role || 
+        (filters.role === 'any' && game.role === 'any') ||
+        (filters.role !== 'any' && game.preferredDuoRole === filters.role)
+      );
+    }
+
+    if (filters.rank !== 'all') {
+      filtered = filtered.filter(game => {
+        const rankedData = game.userRankedData || [];
+        
+        if (filters.rank === 'unranked') {
+          return !rankedData || rankedData.length === 0 || 
+                 (!rankedData.find(q => q.queueType.includes('SOLO')) && 
+                  !rankedData.find(q => q.queueType.includes('FLEX')));
+        }
+        
+        const soloQueue = getQueueData(rankedData, 'RANKED_SOLO_5x5');
+        const flexQueue = getQueueData(rankedData, 'RANKED_FLEX_SR');
+        
+        const soloMatch = soloQueue && soloQueue.tier && 
+                         soloQueue.tier.toLowerCase() === filters.rank.toLowerCase();
+        const flexMatch = flexQueue && flexQueue.tier && 
+                         flexQueue.tier.toLowerCase() === filters.rank.toLowerCase();
+        
+        return soloMatch || flexMatch;
+      });
+    }
+
+    if (filters.queueType !== 'all') {
+      filtered = filtered.filter(game => game.queueType === filters.queueType);
+    }
+
+    if (filters.region !== 'all' && filters.region !== 'undefined') {
+      filtered = filtered.filter(game => {
+        if (!game.userRiotAccountObject || !game.userRiotAccountObject.region) {
+          return false;
+        }
+        return game.userRiotAccountObject.region.toLowerCase() === filters.region.toLowerCase();
+      });
+    }
+
+    setFilteredListings(filtered);
+  };
 
   const updateUserRankedData = async () => {
     try {
@@ -868,6 +965,31 @@ function QueueSystem() {
     return roleIcons[role] || '🎮';
   };
 
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }));
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      role: 'all',
+      rank: 'all',
+      queueType: 'all',
+      region: 'all'
+    });
+  };
+
+  const getRegionFromGame = (game) => {
+    if (!game.userRiotAccountObject || !game.userRiotAccountObject.region) {
+      return 'Unknown';
+    }
+    const region = game.userRiotAccountObject.region.toLowerCase();
+    const regionObj = regions.find(r => r.id === region);
+    return regionObj ? regionObj.name : region.toUpperCase();
+  };
+
   if (loading) {
     return (
       <div className="queue-container">
@@ -921,6 +1043,132 @@ function QueueSystem() {
         </div>
       </div>
 
+      <div className="filter-section">
+        <h3>Filter Games</h3>
+        <div className="filters-grid">
+          <div className="filter-group">
+            <label className="filter-label">Role</label>
+            <div className="filter-buttons">
+              {roles.filter(r => r.id !== 'any').map(role => (
+                <button
+                  key={role.id}
+                  type="button"
+                  className={`filter-btn ${filters.role === role.id ? 'active' : ''}`}
+                  onClick={() => handleFilterChange('role', role.id)}
+                >
+                  <span className="filter-icon">{role.icon}</span>
+                  <span className="filter-text">{role.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-group">
+            <label className="filter-label">Rank</label>
+            <select 
+              value={filters.rank}
+              onChange={(e) => handleFilterChange('rank', e.target.value)}
+              className="filter-select"
+            >
+              {rankTiers.map(rank => (
+                <option key={rank.id} value={rank.id}>
+                  {rank.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label className="filter-label">Queue Type</label>
+            <select 
+              value={filters.queueType}
+              onChange={(e) => handleFilterChange('queueType', e.target.value)}
+              className="filter-select"
+            >
+              {queueTypes.map(queue => (
+                <option key={queue.id} value={queue.id}>
+                  {queue.icon} {queue.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label className="filter-label">Region</label>
+            <select 
+              value={filters.region}
+              onChange={(e) => handleFilterChange('region', e.target.value)}
+              className="filter-select"
+            >
+              {regions.map(region => (
+                <option key={region.id} value={region.id}>
+                  {region.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label className="filter-label">&nbsp;</label>
+            <button 
+              className="reset-filters-btn"
+              onClick={resetFilters}
+            >
+              🔄 Reset Filters
+            </button>
+          </div>
+        </div>
+
+        {(filters.role !== 'all' || filters.rank !== 'all' || filters.queueType !== 'all' || filters.region !== 'all') && (
+          <div className="active-filters">
+            <span className="active-filters-label">Active Filters:</span>
+            {filters.role !== 'all' && (
+              <span className="filter-tag">
+                Role: {roles.find(r => r.id === filters.role)?.name}
+                <button 
+                  className="remove-filter-btn"
+                  onClick={() => handleFilterChange('role', 'all')}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+            {filters.rank !== 'all' && (
+              <span className="filter-tag">
+                Rank: {rankTiers.find(r => r.id === filters.rank)?.name}
+                <button 
+                  className="remove-filter-btn"
+                  onClick={() => handleFilterChange('rank', 'all')}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+            {filters.queueType !== 'all' && (
+              <span className="filter-tag">
+                Queue: {queueTypes.find(q => q.id === filters.queueType)?.name}
+                <button 
+                  className="remove-filter-btn"
+                  onClick={() => handleFilterChange('queueType', 'all')}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+            {filters.region !== 'all' && (
+              <span className="filter-tag">
+                Region: {regions.find(r => r.id === filters.region)?.name}
+                <button 
+                  className="remove-filter-btn"
+                  onClick={() => handleFilterChange('region', 'all')}
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
       {(isPostingGame || isEditingGame) && (
         <div className="compact-post-form">
           <h3>{isEditingGame ? 'Edit Your Game Post' : 'Create New Game Post'}</h3>
@@ -951,7 +1199,7 @@ function QueueSystem() {
                 onChange={handleInputChange}
                 className="select-compact"
               >
-                {queueTypes.map(queue => (
+                {queueTypes.filter(q => q.id !== 'all').map(queue => (
                   <option key={queue.id} value={queue.id}>
                     {queue.icon} {queue.name}
                   </option>
@@ -963,7 +1211,7 @@ function QueueSystem() {
           <div className="form-group-compact">
             <label className="form-label-compact">My Role</label>
             <div className="role-grid-compact">
-              {roles.map(role => (
+              {roles.filter(r => r.id !== 'all').map(role => (
                 <button
                   key={role.id}
                   type="button"
@@ -980,7 +1228,7 @@ function QueueSystem() {
           <div className="form-group-compact">
             <label className="form-label-compact">Looking For Role</label>
             <div className="role-grid-compact">
-              {roles.map(role => (
+              {roles.filter(r => r.id !== 'all').map(role => (
                 <button
                   key={role.id}
                   type="button"
@@ -1053,15 +1301,34 @@ function QueueSystem() {
       )}
 
       <div className="listings-container">
-        <h3 className="listings-title">Available Games ({gameListings.length})</h3>
+        <h3 className="listings-title">
+          Available Games ({filteredListings.length})
+          {filteredListings.length !== gameListings.length && (
+            <span className="filtered-count">
+              (Filtered from {gameListings.length} total)
+            </span>
+          )}
+        </h3>
         
-        {gameListings.length === 0 ? (
+        {filteredListings.length === 0 ? (
           <div className="no-listings">
-            <p>No games posted yet. Be the first to post!</p>
+            <p>
+              {gameListings.length === 0 
+                ? "No games posted yet. Be the first to post!"
+                : "No games match your filters. Try adjusting your criteria."}
+            </p>
+            {gameListings.length > 0 && (
+              <button 
+                className="reset-filters-inline"
+                onClick={resetFilters}
+              >
+                Reset All Filters
+              </button>
+            )}
           </div>
         ) : (
           <div className="game-cards-grid">
-            {gameListings.map(game => {
+            {filteredListings.map(game => {
               const isOwnGame = game.userId === auth.currentUser?.uid;
               const isFriend = isAlreadyFriend(game.userId);
               
@@ -1082,6 +1349,7 @@ function QueueSystem() {
               const flexRankText = formatRankDisplay(flexQueue);
               
               const profileImage = getProfileImage(game);
+              const region = getRegionFromGame(game);
               
               return (
                 <div key={game.id} className="game-card-compact">
@@ -1107,7 +1375,12 @@ function QueueSystem() {
                         )}
                       </div>
                       <div className="user-text-small">
-                        <div className="user-name-small">{game.userDisplayName}</div>
+                        <div className="user-name-small">
+                          {game.userDisplayName}
+                          <span className="region-badge" title={`Region: ${region}`}>
+                            🌍 {region}
+                          </span>
+                        </div>
                         <div className="riot-account-with-copy">
                           <span className="riot-account-small">{game.userRiotAccount}</span>
                           {game.userRiotAccount && game.userRiotAccount !== 'Not linked' && 
@@ -1282,6 +1555,10 @@ function QueueSystem() {
                     <div className="info-row">
                       <span>Looking For:</span>
                       <span>{roles.find(r => r.id === selectedGame.preferredDuoRole)?.name}</span>
+                    </div>
+                    <div className="info-row">
+                      <span>Region:</span>
+                      <span>{getRegionFromGame(selectedGame)}</span>
                     </div>
                   </div>
                 </>

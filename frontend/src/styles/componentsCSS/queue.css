@@ -1734,3 +1734,220 @@
     width: 100%;
   }
 }
+
+/* Filter Section Styles */
+.filter-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  border-radius: 12px;
+  margin: 20px 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.filter-section h3 {
+  color: white;
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-label {
+  color: white;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: white;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.filter-btn.active {
+  background: white;
+  color: #667eea;
+  border-color: white;
+}
+
+.filter-icon {
+  font-size: 1rem;
+}
+
+.filter-text {
+  white-space: nowrap;
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.filter-select option {
+  background: #667eea;
+  color: white;
+}
+
+.reset-filters-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.reset-filters-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Active Filters Display */
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.active-filters-label {
+  color: white;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.filter-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 15px;
+  color: white;
+  font-size: 0.85rem;
+}
+
+.remove-filter-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 5px;
+  border-radius: 50%;
+}
+
+.remove-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Region Badge in Game Cards */
+.region-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  color: #667eea;
+}
+
+/* Filtered Count Display */
+.filtered-count {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin-left: 10px;
+  font-weight: normal;
+}
+
+/* Reset Filters Inline Button */
+.reset-filters-inline {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.reset-filters-inline:hover {
+  background: #5a6fd8;
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .filter-buttons {
+    justify-content: flex-start;
+  }
+  
+  .active-filters {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Game Info Preview Update */
+.game-info-preview {
+  background: rgba(102, 126, 234, 0.05);
+  padding: 15px;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.game-info-preview .info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.game-info-preview .info-row:last-child {
+  border-bottom: none;
+}
