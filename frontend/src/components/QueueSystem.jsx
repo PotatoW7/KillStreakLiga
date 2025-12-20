@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from '../firebase';
 import { 
   collection, query, where, onSnapshot, addDoc, 
@@ -18,7 +18,7 @@ function QueueSystem() {
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
-    role: 'all',
+    roles: [], 
     rank: 'all',
     queueType: 'all',
     region: 'all'
@@ -31,7 +31,6 @@ function QueueSystem() {
   
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [myGameRequests, setMyGameRequests] = useState([]);
-  const [selectedManageGame, setSelectedManageGame] = useState(null);
 
   const [gameData, setGameData] = useState({
     role: 'any',
@@ -41,42 +40,47 @@ function QueueSystem() {
     description: '',
   });
 
+  const rankDropdownRef = useRef(null);
+  const [showRankDropdown, setShowRankDropdown] = useState(false);
+
   const roles = [
-    { id: 'all', name: 'All Roles', icon: '🔄' },
-    { id: 'any', name: 'Any', icon: '🔄' },
-    { id: 'top', name: 'Top', icon: '⚔️' },
-    { id: 'jungle', name: 'Jungle', icon: '🌲' },
-    { id: 'mid', name: 'Mid', icon: '✨' },
-    { id: 'adc', name: 'ADC', icon: '🎯' },
-    { id: 'support', name: 'Support', icon: '🛡️' }
+    { id: 'all', name: 'All Roles', icon: '/lane-icons/Fill icon.jpg' },
+    { id: 'fill', name: 'Fill', icon: '/lane-icons/Fill icon.png' },
+    { id: 'any', name: 'Any', icon: '/lane-icons/Fill icon.jpg' },
+    { id: 'top', name: 'Top', icon: '/lane-icons/top lane.png' },
+    { id: 'jungle', name: 'Jungle', icon: '/lane-icons/jg icon.png' },
+    { id: 'mid', name: 'Mid', icon: '/lane-icons/mid lane.png' },
+    { id: 'adc', name: 'ADC', icon: '/lane-icons/adc lane.png' },
+    { id: 'support', name: 'Support', icon: '/lane-icons/sup icon.png' }
   ];
 
   const queueTypes = [
-    { id: 'all', name: 'All Queues', icon: '🎮' },
-    { id: 'ranked_solo_duo', name: 'Ranked Solo/Duo', icon: '🥇' },
-    { id: 'ranked_flex', name: 'Ranked Flex', icon: '👥' },
-    { id: 'normal_draft', name: 'Normal Draft', icon: '⚔️' },
-    { id: 'aram', name: 'ARAM', icon: '🎲' },
-    { id: 'swiftplay', name: 'Swiftplay', icon: '⚡' }
+    { id: 'all', name: 'All Queues' },
+    { id: 'ranked_solo_duo', name: 'Ranked Solo/Duo' },
+    { id: 'ranked_flex', name: 'Ranked Flex' },
+    { id: 'normal_draft', name: 'Normal Draft' },
+    { id: 'aram', name: 'ARAM' },
+    { id: 'swiftplay', name: 'Swiftplay' }
   ];
 
   const communicationTypes = [
-    { id: 'text', name: 'Text Chat', icon: '💬' },
-    { id: 'voice', name: 'Voice Chat', icon: '🎤' },
+    { id: 'text', name: 'Text Chat' },
+    { id: 'voice', name: 'Voice Chat' },
   ];
 
   const rankTiers = [
     { id: 'all', name: 'All Ranks' },
+    { id: 'unranked', name: 'Unranked' },
     { id: 'IRON', name: 'Iron' },
     { id: 'BRONZE', name: 'Bronze' },
     { id: 'SILVER', name: 'Silver' },
     { id: 'GOLD', name: 'Gold' },
     { id: 'PLATINUM', name: 'Platinum' },
+    { id: 'EMERALD', name: 'Emerald' },
     { id: 'DIAMOND', name: 'Diamond' },
     { id: 'MASTER', name: 'Master' },
     { id: 'GRANDMASTER', name: 'Grandmaster' },
     { id: 'CHALLENGER', name: 'Challenger' },
-    { id: 'unranked', name: 'Unranked' }
   ];
 
   const regions = [
@@ -93,6 +97,33 @@ function QueueSystem() {
     { id: 'ru', name: 'Russia' },
     { id: 'tr', name: 'Turkey' }
   ];
+
+  const rankIconsMap = {
+    'UNRANKED': 'Rank=Unranked.png',
+    'IRON': 'Rank=Iron.png',
+    'BRONZE': 'Rank=Bronze.png',
+    'SILVER': 'Rank=Silver.png',
+    'GOLD': 'Rank=Gold.png',
+    'PLATINUM': 'Rank=Platinum.png',
+    'EMERALD': 'Rank=Emerald.png',
+    'DIAMOND': 'Rank=Diamond.png',
+    'MASTER': 'Rank=Master.png',
+    'GRANDMASTER': 'Rank=Grandmaster.png',
+    'CHALLENGER': 'Rank=Challenger.png'
+  };
+  
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (rankDropdownRef.current && !rankDropdownRef.current.contains(event.target)) {
+        setShowRankDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleTextareaResize = (e) => {
     const textarea = e.target;
@@ -147,12 +178,12 @@ function QueueSystem() {
 
     let filtered = [...gameListings];
 
-    if (filters.role !== 'all') {
-      filtered = filtered.filter(game => 
-        game.role === filters.role || 
-        (filters.role === 'any' && game.role === 'any') ||
-        (filters.role !== 'any' && game.preferredDuoRole === filters.role)
-      );
+    if (filters.roles.length > 0) {
+      filtered = filtered.filter(game => {
+        const roleMatch = filters.roles.includes(game.role);
+        const preferredRoleMatch = filters.roles.includes(game.preferredDuoRole);
+        return roleMatch || preferredRoleMatch;
+      });
     }
 
     if (filters.rank !== 'all') {
@@ -191,6 +222,14 @@ function QueueSystem() {
     }
 
     setFilteredListings(filtered);
+  };
+
+  const getRankIconForFilter = (rankId) => {
+    if (rankId === 'all') return '/rank-icons/tool.png';
+    if (rankId === 'unranked') return '/rank-icons/Rank=Unranked.png';
+    
+    const fileName = rankIconsMap[rankId];
+    return fileName ? `/rank-icons/${fileName}` : '/rank-icons/Rank=Unranked.png';
   };
 
   const updateUserRankedData = async () => {
@@ -517,9 +556,11 @@ function QueueSystem() {
   };
 
   const getRankIcon = (tier) => {
-    if (!tier) return null;
-    const tierLower = tier.toLowerCase();
-    return `/rank-icons/Rank=${tierLower.charAt(0).toUpperCase() + tierLower.slice(1)}.png`;
+    if (!tier) return '/rank-icons/unranked.png';
+    const tierUpper = tier.toUpperCase();
+    
+    const fileName = rankIconsMap[tierUpper];
+    return fileName ? `/rank-icons/${fileName}` : '/rank-icons/unranked.png';
   };
 
   const formatRankDisplay = (queue) => {
@@ -954,15 +995,27 @@ function QueueSystem() {
   };
 
   const getRoleIcon = (role) => {
-    const roleIcons = {
-      'top': '⚔️',
-      'jungle': '🌲',
-      'mid': '✨',
-      'adc': '🎯',
-      'support': '🛡️',
-      'any': '🔄'
-    };
-    return roleIcons[role] || '🎮';
+    const roleObj = roles.find(r => r.id === role);
+    return roleObj ? roleObj.icon : '/lane-icons/Fill icon.jpg';
+  };
+
+  const getRoleImage = (role) => {
+    const roleObj = roles.find(r => r.id === role);
+    return roleObj ? roleObj.icon : '/lane-icons/Fill icon.jpg';
+  };
+
+  const handleRoleToggle = (roleId) => {
+    setFilters(prev => {
+      if (roleId === 'all') {
+        return { ...prev, roles: [] };
+      }
+      
+      const newRoles = prev.roles.includes(roleId)
+        ? prev.roles.filter(id => id !== roleId)
+        : [...prev.roles, roleId];
+      
+      return { ...prev, roles: newRoles };
+    });
   };
 
   const handleFilterChange = (filterType, value) => {
@@ -974,7 +1027,7 @@ function QueueSystem() {
 
   const resetFilters = () => {
     setFilters({
-      role: 'all',
+      roles: [],
       rank: 'all',
       queueType: 'all',
       region: 'all'
@@ -994,7 +1047,7 @@ function QueueSystem() {
     return (
       <div className="queue-container">
         <div className="queue-loading">
-          <div className="spinner">🌀</div>
+          <div className="spinner">Loading...</div>
           <p>Loading game listings...</p>
         </div>
       </div>
@@ -1029,7 +1082,7 @@ function QueueSystem() {
               setIsPostingGame(!isPostingGame);
             }}
           >
-            {isPostingGame ? '✖ Cancel' : '➕ Post a Game'}
+            {isPostingGame ? 'Cancel' : 'Post a Game'}
           </button>
           
           {myGameRequests.length > 0 && (
@@ -1037,7 +1090,7 @@ function QueueSystem() {
               className="manage-requests-btn"
               onClick={handleManageRequests}
             >
-              📨 Manage Requests ({myGameRequests.length})
+              Manage Requests ({myGameRequests.length})
             </button>
           )}
         </div>
@@ -1053,10 +1106,17 @@ function QueueSystem() {
                 <button
                   key={role.id}
                   type="button"
-                  className={`filter-btn ${filters.role === role.id ? 'active' : ''}`}
-                  onClick={() => handleFilterChange('role', role.id)}
+                  className={`filter-btn ${filters.roles.includes(role.id) ? 'active' : ''}`}
+                  onClick={() => handleRoleToggle(role.id)}
                 >
-                  <span className="filter-icon">{role.icon}</span>
+                  <img 
+                    src={role.icon} 
+                    alt={role.name}
+                    className="filter-icon-img"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
                   <span className="filter-text">{role.name}</span>
                 </button>
               ))}
@@ -1065,17 +1125,52 @@ function QueueSystem() {
 
           <div className="filter-group">
             <label className="filter-label">Rank</label>
-            <select 
-              value={filters.rank}
-              onChange={(e) => handleFilterChange('rank', e.target.value)}
-              className="filter-select"
-            >
-              {rankTiers.map(rank => (
-                <option key={rank.id} value={rank.id}>
-                  {rank.name}
-                </option>
-              ))}
-            </select>
+            <div className="rank-filter-wrapper" ref={rankDropdownRef}>
+              <div 
+                className="rank-filter-display"
+                onClick={() => setShowRankDropdown(!showRankDropdown)}
+              >
+                <div className="rank-filter-display-content">
+                  <img 
+                    src={getRankIconForFilter(filters.rank)} 
+                    alt={rankTiers.find(r => r.id === filters.rank)?.name}
+                    className="rank-filter-display-icon"
+                    onError={(e) => {
+                      console.error('Failed to load rank icon:', e.target.src);
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                  <span>{rankTiers.find(r => r.id === filters.rank)?.name}</span>
+                </div>
+                <span className={`rank-filter-chevron ${showRankDropdown ? 'open' : ''}`}>▼</span>
+              </div>
+              
+              {showRankDropdown && (
+                <div className="rank-filter-dropdown">
+                  {rankTiers.map(rank => (
+                    <div
+                      key={rank.id}
+                      className={`rank-filter-option ${filters.rank === rank.id ? 'active' : ''}`}
+                      onClick={() => {
+                        handleFilterChange('rank', rank.id);
+                        setShowRankDropdown(false);
+                      }}
+                    >
+                      <img 
+                        src={getRankIconForFilter(rank.id)} 
+                        alt={rank.name}
+                        className="rank-filter-option-icon"
+                        onError={(e) => {
+                          console.error('Failed to load rank icon:', e.target.src);
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                      <span>{rank.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="filter-group">
@@ -1087,7 +1182,7 @@ function QueueSystem() {
             >
               {queueTypes.map(queue => (
                 <option key={queue.id} value={queue.id}>
-                  {queue.icon} {queue.name}
+                  {queue.name}
                 </option>
               ))}
             </select>
@@ -1107,64 +1202,68 @@ function QueueSystem() {
               ))}
             </select>
           </div>
-          <div className="filter-group">
-            <label className="filter-label">&nbsp;</label>
-            <button 
-              className="reset-filters-btn"
-              onClick={resetFilters}
-            >
-              🔄 Reset Filters
-            </button>
-          </div>
         </div>
 
-        {(filters.role !== 'all' || filters.rank !== 'all' || filters.queueType !== 'all' || filters.region !== 'all') && (
+        {(filters.roles.length > 0 || filters.rank !== 'all' || filters.queueType !== 'all' || filters.region !== 'all') && (
           <div className="active-filters">
-            <span className="active-filters-label">Active Filters:</span>
-            {filters.role !== 'all' && (
-              <span className="filter-tag">
-                Role: {roles.find(r => r.id === filters.role)?.name}
-                <button 
-                  className="remove-filter-btn"
-                  onClick={() => handleFilterChange('role', 'all')}
-                >
-                  ✕
-                </button>
-              </span>
-            )}
-            {filters.rank !== 'all' && (
-              <span className="filter-tag">
-                Rank: {rankTiers.find(r => r.id === filters.rank)?.name}
-                <button 
-                  className="remove-filter-btn"
-                  onClick={() => handleFilterChange('rank', 'all')}
-                >
-                  ✕
-                </button>
-              </span>
-            )}
-            {filters.queueType !== 'all' && (
-              <span className="filter-tag">
-                Queue: {queueTypes.find(q => q.id === filters.queueType)?.name}
-                <button 
-                  className="remove-filter-btn"
-                  onClick={() => handleFilterChange('queueType', 'all')}
-                >
-                  ✕
-                </button>
-              </span>
-            )}
-            {filters.region !== 'all' && (
-              <span className="filter-tag">
-                Region: {regions.find(r => r.id === filters.region)?.name}
-                <button 
-                  className="remove-filter-btn"
-                  onClick={() => handleFilterChange('region', 'all')}
-                >
-                  ✕
-                </button>
-              </span>
-            )}
+            <div className="active-filters-header">
+              <span className="active-filters-label">Active Filters:</span>
+              <button 
+                className="reset-filters-btn-small"
+                onClick={resetFilters}
+              >
+                Reset
+              </button>
+            </div>
+            <div className="filter-tags-container">
+              {filters.roles.length > 0 && filters.roles.map(roleId => {
+                const role = roles.find(r => r.id === roleId);
+                return role && (
+                  <span key={roleId} className="filter-tag">
+                    Role: {role.name}
+                    <button 
+                      className="remove-filter-btn"
+                      onClick={() => handleRoleToggle(roleId)}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                );
+              })}
+              {filters.rank !== 'all' && (
+                <span className="filter-tag" data-rank={filters.rank}>
+                  Rank: {rankTiers.find(r => r.id === filters.rank)?.name}
+                  <button 
+                    className="remove-filter-btn"
+                    onClick={() => handleFilterChange('rank', 'all')}
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+              {filters.queueType !== 'all' && (
+                <span className="filter-tag">
+                  Queue: {queueTypes.find(q => q.id === filters.queueType)?.name}
+                  <button 
+                    className="remove-filter-btn"
+                    onClick={() => handleFilterChange('queueType', 'all')}
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+              {filters.region !== 'all' && (
+                <span className="filter-tag">
+                  Region: {regions.find(r => r.id === filters.region)?.name}
+                  <button 
+                    className="remove-filter-btn"
+                    onClick={() => handleFilterChange('region', 'all')}
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -1201,7 +1300,7 @@ function QueueSystem() {
               >
                 {queueTypes.filter(q => q.id !== 'all').map(queue => (
                   <option key={queue.id} value={queue.id}>
-                    {queue.icon} {queue.name}
+                    {queue.name}
                   </option>
                 ))}
               </select>
@@ -1218,7 +1317,14 @@ function QueueSystem() {
                   className={`role-btn-compact ${gameData.role === role.id ? 'active' : ''}`}
                   onClick={() => handleInputChange({ target: { name: 'role', value: role.id } })}
                 >
-                  <span className="role-icon-compact">{role.icon}</span>
+                  <img 
+                    src={role.icon} 
+                    alt={role.name}
+                    className="role-icon-img-compact"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
                   <span>{role.name}</span>
                 </button>
               ))}
@@ -1235,7 +1341,14 @@ function QueueSystem() {
                   className={`role-btn-compact ${gameData.preferredDuoRole === role.id ? 'active' : ''}`}
                   onClick={() => handleInputChange({ target: { name: 'preferredDuoRole', value: role.id } })}
                 >
-                  <span className="role-icon-compact">{role.icon}</span>
+                  <img 
+                    src={role.icon} 
+                    alt={role.name}
+                    className="role-icon-img-compact"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
                   <span>{role.name}</span>
                 </button>
               ))}
@@ -1253,7 +1366,6 @@ function QueueSystem() {
                     className={`comm-btn-compact ${gameData.communication === comm.id ? 'active' : ''}`}
                     onClick={() => handleCommunicationSelect(comm.id)}
                   >
-                    <span>{comm.icon}</span>
                     <span>{comm.name}</span>
                   </button>
                 ))}
@@ -1350,6 +1462,8 @@ function QueueSystem() {
               
               const profileImage = getProfileImage(game);
               const region = getRegionFromGame(game);
+              const roleIcon = getRoleImage(game.role);
+              const preferredRoleIcon = getRoleImage(game.preferredDuoRole);
               
               return (
                 <div key={game.id} className="game-card-compact">
@@ -1378,7 +1492,7 @@ function QueueSystem() {
                         <div className="user-name-small">
                           {game.userDisplayName}
                           <span className="region-badge" title={`Region: ${region}`}>
-                            🌍 {region}
+                            Region: {region}
                           </span>
                         </div>
                         <div className="riot-account-with-copy">
@@ -1390,7 +1504,7 @@ function QueueSystem() {
                               onClick={() => handleCopyRiotAccount(game.userRiotAccount)}
                               title="Copy Riot ID"
                             >
-                              📋
+                              Copy
                             </button>
                           )}
                         </div>
@@ -1450,7 +1564,6 @@ function QueueSystem() {
                       </div>
                     </div>
                     <div className="time-ago-compact">
-                      <span>⏰</span>
                       {formatTimeAgo(game.createdAt)}
                     </div>
                   </div>
@@ -1458,19 +1571,39 @@ function QueueSystem() {
                   <div className="card-middle-section">
                     <div className="roles-grid-compact">
                       <div className="role-tag">
-                        <span className="icon">{roles.find(r => r.id === game.role)?.icon}</span>
+                        <img 
+                          src={roleIcon} 
+                          alt="My Role"
+                          className="role-icon-small"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            if (game.role === 'support') {
+                              e.target.src = '/lane-icons/sup icon.png';
+                              e.target.style.display = 'block';
+                            }
+                          }}
+                        />
                         <span>My Role: {roles.find(r => r.id === game.role)?.name}</span>
                       </div>
                       <div className="role-tag">
-                        <span className="icon">{roles.find(r => r.id === game.preferredDuoRole)?.icon}</span>
+                        <img 
+                          src={preferredRoleIcon} 
+                          alt="Looking For"
+                          className="role-icon-small"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            if (game.preferredDuoRole === 'support') {
+                              e.target.src = '/lane-icons/sup icon.png';
+                              e.target.style.display = 'block';
+                            }
+                          }}
+                        />
                         <span>Looking For: {roles.find(r => r.id === game.preferredDuoRole)?.name}</span>
                       </div>
                       <div className="role-tag">
-                        <span className="icon">{queueTypes.find(q => q.id === game.queueType)?.icon}</span>
-                        <span>{queueTypes.find(q => q.id === game.queueType)?.name}</span>
+                        <span>{getQueueTypeName(game.queueType)}</span>
                       </div>
                       <div className="role-tag">
-                        <span className="icon">{game.communication === 'voice' ? '🎤' : '💬'}</span>
                         <span>{game.communication === 'voice' ? 'Voice' : 'Text'}</span>
                       </div>
                     </div>
@@ -1488,7 +1621,7 @@ function QueueSystem() {
                               className="edit-btn-compact"
                               onClick={() => handleEditGame(game)}
                             >
-                              ✏️ Edit
+                              Edit
                             </button>
                           </div>
                           <div className="action-row">
@@ -1496,7 +1629,7 @@ function QueueSystem() {
                               className="delete-btn-compact"
                               onClick={() => handleDeleteListing(game.id)}
                             >
-                              🗑️ Delete
+                              Delete
                             </button>
                           </div>
                         </div>
@@ -1516,7 +1649,7 @@ function QueueSystem() {
                               onClick={() => handleAddFriend(game.userId)}
                               disabled={isFriend}
                             >
-                              {isFriend ? '✓ Friends' : '+ Add Friend'}
+                              {isFriend ? 'Friends' : 'Add Friend'}
                             </button>
                           </div>
                         </div>
@@ -1600,7 +1733,7 @@ function QueueSystem() {
           <div className="request-modal-content">
             <div className="request-modal-header">
               <h3 className="request-modal-title">
-                🎮 Manage Game Requests ({myGameRequests.length})
+                Manage Game Requests ({myGameRequests.length})
               </h3>
               <button className="request-modal-close" onClick={() => setShowRequestModal(false)}>
                 ✕
@@ -1610,7 +1743,6 @@ function QueueSystem() {
             <div className="request-modal-body">
               {myGameRequests.length === 0 ? (
                 <div className="no-requests">
-                  <div className="no-requests-icon">📭</div>
                   <p>No pending requests</p>
                   <p style={{ fontSize: '14px', color: '#7f8c8d' }}>
                     Players who request to join your games will appear here
@@ -1641,7 +1773,7 @@ function QueueSystem() {
                           <div className="request-user-name">
                             {request.displayName}
                             <span className="request-status-badge request-status-pending">
-                              ⏳ Pending
+                              Pending
                             </span>
                           </div>
                           <div className="request-riot-account">
@@ -1652,15 +1784,15 @@ function QueueSystem() {
 
                       <div className="request-game-info">
                         <div className="request-info-tag">
-                          🎮 {getQueueTypeName(request.gameQueueType)}
+                          {getQueueTypeName(request.gameQueueType)}
                         </div>
                         <div className="request-info-tag">
-                          {getRoleIcon(request.role)} {request.role || 'Any role'}
+                          {request.role || 'Any role'}
                         </div>
                       </div>
 
                       <div className="request-applied-time">
-                        ⏰ Applied {formatTimeAgo(new Date(request.appliedAt))}
+                        Applied {formatTimeAgo(new Date(request.appliedAt))}
                       </div>
 
                       {request.message && (
@@ -1674,19 +1806,19 @@ function QueueSystem() {
                           className="request-profile-btn"
                           onClick={() => handleViewProfile(request.userId)}
                         >
-                          👤 View Profile
+                          View Profile
                         </button>
                         <button 
                           className="request-decline-btn"
                           onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
                         >
-                          ❌ Decline
+                          Decline
                         </button>
                         <button 
                           className="request-accept-btn"
                           onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
                         >
-                          ✅ Accept
+                          Accept
                         </button>
                       </div>
                     </div>
