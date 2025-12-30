@@ -365,7 +365,7 @@ function Profile() {
       };
     } catch (error) {
       if (error.message.includes('Summoner not found') || error.message.includes('404')) throw new Error('Riot account not found. Please check the Riot ID and region.');
-      if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) throw new Error('Cannot connect to server. Please make sure the backend is running on port 3000.');
+      if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) throw new Error('There was an error connecting to the Riot servers. Please try again later.');
       throw new Error('Failed to validate Riot account. Please try again.');
     }
   };

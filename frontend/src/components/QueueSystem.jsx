@@ -33,10 +33,10 @@ function QueueSystem() {
   const [myGameRequests, setMyGameRequests] = useState([]);
 
   const [gameData, setGameData] = useState({
-    role: 'any',
+    role: 'fill',
     queueType: 'ranked_solo_duo',
     communication: 'text',
-    preferredDuoRole: 'any',
+    preferredDuoRole: 'fill',
     description: '',
   });
 
@@ -46,7 +46,6 @@ function QueueSystem() {
   const roles = [
     { id: 'all', name: 'All Roles', icon: '/lane-icons/Fill icon.jpg' },
     { id: 'fill', name: 'Fill', icon: '/lane-icons/Fill icon.png' },
-    { id: 'any', name: 'Any', icon: '/lane-icons/Fill icon.jpg' },
     { id: 'top', name: 'Top', icon: '/lane-icons/top lane.png' },
     { id: 'jungle', name: 'Jungle', icon: '/lane-icons/jg icon.png' },
     { id: 'mid', name: 'Mid', icon: '/lane-icons/mid lane.png' },
@@ -85,17 +84,22 @@ function QueueSystem() {
 
   const regions = [
     { id: 'all', name: 'All Regions' },
-    { id: 'na', name: 'North America' },
-    { id: 'euw', name: 'EU West' },
-    { id: 'eune', name: 'EU Nordic & East' },
+    { id: 'na1', name: 'North America' },
+    { id: 'euw1', name: 'EU West' },
+    { id: 'eun1', name: 'EU Nordic & East' },
     { id: 'kr', name: 'Korea' },
-    { id: 'jp', name: 'Japan' },
-    { id: 'br', name: 'Brazil' },
-    { id: 'las', name: 'Latin America South' },
-    { id: 'lan', name: 'Latin America North' },
-    { id: 'oce', name: 'Oceania' },
+    { id: 'jp1', name: 'Japan' },
+    { id: 'br1', name: 'Brazil' },
+    { id: 'la2', name: 'Latin America South' },
+    { id: 'la1', name: 'Latin America North' },
+    { id: 'oc1', name: 'Oceania' },
     { id: 'ru', name: 'Russia' },
-    { id: 'tr', name: 'Turkey' }
+    { id: 'tr1', name: 'Turkey' },
+    { id: 'ph2', name: 'Philippines' },
+    { id: 'sg2', name: 'Singapore' },
+    { id: 'th2', name: 'Thailand' },
+    { id: 'tw2', name: 'Taiwan' },
+    { id: 'vn2', name: 'Vietnam' }
   ];
 
   const rankIconsMap = {
@@ -110,6 +114,56 @@ function QueueSystem() {
     'MASTER': 'Rank=Master.png',
     'GRANDMASTER': 'Rank=Grandmaster.png',
     'CHALLENGER': 'Rank=Challenger.png'
+  };
+
+  const mapRegionToFilter = (regionFromDB) => {
+    if (!regionFromDB) return null;
+    
+    const regionMap = {
+      'na1': 'na1',
+      'euw1': 'euw1',
+      'eun1': 'eun1',
+      'kr': 'kr',
+      'jp1': 'jp1',
+      'br1': 'br1',
+      'la2': 'la2',
+      'la1': 'la1',
+      'oc1': 'oc1',
+      'ru': 'ru',
+      'tr1': 'tr1',
+      'ph2': 'ph2',
+      'sg2': 'sg2',
+      'th2': 'th2',
+      'tw2': 'tw2',
+      'vn2': 'vn2'
+    };
+    
+    return regionMap[regionFromDB.toLowerCase()] || regionFromDB.toLowerCase();
+  };
+
+  const getDisplayRegion = (regionFromDB) => {
+    if (!regionFromDB) return 'Unknown';
+    
+    const displayMap = {
+      'na1': 'North America',
+      'euw1': 'EUW',
+      'eun1': 'EUNE',
+      'kr': 'Korea',
+      'jp1': 'Japan',
+      'br1': 'Brazil',
+      'la2': 'LAS',
+      'la1': 'LAN',
+      'oc1': 'Oceania',
+      'ru': 'Russia',
+      'tr1': 'Turkey',
+      'ph2': 'Philippines',
+      'sg2': 'Singapore',
+      'th2': 'Thailand',
+      'tw2': 'Taiwan',
+      'vn2': 'Vietnam'
+    };
+    
+    return displayMap[regionFromDB.toLowerCase()] || regionFromDB.toUpperCase();
   };
   
   useEffect(() => {
@@ -217,7 +271,9 @@ function QueueSystem() {
         if (!game.userRiotAccountObject || !game.userRiotAccountObject.region) {
           return false;
         }
-        return game.userRiotAccountObject.region.toLowerCase() === filters.region.toLowerCase();
+        
+        const gameRegion = mapRegionToFilter(game.userRiotAccountObject.region);
+        return gameRegion === filters.region;
       });
     }
 
@@ -633,10 +689,10 @@ function QueueSystem() {
       });
       
       setGameData({
-        role: 'any',
+        role: 'fill',
         queueType: 'ranked_solo_duo',
         communication: 'text',
-        preferredDuoRole: 'any',
+        preferredDuoRole: 'fill',
         description: '',
       });
       
@@ -729,15 +785,14 @@ function QueueSystem() {
       await addDoc(collection(db, 'gameListings'), gameListing);
       
       setGameData({
-        role: 'any',
+        role: 'fill',
         queueType: 'ranked_solo_duo',
         communication: 'text',
-        preferredDuoRole: 'any',
+        preferredDuoRole: 'fill',
         description: '',
       });
       
       setIsPostingGame(false);
-      alert('Game posted successfully!');
       
       setPlayerProfiles(prev => ({
         ...prev,
@@ -794,7 +849,7 @@ function QueueSystem() {
         appliedAt: new Date().toISOString(),
         status: 'pending',
         message: message.trim(),
-        role: userProfile?.preferredRole || 'any'
+        role: userProfile?.preferredRole || 'fill'
       };
 
       await updateDoc(gameRef, {
@@ -911,7 +966,6 @@ function QueueSystem() {
 
     try {
       await deleteDoc(doc(db, 'gameListings', gameId));
-      alert('Game listing deleted successfully!');
     } catch (error) {
       console.error('Error deleting listing:', error);
       alert('Error deleting listing. Please try again.');
@@ -963,10 +1017,10 @@ function QueueSystem() {
   const handleCancelEdit = () => {
     setIsEditingGame(null);
     setGameData({
-      role: 'any',
+      role: 'fill',
       queueType: 'ranked_solo_duo',
       communication: 'text',
-      preferredDuoRole: 'any',
+      preferredDuoRole: 'fill',
       description: '',
     });
     setIsPostingGame(false);
@@ -1038,9 +1092,7 @@ function QueueSystem() {
     if (!game.userRiotAccountObject || !game.userRiotAccountObject.region) {
       return 'Unknown';
     }
-    const region = game.userRiotAccountObject.region.toLowerCase();
-    const regionObj = regions.find(r => r.id === region);
-    return regionObj ? regionObj.name : region.toUpperCase();
+    return getDisplayRegion(game.userRiotAccountObject.region);
   };
 
   if (loading) {
@@ -1102,7 +1154,7 @@ function QueueSystem() {
           <div className="filter-group">
             <label className="filter-label">Role</label>
             <div className="filter-buttons">
-              {roles.filter(r => r.id !== 'any').map(role => (
+              {roles.filter(r => r.id !== 'fill').map(role => (
                 <button
                   key={role.id}
                   type="button"
@@ -1787,7 +1839,7 @@ function QueueSystem() {
                           {getQueueTypeName(request.gameQueueType)}
                         </div>
                         <div className="request-info-tag">
-                          {request.role || 'Any role'}
+                          {request.role || 'Fill role'}
                         </div>
                       </div>
 
