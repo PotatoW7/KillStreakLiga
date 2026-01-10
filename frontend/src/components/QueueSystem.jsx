@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from '../firebase';
-import { 
-  collection, query, where, onSnapshot, addDoc, 
-  serverTimestamp, doc, getDoc, orderBy, deleteDoc, 
+import {
+  collection, query, where, onSnapshot, addDoc,
+  serverTimestamp, doc, getDoc, orderBy, deleteDoc,
   updateDoc, arrayUnion, arrayRemove, getDocs
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +18,7 @@ function QueueSystem() {
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
-    roles: [], 
+    roles: [],
     rank: 'all',
     queueType: 'all',
     region: 'all'
@@ -28,7 +28,7 @@ function QueueSystem() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
   const [joinMessage, setJoinMessage] = useState('');
-  
+
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [myGameRequests, setMyGameRequests] = useState([]);
 
@@ -118,7 +118,7 @@ function QueueSystem() {
 
   const mapRegionToFilter = (regionFromDB) => {
     if (!regionFromDB) return null;
-    
+
     const regionMap = {
       'na1': 'na1',
       'euw1': 'euw1',
@@ -137,13 +137,13 @@ function QueueSystem() {
       'tw2': 'tw2',
       'vn2': 'vn2'
     };
-    
+
     return regionMap[regionFromDB.toLowerCase()] || regionFromDB.toLowerCase();
   };
 
   const getDisplayRegion = (regionFromDB) => {
     if (!regionFromDB) return 'Unknown';
-    
+
     const displayMap = {
       'na1': 'North America',
       'euw1': 'EUW',
@@ -162,10 +162,10 @@ function QueueSystem() {
       'tw2': 'Taiwan',
       'vn2': 'Vietnam'
     };
-    
+
     return displayMap[regionFromDB.toLowerCase()] || regionFromDB.toUpperCase();
   };
-  
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (rankDropdownRef.current && !rankDropdownRef.current.contains(event.target)) {
@@ -183,7 +183,7 @@ function QueueSystem() {
     const textarea = e.target;
     textarea.style.height = 'auto';
     textarea.style.height = `${textarea.scrollHeight}px`;
-    
+
     if (textarea.scrollHeight > 300) {
       textarea.style.height = '300px';
       textarea.style.overflowY = 'auto';
@@ -203,7 +203,7 @@ function QueueSystem() {
     fetchUserFriends();
     fetchGameListings();
     fetchMyGameRequests();
-    
+
     return () => {
       const unsubscribe = fetchGameListings();
       if (unsubscribe) unsubscribe();
@@ -243,21 +243,21 @@ function QueueSystem() {
     if (filters.rank !== 'all') {
       filtered = filtered.filter(game => {
         const rankedData = game.userRankedData || [];
-        
+
         if (filters.rank === 'unranked') {
-          return !rankedData || rankedData.length === 0 || 
-                 (!rankedData.find(q => q.queueType.includes('SOLO')) && 
-                  !rankedData.find(q => q.queueType.includes('FLEX')));
+          return !rankedData || rankedData.length === 0 ||
+            (!rankedData.find(q => q.queueType.includes('SOLO')) &&
+              !rankedData.find(q => q.queueType.includes('FLEX')));
         }
-        
+
         const soloQueue = getQueueData(rankedData, 'RANKED_SOLO_5x5');
         const flexQueue = getQueueData(rankedData, 'RANKED_FLEX_SR');
-        
-        const soloMatch = soloQueue && soloQueue.tier && 
-                         soloQueue.tier.toLowerCase() === filters.rank.toLowerCase();
-        const flexMatch = flexQueue && flexQueue.tier && 
-                         flexQueue.tier.toLowerCase() === filters.rank.toLowerCase();
-        
+
+        const soloMatch = soloQueue && soloQueue.tier &&
+          soloQueue.tier.toLowerCase() === filters.rank.toLowerCase();
+        const flexMatch = flexQueue && flexQueue.tier &&
+          flexQueue.tier.toLowerCase() === filters.rank.toLowerCase();
+
         return soloMatch || flexMatch;
       });
     }
@@ -271,7 +271,7 @@ function QueueSystem() {
         if (!game.userRiotAccountObject || !game.userRiotAccountObject.region) {
           return false;
         }
-        
+
         const gameRegion = mapRegionToFilter(game.userRiotAccountObject.region);
         return gameRegion === filters.region;
       });
@@ -283,7 +283,7 @@ function QueueSystem() {
   const getRankIconForFilter = (rankId) => {
     if (rankId === 'all') return '/rank-icons/tool.png';
     if (rankId === 'unranked') return '/rank-icons/Rank=Unranked.png';
-    
+
     const fileName = rankIconsMap[rankId];
     return fileName ? `/rank-icons/${fileName}` : '/rank-icons/Rank=Unranked.png';
   };
@@ -292,26 +292,26 @@ function QueueSystem() {
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const userDoc = await getDoc(userRef);
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        
+
         if (userData.riotAccount && userData.riotAccount.gameName && userData.riotAccount.tagLine) {
           try {
             const response = await fetch(`http://localhost:3000/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
             if (response.ok) {
               const summonerData = await response.json();
               const rankedData = summonerData.ranked || [];
-              
-              await updateDoc(userRef, { 
+
+              await updateDoc(userRef, {
                 rankedData: rankedData,
                 lastRankedUpdate: new Date(),
                 'riotAccount.summonerLevel': summonerData.summonerLevel,
                 'riotAccount.profileIconId': summonerData.profileIconId
               });
-              
+
               console.log("Ranked data updated from QueueSystem");
-              
+
               if (userProfile) {
                 setUserProfile(prev => ({
                   ...prev,
@@ -338,17 +338,17 @@ function QueueSystem() {
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const userDoc = await getDoc(userRef);
-      
+
       if (userDoc.exists()) {
         const data = userDoc.data();
-        
+
         let riotAccountDisplay = 'Not linked';
         let riotAccountObject = null;
         let profileImage = null;
         let aboutMe = '';
         let rankedData = null;
         let displayName = auth.currentUser.displayName || 'Anonymous';
-        
+
         if (data.riotAccount && typeof data.riotAccount === 'object') {
           riotAccountObject = data.riotAccount;
           const { gameName, tagLine } = data.riotAccount;
@@ -362,9 +362,9 @@ function QueueSystem() {
         } else if (data.riotAccount) {
           riotAccountDisplay = data.riotAccount;
         }
-        
+
         profileImage = data.profileImage || null;
-        
+
         aboutMe = data.aboutMe || '';
         rankedData = data.rankedData || null;
         displayName = auth.currentUser.displayName || data.username || 'Anonymous';
@@ -397,10 +397,10 @@ function QueueSystem() {
       const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        
+
         const profileImage = userData.profileImage || null;
         const username = userData.username || userData.displayName || 'Anonymous';
-        
+
         setPlayerProfiles(prev => ({
           ...prev,
           [userId]: {
@@ -418,7 +418,7 @@ function QueueSystem() {
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const userDoc = await getDoc(userRef);
-      
+
       if (userDoc.exists()) {
         const data = userDoc.data();
         setUserFriends(data.friends || []);
@@ -449,20 +449,20 @@ function QueueSystem() {
       return unsubscribe;
     } catch (error) {
       console.error('Error in fetchGameListings:', error);
-      
+
       const q = query(collection(db, 'gameListings'));
-      
+
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const allListings = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date()
         }));
-        
+
         const activeListings = allListings
           .filter(listing => listing.status === 'active')
           .sort((a, b) => b.createdAt - a.createdAt);
-        
+
         setGameListings(activeListings);
         setLoading(false);
       });
@@ -486,7 +486,7 @@ function QueueSystem() {
         snapshot.forEach((docSnap) => {
           const gameData = docSnap.data();
           const applicants = gameData.applicants || [];
-          
+
           const pendingRequests = applicants
             .filter(applicant => applicant.status === 'pending')
             .map(applicant => ({
@@ -498,10 +498,10 @@ function QueueSystem() {
               ...applicant,
               appliedAt: applicant.appliedAt || new Date().toISOString()
             }));
-          
+
           requests.push(...pendingRequests);
         });
-        
+
         setMyGameRequests(requests);
       });
 
@@ -515,26 +515,26 @@ function QueueSystem() {
     try {
       const hostRef = doc(db, 'users', hostUserId);
       const applicantRef = doc(db, 'users', applicantUserId);
-      
+
       const [hostDoc, applicantDoc] = await Promise.all([
         getDoc(hostRef),
         getDoc(applicantRef)
       ]);
-      
+
       if (!hostDoc.exists() || !applicantDoc.exists()) {
         console.log("User not found for auto-friend");
         return;
       }
-      
+
       const hostData = hostDoc.data();
       const applicantData = applicantDoc.data();
-      
+
       const hostFriends = hostData.friends || [];
       const applicantFriends = applicantData.friends || [];
-      
+
       const alreadyFriends = hostFriends.some(friend => friend.id === applicantUserId) ||
-                            applicantFriends.some(friend => friend.id === hostUserId);
-      
+        applicantFriends.some(friend => friend.id === hostUserId);
+
       if (!alreadyFriends) {
         await updateDoc(hostRef, {
           friends: arrayUnion({
@@ -544,7 +544,7 @@ function QueueSystem() {
             addedAt: new Date()
           })
         });
-        
+
         await updateDoc(applicantRef, {
           friends: arrayUnion({
             id: hostUserId,
@@ -553,7 +553,7 @@ function QueueSystem() {
             addedAt: new Date()
           })
         });
-        
+
         console.log("Auto-friended users after queue acceptance");
       }
     } catch (error) {
@@ -567,39 +567,39 @@ function QueueSystem() {
         return game.userProfileImage;
       }
     }
-    
+
     if (game.userId && playerProfiles[game.userId]?.profileImage) {
       const image = playerProfiles[game.userId].profileImage;
       if (image && typeof image === 'string' && image.startsWith('data:image')) {
         return image;
       }
     }
-    
+
     return null;
   };
 
   const getQueueData = (rankedData, queueType) => {
     if (!rankedData || !Array.isArray(rankedData)) return null;
-    
+
     const queue = rankedData.find(queue => {
       if (!queue.queueType) return false;
-      
+
       if (queue.queueType === queueType) return true;
-      
+
       if (queueType === 'RANKED_SOLO_5x5') {
-        return queue.queueType.includes('SOLO') || 
-               queue.queueType.includes('Solo') ||
-               queue.queueType === 'RANKED_SOLO/DUO';
+        return queue.queueType.includes('SOLO') ||
+          queue.queueType.includes('Solo') ||
+          queue.queueType === 'RANKED_SOLO/DUO';
       }
-      
+
       if (queueType === 'RANKED_FLEX_SR') {
-        return queue.queueType.includes('FLEX') || 
-               queue.queueType.includes('Flex');
+        return queue.queueType.includes('FLEX') ||
+          queue.queueType.includes('Flex');
       }
-      
+
       return false;
     });
-    
+
     return queue;
   };
 
@@ -614,7 +614,7 @@ function QueueSystem() {
   const getRankIcon = (tier) => {
     if (!tier) return '/rank-icons/unranked.png';
     const tierUpper = tier.toUpperCase();
-    
+
     const fileName = rankIconsMap[tierUpper];
     return fileName ? `/rank-icons/${fileName}` : '/rank-icons/unranked.png';
   };
@@ -631,11 +631,11 @@ function QueueSystem() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === 'description' && value.length > 200) {
       return;
     }
-    
+
     setGameData(prev => ({
       ...prev,
       [name]: value
@@ -659,7 +659,7 @@ function QueueSystem() {
       description: game.description,
     });
     setIsPostingGame(true);
-    
+
     setTimeout(() => {
       const textarea = document.querySelector('.textarea-compact');
       if (textarea) {
@@ -678,7 +678,7 @@ function QueueSystem() {
 
     try {
       const gameRef = doc(db, 'gameListings', isEditingGame);
-      
+
       await updateDoc(gameRef, {
         role: gameData.role,
         queueType: gameData.queueType,
@@ -687,7 +687,7 @@ function QueueSystem() {
         description: gameData.description.trim(),
         updatedAt: serverTimestamp()
       });
-      
+
       setGameData({
         role: 'fill',
         queueType: 'ranked_solo_duo',
@@ -695,7 +695,7 @@ function QueueSystem() {
         preferredDuoRole: 'fill',
         description: '',
       });
-      
+
       setIsEditingGame(null);
       setIsPostingGame(false);
       alert('Game updated successfully!');
@@ -725,21 +725,21 @@ function QueueSystem() {
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const userDoc = await getDoc(userRef);
-      
+
       if (!userDoc.exists()) {
         alert('User data not found!');
         return;
       }
-      
+
       const userData = userDoc.data();
-      
+
       let riotAccountDisplay = 'Not linked';
       let riotAccountObject = null;
       let profileImage = null;
       let aboutMe = '';
       let rankedData = null;
       let displayName = auth.currentUser.displayName || 'Anonymous';
-      
+
       if (userData.riotAccount && typeof userData.riotAccount === 'object') {
         riotAccountObject = userData.riotAccount;
         const { gameName, tagLine } = userData.riotAccount;
@@ -753,9 +753,9 @@ function QueueSystem() {
       } else if (userData.riotAccount) {
         riotAccountDisplay = userData.riotAccount;
       }
-      
+
       profileImage = userData.profileImage || null;
-      
+
       aboutMe = userData.aboutMe || '';
       rankedData = userData.rankedData || null;
       displayName = auth.currentUser.displayName || userData.username || 'Anonymous';
@@ -767,23 +767,23 @@ function QueueSystem() {
         userRiotAccount: riotAccountDisplay,
         userRiotAccountObject: riotAccountObject,
         userAboutMe: aboutMe,
-        userRankedData: rankedData, 
-        
+        userRankedData: rankedData,
+
         role: gameData.role,
         queueType: gameData.queueType,
         communication: gameData.communication,
         preferredDuoRole: gameData.preferredDuoRole,
         description: gameData.description.trim(),
-        
+
         status: 'active',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         applicants: [],
         acceptedPlayers: []
       };
-      
+
       await addDoc(collection(db, 'gameListings'), gameListing);
-      
+
       setGameData({
         role: 'fill',
         queueType: 'ranked_solo_duo',
@@ -791,9 +791,9 @@ function QueueSystem() {
         preferredDuoRole: 'fill',
         description: '',
       });
-      
+
       setIsPostingGame(false);
-      
+
       setPlayerProfiles(prev => ({
         ...prev,
         [auth.currentUser.uid]: {
@@ -801,7 +801,7 @@ function QueueSystem() {
           username: displayName
         }
       }));
-      
+
       fetchGameListings();
     } catch (error) {
       console.error('Error posting game:', error);
@@ -824,18 +824,18 @@ function QueueSystem() {
     try {
       const gameRef = doc(db, 'gameListings', gameId);
       const gameDoc = await getDoc(gameRef);
-      
+
       if (!gameDoc.exists()) {
         alert('This game listing no longer exists.');
         return;
       }
 
       const gameData = gameDoc.data();
-      
+
       const alreadyApplied = gameData.applicants?.some(
         applicant => applicant.userId === auth.currentUser.uid
       );
-      
+
       if (alreadyApplied) {
         alert('You have already requested to join this queue.');
         return;
@@ -874,7 +874,7 @@ function QueueSystem() {
     try {
       const gameRef = doc(db, 'gameListings', gameId);
       const gameDoc = await getDoc(gameRef);
-      
+
       if (!gameDoc.exists()) {
         alert('This game listing no longer exists.');
         return;
@@ -882,15 +882,15 @@ function QueueSystem() {
 
       const gameData = gameDoc.data();
       const applicants = gameData.applicants || [];
-      
-      const updatedApplicants = applicants.map(applicant => 
-        applicant.userId === applicantUserId 
+
+      const updatedApplicants = applicants.map(applicant =>
+        applicant.userId === applicantUserId
           ? { ...applicant, status: 'accepted', acceptedAt: new Date().toISOString() }
           : applicant
       );
       const acceptedPlayers = gameData.acceptedPlayers || [];
       const applicantData = applicants.find(app => app.userId === applicantUserId);
-      
+
       if (applicantData && !acceptedPlayers.some(p => p.userId === applicantUserId)) {
         acceptedPlayers.push({
           userId: applicantUserId,
@@ -910,8 +910,8 @@ function QueueSystem() {
       await addFriendOnAccept(gameData.userId, applicantUserId, applicantName);
 
       alert(`Request accepted! ${applicantName} has been added to your game and as a friend.`);
-      
-      setMyGameRequests(prev => prev.filter(req => 
+
+      setMyGameRequests(prev => prev.filter(req =>
         !(req.gameId === gameId && req.userId === applicantUserId)
       ));
     } catch (error) {
@@ -924,7 +924,7 @@ function QueueSystem() {
     try {
       const gameRef = doc(db, 'gameListings', gameId);
       const gameDoc = await getDoc(gameRef);
-      
+
       if (!gameDoc.exists()) {
         alert('This game listing no longer exists.');
         return;
@@ -932,9 +932,9 @@ function QueueSystem() {
 
       const gameData = gameDoc.data();
       const applicants = gameData.applicants || [];
-      
-      const updatedApplicants = applicants.map(applicant => 
-        applicant.userId === applicantUserId 
+
+      const updatedApplicants = applicants.map(applicant =>
+        applicant.userId === applicantUserId
           ? { ...applicant, status: 'declined', declinedAt: new Date().toISOString() }
           : applicant
       );
@@ -945,8 +945,8 @@ function QueueSystem() {
       });
 
       alert(`Request from ${applicantName} declined.`);
-      
-      setMyGameRequests(prev => prev.filter(req => 
+
+      setMyGameRequests(prev => prev.filter(req =>
         !(req.gameId === gameId && req.userId === applicantUserId)
       ));
     } catch (error) {
@@ -984,7 +984,7 @@ function QueueSystem() {
           timestamp: new Date()
         })
       });
-      
+
       alert('Friend request sent!');
     } catch (error) {
       console.error('Error sending friend request:', error);
@@ -994,12 +994,12 @@ function QueueSystem() {
 
   const handleCopyRiotAccount = (riotAccount) => {
     if (!riotAccount || riotAccount === 'Not linked') return;
-    
+
     if (riotAccount.includes('Not linked') || riotAccount.includes('Linked (no name)') || riotAccount === 'Linked') {
       alert('No Riot account to copy');
       return;
     }
-    
+
     navigator.clipboard.writeText(riotAccount)
       .then(() => {
         alert('Riot account copied to clipboard: ' + riotAccount);
@@ -1028,9 +1028,9 @@ function QueueSystem() {
 
   const formatTimeAgo = (date) => {
     if (!date) return 'just now';
-    
+
     const seconds = Math.floor((new Date() - date) / 1000);
-    
+
     if (seconds < 60) return 'just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -1063,11 +1063,11 @@ function QueueSystem() {
       if (roleId === 'all') {
         return { ...prev, roles: [] };
       }
-      
+
       const newRoles = prev.roles.includes(roleId)
         ? prev.roles.filter(id => id !== roleId)
         : [...prev.roles, roleId];
-      
+
       return { ...prev, roles: newRoles };
     });
   };
@@ -1125,9 +1125,9 @@ function QueueSystem() {
       <div className="queue-header">
         <h1>Find League Teammates</h1>
         <p>Post your game or join others to find the perfect duo partner</p>
-        
+
         <div className="header-actions">
-          <button 
+          <button
             className="post-game-btn"
             onClick={() => {
               setIsEditingGame(null);
@@ -1136,9 +1136,9 @@ function QueueSystem() {
           >
             {isPostingGame ? 'Cancel' : 'Post a Game'}
           </button>
-          
+
           {myGameRequests.length > 0 && (
-            <button 
+            <button
               className="manage-requests-btn"
               onClick={handleManageRequests}
             >
@@ -1161,8 +1161,8 @@ function QueueSystem() {
                   className={`filter-btn ${filters.roles.includes(role.id) ? 'active' : ''}`}
                   onClick={() => handleRoleToggle(role.id)}
                 >
-                  <img 
-                    src={role.icon} 
+                  <img
+                    src={role.icon}
                     alt={role.name}
                     className="filter-icon-img"
                     onError={(e) => {
@@ -1178,13 +1178,13 @@ function QueueSystem() {
           <div className="filter-group">
             <label className="filter-label">Rank</label>
             <div className="rank-filter-wrapper" ref={rankDropdownRef}>
-              <div 
+              <div
                 className="rank-filter-display"
                 onClick={() => setShowRankDropdown(!showRankDropdown)}
               >
                 <div className="rank-filter-display-content">
-                  <img 
-                    src={getRankIconForFilter(filters.rank)} 
+                  <img
+                    src={getRankIconForFilter(filters.rank)}
                     alt={rankTiers.find(r => r.id === filters.rank)?.name}
                     className="rank-filter-display-icon"
                     onError={(e) => {
@@ -1196,7 +1196,7 @@ function QueueSystem() {
                 </div>
                 <span className={`rank-filter-chevron ${showRankDropdown ? 'open' : ''}`}>▼</span>
               </div>
-              
+
               {showRankDropdown && (
                 <div className="rank-filter-dropdown">
                   {rankTiers.map(rank => (
@@ -1208,8 +1208,8 @@ function QueueSystem() {
                         setShowRankDropdown(false);
                       }}
                     >
-                      <img 
-                        src={getRankIconForFilter(rank.id)} 
+                      <img
+                        src={getRankIconForFilter(rank.id)}
                         alt={rank.name}
                         className="rank-filter-option-icon"
                         onError={(e) => {
@@ -1227,7 +1227,7 @@ function QueueSystem() {
 
           <div className="filter-group">
             <label className="filter-label">Queue Type</label>
-            <select 
+            <select
               value={filters.queueType}
               onChange={(e) => handleFilterChange('queueType', e.target.value)}
               className="filter-select"
@@ -1242,7 +1242,7 @@ function QueueSystem() {
 
           <div className="filter-group">
             <label className="filter-label">Region</label>
-            <select 
+            <select
               value={filters.region}
               onChange={(e) => handleFilterChange('region', e.target.value)}
               className="filter-select"
@@ -1260,7 +1260,7 @@ function QueueSystem() {
           <div className="active-filters">
             <div className="active-filters-header">
               <span className="active-filters-label">Active Filters:</span>
-              <button 
+              <button
                 className="reset-filters-btn-small"
                 onClick={resetFilters}
               >
@@ -1273,7 +1273,7 @@ function QueueSystem() {
                 return role && (
                   <span key={roleId} className="filter-tag">
                     Role: {role.name}
-                    <button 
+                    <button
                       className="remove-filter-btn"
                       onClick={() => handleRoleToggle(roleId)}
                     >
@@ -1285,7 +1285,7 @@ function QueueSystem() {
               {filters.rank !== 'all' && (
                 <span className="filter-tag" data-rank={filters.rank}>
                   Rank: {rankTiers.find(r => r.id === filters.rank)?.name}
-                  <button 
+                  <button
                     className="remove-filter-btn"
                     onClick={() => handleFilterChange('rank', 'all')}
                   >
@@ -1296,7 +1296,7 @@ function QueueSystem() {
               {filters.queueType !== 'all' && (
                 <span className="filter-tag">
                   Queue: {queueTypes.find(q => q.id === filters.queueType)?.name}
-                  <button 
+                  <button
                     className="remove-filter-btn"
                     onClick={() => handleFilterChange('queueType', 'all')}
                   >
@@ -1307,7 +1307,7 @@ function QueueSystem() {
               {filters.region !== 'all' && (
                 <span className="filter-tag">
                   Region: {regions.find(r => r.id === filters.region)?.name}
-                  <button 
+                  <button
                     className="remove-filter-btn"
                     onClick={() => handleFilterChange('region', 'all')}
                   >
@@ -1323,7 +1323,7 @@ function QueueSystem() {
       {(isPostingGame || isEditingGame) && (
         <div className="compact-post-form">
           <h3>{isEditingGame ? 'Edit Your Game Post' : 'Create New Game Post'}</h3>
-          
+
           <div className="form-grid-compact">
             <div className="form-group-compact">
               <label className="form-label-compact">Your Riot Account</label>
@@ -1332,7 +1332,7 @@ function QueueSystem() {
                   {userProfile?.riotAccountData ? userProfile.riotAccount : 'Not linked'}
                 </span>
                 {!userProfile?.riotAccountData && (
-                  <button 
+                  <button
                     className="link-account-btn-compact"
                     onClick={() => navigate('/profile')}
                   >
@@ -1344,7 +1344,7 @@ function QueueSystem() {
 
             <div className="form-group-compact">
               <label className="form-label-compact">Queue Type</label>
-              <select 
+              <select
                 name="queueType"
                 value={gameData.queueType}
                 onChange={handleInputChange}
@@ -1369,8 +1369,8 @@ function QueueSystem() {
                   className={`role-btn-compact ${gameData.role === role.id ? 'active' : ''}`}
                   onClick={() => handleInputChange({ target: { name: 'role', value: role.id } })}
                 >
-                  <img 
-                    src={role.icon} 
+                  <img
+                    src={role.icon}
                     alt={role.name}
                     className="role-icon-img-compact"
                     onError={(e) => {
@@ -1393,8 +1393,8 @@ function QueueSystem() {
                   className={`role-btn-compact ${gameData.preferredDuoRole === role.id ? 'active' : ''}`}
                   onClick={() => handleInputChange({ target: { name: 'preferredDuoRole', value: role.id } })}
                 >
-                  <img 
-                    src={role.icon} 
+                  <img
+                    src={role.icon}
                     alt={role.name}
                     className="role-icon-img-compact"
                     onError={(e) => {
@@ -1447,13 +1447,13 @@ function QueueSystem() {
           </div>
 
           <div className="form-actions-compact">
-            <button 
+            <button
               className="cancel-btn-compact"
               onClick={isEditingGame ? handleCancelEdit : () => setIsPostingGame(false)}
             >
               Cancel
             </button>
-            <button 
+            <button
               className="submit-btn-compact"
               onClick={isEditingGame ? handleUpdateGame : handlePostGame}
               disabled={!gameData.description.trim() || !userProfile?.riotAccountData}
@@ -1473,16 +1473,16 @@ function QueueSystem() {
             </span>
           )}
         </h3>
-        
+
         {filteredListings.length === 0 ? (
           <div className="no-listings">
             <p>
-              {gameListings.length === 0 
+              {gameListings.length === 0
                 ? "No games posted yet. Be the first to post!"
                 : "No games match your filters. Try adjusting your criteria."}
             </p>
             {gameListings.length > 0 && (
-              <button 
+              <button
                 className="reset-filters-inline"
                 onClick={resetFilters}
               >
@@ -1495,36 +1495,36 @@ function QueueSystem() {
             {filteredListings.map(game => {
               const isOwnGame = game.userId === auth.currentUser?.uid;
               const isFriend = isAlreadyFriend(game.userId);
-              
+
               const rankedData = game.userRankedData || [];
               const soloQueue = getQueueData(rankedData, 'RANKED_SOLO_5x5');
               const flexQueue = getQueueData(rankedData, 'RANKED_FLEX_SR');
-              
+
               const soloWinRate = calculateWinRate(soloQueue);
               const flexWinRate = calculateWinRate(flexQueue);
-              
+
               const soloGames = soloQueue ? soloQueue.wins + soloQueue.losses : 0;
               const flexGames = flexQueue ? flexQueue.wins + flexQueue.losses : 0;
-              
+
               const soloRankIcon = getRankIcon(soloQueue?.tier);
               const flexRankIcon = getRankIcon(flexQueue?.tier);
-              
+
               const soloRankText = formatRankDisplay(soloQueue);
               const flexRankText = formatRankDisplay(flexQueue);
-              
+
               const profileImage = getProfileImage(game);
               const region = getRegionFromGame(game);
               const roleIcon = getRoleImage(game.role);
               const preferredRoleIcon = getRoleImage(game.preferredDuoRole);
-              
+
               return (
                 <div key={game.id} className="game-card-compact">
                   <div className="card-left-section">
                     <div className="user-info-compact">
                       <div className="user-avatar-small">
                         {profileImage && profileImage.startsWith('data:image') ? (
-                          <img 
-                            src={profileImage} 
+                          <img
+                            src={profileImage}
                             alt={game.userDisplayName}
                             className="avatar-img-small"
                             onError={(e) => {
@@ -1533,7 +1533,7 @@ function QueueSystem() {
                             }}
                           />
                         ) : (
-                          <img 
+                          <img
                             src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
                             alt={game.userDisplayName}
                             className="avatar-img-small"
@@ -1549,29 +1549,29 @@ function QueueSystem() {
                         </div>
                         <div className="riot-account-with-copy">
                           <span className="riot-account-small">{game.userRiotAccount}</span>
-                          {game.userRiotAccount && game.userRiotAccount !== 'Not linked' && 
-                          game.userRiotAccount !== 'Linked (no name)' && game.userRiotAccount !== 'Linked' && (
-                            <button 
-                              className="copy-riot-btn"
-                              onClick={() => handleCopyRiotAccount(game.userRiotAccount)}
-                              title="Copy Riot ID"
-                            >
-                              Copy
-                            </button>
-                          )}
+                          {game.userRiotAccount && game.userRiotAccount !== 'Not linked' &&
+                            game.userRiotAccount !== 'Linked (no name)' && game.userRiotAccount !== 'Linked' && (
+                              <button
+                                className="copy-riot-btn"
+                                onClick={() => handleCopyRiotAccount(game.userRiotAccount)}
+                                title="Copy Riot ID"
+                              >
+                                Copy
+                              </button>
+                            )}
                         </div>
                         {game.userAboutMe && (
                           <div className="user-about-me-small" title={game.userAboutMe}>
                             {game.userAboutMe.length > 50 ? game.userAboutMe.substring(0, 50) + '...' : game.userAboutMe}
                           </div>
                         )}
-                        
+
                         <div className="rank-info-container">
                           <div className="rank-info-item">
                             {soloRankIcon && (
-                              <img 
-                                src={soloRankIcon} 
-                                alt={soloRankText} 
+                              <img
+                                src={soloRankIcon}
+                                alt={soloRankText}
                                 className="rank-icon-small"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -1589,12 +1589,12 @@ function QueueSystem() {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="rank-info-item">
                             {flexRankIcon && (
-                              <img 
-                                src={flexRankIcon} 
-                                alt={flexRankText} 
+                              <img
+                                src={flexRankIcon}
+                                alt={flexRankText}
                                 className="rank-icon-small"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -1623,8 +1623,8 @@ function QueueSystem() {
                   <div className="card-middle-section">
                     <div className="roles-grid-compact">
                       <div className="role-tag">
-                        <img 
-                          src={roleIcon} 
+                        <img
+                          src={roleIcon}
                           alt="My Role"
                           className="role-icon-small"
                           onError={(e) => {
@@ -1638,8 +1638,8 @@ function QueueSystem() {
                         <span>My Role: {roles.find(r => r.id === game.role)?.name}</span>
                       </div>
                       <div className="role-tag">
-                        <img 
-                          src={preferredRoleIcon} 
+                        <img
+                          src={preferredRoleIcon}
                           alt="Looking For"
                           className="role-icon-small"
                           onError={(e) => {
@@ -1669,7 +1669,7 @@ function QueueSystem() {
                       {isOwnGame ? (
                         <div className="owner-actions-compact">
                           <div className="action-row">
-                            <button 
+                            <button
                               className="edit-btn-compact"
                               onClick={() => handleEditGame(game)}
                             >
@@ -1677,7 +1677,7 @@ function QueueSystem() {
                             </button>
                           </div>
                           <div className="action-row">
-                            <button 
+                            <button
                               className="delete-btn-compact"
                               onClick={() => handleDeleteListing(game.id)}
                             >
@@ -1688,7 +1688,7 @@ function QueueSystem() {
                       ) : (
                         <div className="actions-compact">
                           <div className="action-row">
-                            <button 
+                            <button
                               className="join-btn-compact"
                               onClick={() => openJoinModal(game)}
                             >
@@ -1696,7 +1696,7 @@ function QueueSystem() {
                             </button>
                           </div>
                           <div className="action-row">
-                            <button 
+                            <button
                               className="friend-btn-compact"
                               onClick={() => handleAddFriend(game.userId)}
                               disabled={isFriend}
@@ -1748,7 +1748,7 @@ function QueueSystem() {
                   </div>
                 </>
               )}
-              
+
               <div className="message-input-container">
                 <label htmlFor="joinMessage">Add a message (optional):</label>
                 <textarea
@@ -1768,7 +1768,7 @@ function QueueSystem() {
               <button className="cancel-btn" onClick={() => setShowJoinModal(false)}>
                 Cancel
               </button>
-              <button 
+              <button
                 className="submit-btn"
                 onClick={() => handleJoinQueue(selectedGame.id, joinMessage)}
                 disabled={!selectedGame}
@@ -1807,15 +1807,15 @@ function QueueSystem() {
                       <div className="request-user-info">
                         <div className="request-user-avatar">
                           {request.profileImage && request.profileImage.startsWith('data:image') ? (
-                            <img 
-                              src={request.profileImage} 
+                            <img
+                              src={request.profileImage}
                               alt={request.displayName}
                               onError={(e) => {
                                 e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
                               }}
                             />
                           ) : (
-                            <img 
+                            <img
                               src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
                               alt={request.displayName}
                             />
@@ -1854,19 +1854,19 @@ function QueueSystem() {
                       )}
 
                       <div className="request-actions">
-                        <button 
+                        <button
                           className="request-profile-btn"
                           onClick={() => handleViewProfile(request.userId)}
                         >
                           View Profile
                         </button>
-                        <button 
+                        <button
                           className="request-decline-btn"
                           onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
                         >
                           Decline
                         </button>
-                        <button 
+                        <button
                           className="request-accept-btn"
                           onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
                         >
@@ -1880,7 +1880,7 @@ function QueueSystem() {
             </div>
 
             <div className="request-modal-footer">
-              <button 
+              <button
                 onClick={() => setShowRequestModal(false)}
                 style={{
                   background: 'rgba(52, 152, 219, 0.1)',

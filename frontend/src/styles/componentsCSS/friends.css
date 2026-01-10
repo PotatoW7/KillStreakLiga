@@ -237,7 +237,7 @@
   margin: 0;
 }
 
-.friends-container > p {
+.friends-container>p {
   padding: var(--space-lg);
   text-align: center;
   color: var(--text-secondary);
@@ -387,6 +387,7 @@
 .chat-messages::-webkit-scrollbar-thumb:hover {
   background: var(--accent-gold);
 }
+
 .social-container-wrapper {
   position: fixed;
   bottom: 90px;
@@ -402,13 +403,134 @@
   overflow: hidden;
   z-index: 1000;
   opacity: 0;
-  visibility: hidden; /* Add this */
+  visibility: hidden;
+  /* Add this */
   transform: translateY(20px) scale(0.95);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .social-container-wrapper.open {
   opacity: 1;
-  visibility: visible; /* Add this */
+  visibility: visible;
+  /* Add this */
   transform: translateY(0) scale(1);
+}
+
+/* Social Tabs */
+.social-tabs {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.social-tab {
+  flex: 1;
+  padding: var(--space-md) var(--space-lg);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+}
+
+.social-tab:hover {
+  background: rgba(200, 155, 60, 0.1);
+  color: var(--text-primary);
+}
+
+.social-tab.active {
+  background: var(--bg-secondary);
+  color: var(--accent-gold);
+  border-bottom: 2px solid var(--accent-gold);
+}
+
+/* Tab notification badge */
+.tab-notification-badge {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  animation: pulse 2s infinite;
+}
+
+/* Floating button notification badge */
+.floating-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Embedded notification content */
+.embedded-notification-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.embedded-notification-content .notification-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+  max-height: none;
+}
+
+.embedded-notification-content .notification-panel-footer {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
+}
+
+/* Override notification styles for embedded mode */
+.embedded-notification-content .notification-empty {
+  padding: 60px 20px;
+}
+
+.embedded-notification-content .notification-item {
+  background: var(--bg-tertiary);
+  border-color: var(--border-subtle);
+}
+
+.embedded-notification-content .notification-item:hover {
+  border-color: var(--accent-gold);
+  transform: translateX(3px);
 }

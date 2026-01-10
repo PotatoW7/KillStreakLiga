@@ -9,7 +9,7 @@ import FriendsList from "./components/FriendsList";
 import Chat from "./components/Chat";
 import QueueSystem from "./components/QueueSystem";
 import Home from "./components/Home";
-import Announcement from "./components/Announcement"; 
+import Announcement from "./components/Announcement";
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import "./styles/index.css";
@@ -19,6 +19,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [showSocial, setShowSocial] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [activeTab, setActiveTab] = useState('friends');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -107,6 +109,7 @@ function App() {
             <Link className="nav-link" to="/queue">
               Find Queue
             </Link>
+
             <button className="nav-link logout-btn" onClick={handleLogout}>
               Logout
             </button>
@@ -117,9 +120,9 @@ function App() {
       <div className="app-container">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route 
-            path="/login" 
-            element={user ? <Navigate to="/profile" /> : <Login />} 
+          <Route
+            path="/login"
+            element={user ? <Navigate to="/profile" /> : <Login />}
           />
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
@@ -133,9 +136,17 @@ function App() {
           />
         </Routes>
 
-        {/* Add Announcement component globally */}
-        {user && <Announcement />}
+        {/* Floating Notification Button - Left Side */}
+        {user && (
+          <Announcement
+            notificationCount={notificationCount}
+            setNotificationCount={setNotificationCount}
+            isEmbedded={false}
+            showPanel={false}
+          />
+        )}
 
+        {/* Floating Chat Button - Right Side */}
         {user && (
           <>
             <button
@@ -147,13 +158,38 @@ function App() {
             </button>
 
             <div className={`social-container-wrapper ${showSocial ? "open" : ""}`}>
+              <div className="social-tabs">
+                <button
+                  className={`social-tab ${!selectedFriend && activeTab === 'friends' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('friends'); setSelectedFriend(null); }}
+                >
+                  💬 Friends
+                </button>
+                <button
+                  className={`social-tab ${activeTab === 'requests' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('requests'); setSelectedFriend(null); }}
+                >
+                  🔔 Requests
+                  {notificationCount > 0 && (
+                    <span className="tab-notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span>
+                  )}
+                </button>
+              </div>
               <div className="social-container">
-                {!selectedFriend ? (
-                  <FriendsList onSelectFriend={handleSelectFriend} />
+                {activeTab === 'friends' ? (
+                  !selectedFriend ? (
+                    <FriendsList onSelectFriend={handleSelectFriend} />
+                  ) : (
+                    <Chat
+                      selectedFriend={selectedFriend}
+                      onBack={handleBackToFriends}
+                    />
+                  )
                 ) : (
-                  <Chat
-                    selectedFriend={selectedFriend}
-                    onBack={handleBackToFriends}
+                  <Announcement
+                    notificationCount={notificationCount}
+                    setNotificationCount={setNotificationCount}
+                    isEmbedded={true}
                   />
                 )}
               </div>
