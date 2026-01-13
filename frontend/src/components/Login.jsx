@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -56,7 +56,7 @@ function Login() {
   };
 
   return (
-    <div className="auth-page"> 
+    <div className="auth-page">
       <div className="auth-container">
         <h2>Login</h2>
         <p>Welcome to Killstreak</p>
@@ -85,6 +85,10 @@ function Login() {
             {loading ? "Signing in..." : "Login"}
           </button>
         </form>
+
+        <div className="auth-footer">
+          <p>Want to share your skills? <Link to="/become-coach" className="auth-link">Become a Coach</Link></p>
+        </div>
       </div>
     </div>
   );

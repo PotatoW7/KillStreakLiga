@@ -39,7 +39,7 @@ function Home() {
     }
 
     setSearchError('');
-    
+
     navigate(`/summoner?search=${encodeURIComponent(searchInput)}&region=${searchRegion}`);
   };
 
@@ -75,7 +75,7 @@ function Home() {
             <p className="hero-subtitle">
               Advanced League of Legends statistics and teammate finder
             </p>
-            
+
             <form onSubmit={handleSearch} className="search-form-large">
               <div className="search-input-group">
                 <input
@@ -86,8 +86,8 @@ function Home() {
                   className="search-input"
                   required
                 />
-                <select 
-                  value={searchRegion} 
+                <select
+                  value={searchRegion}
                   onChange={(e) => setSearchRegion(e.target.value)}
                   className="region-select"
                 >
@@ -114,7 +114,7 @@ function Home() {
             <div className="user-profile-card">
               <div className="profile-header">
                 <div className="profile-avatar-container">
-                  <img 
+                  <img
                     src={`https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/${riotAccount.profileIconId}.png`}
                     alt="Profile"
                     className="profile-avatar"
@@ -168,6 +168,11 @@ function Home() {
               <h3>Social Features</h3>
               <p>Chat with friends and share your achievements.</p>
             </div>
+            <div className="feature-card">
+              <div className="feature-icon">🎓</div>
+              <h3>Pro Coaching</h3>
+              <p>Learn from verified high-rank coaches and improve your gameplay.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -192,8 +197,8 @@ function Home() {
                   <Link to="/summoner" className="cta-button primary">
                     Search Players
                   </Link>
-                  <Link to="/find-duo" className="cta-button secondary">
-                    Find Duo
+                  <Link to="/coaching" className="cta-button secondary">
+                    Find a Coach
                   </Link>
                 </>
               )}

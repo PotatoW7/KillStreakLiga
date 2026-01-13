@@ -5,7 +5,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDocs, collection, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Register() {
   const [form, setForm] = useState({
@@ -131,6 +131,10 @@ function Register() {
           <button disabled={loading} className="auth-button">
             {loading ? "Creating Account..." : "Register"}
           </button>
+
+          <div className="auth-footer">
+            <p>Want to share your skills? <Link to="/become-coach" className="auth-link">Become a Coach</Link></p>
+          </div>
         </form>
       </div>
     </div>

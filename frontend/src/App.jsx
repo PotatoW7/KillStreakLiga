@@ -10,12 +10,17 @@ import Chat from "./components/Chat";
 import QueueSystem from "./components/QueueSystem";
 import Home from "./components/Home";
 import Announcement from "./components/Announcement";
+import BecomeCoach from "./components/BecomeCoach";
+import CoachRules from "./components/CoachRules";
+import Coaching from "./components/Coaching";
+
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import "./styles/index.css";
 
 function App() {
   const [user, setUser] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [showSocial, setShowSocial] = useState(false);
@@ -27,6 +32,7 @@ function App() {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         await initializeUserInFirestore(firebaseUser);
+      } else {
       }
       setUser(firebaseUser);
       setLoading(false);
@@ -45,6 +51,7 @@ function App() {
         createdAt: new Date(),
         friends: [],
         pendingRequests: [],
+        role: "user",
       });
     }
   };
@@ -88,6 +95,9 @@ function App() {
             <Link className="nav-link" to="/summoner">
               Summoner Lookup
             </Link>
+            <Link className="nav-link" to="/coaching">
+              Coaching
+            </Link>
             <Link className="nav-link" to="/login">
               Login
             </Link>
@@ -109,6 +119,10 @@ function App() {
             <Link className="nav-link" to="/queue">
               Find Queue
             </Link>
+            <Link className="nav-link" to="/coaching">
+              Coaching
+            </Link>
+
 
             <button className="nav-link logout-btn" onClick={handleLogout}>
               Logout
@@ -130,6 +144,10 @@ function App() {
           <Route path="/summoner" element={<Summoner />} />
           <Route path="/queue" element={<QueueSystem />} />
           <Route path="/finishSignIn" element={<FinishSignIn />} />
+          <Route path="/become-coach" element={<BecomeCoach />} />
+          <Route path="/coach-rules" element={<CoachRules />} />
+          <Route path="/coaching" element={<Coaching />} />
+
           <Route
             path="*"
             element={<p className="error-box">404: Page not found</p>}
@@ -202,3 +220,4 @@ function App() {
 }
 
 export default App;
+
