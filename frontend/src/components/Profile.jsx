@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { auth, db } from "../firebase";
 import {
   sendEmailVerification,
@@ -575,11 +575,14 @@ function Profile() {
           </h2>
           {userRole !== "user" && (
             <span className={`role-badge ${userRole}`}>
-              {userRole === "coach" ? "🎓 Coach" : userRole === "admin" ? "🛡️ Admin" : ""}
+              {userRole === "coach" ? "🎓 Coach" : userRole === "admin" ? "🛡️ Admin" : userRole === "owner" ? "Owner" : ""}
             </span>
           )}
           {coachAppStatus === "pending" && state.isOwnProfile && (
             <span className="role-badge pending">⏳ Coach App Pending</span>
+          )}
+          {state.profileData?.adminApplication?.status === "pending" && state.isOwnProfile && (
+            <span className="role-badge pending">⏳ Admin App Pending</span>
           )}
         </div>
 
@@ -597,6 +600,16 @@ function Profile() {
 
               {state.menuOpen && (
                 <div className="menu-dropdown">
+                  {userRole !== 'admin' && userRole !== 'owner' &&
+                    state.profileData?.adminApplication?.status !== 'pending' && (
+                      <Link
+                        to="/apply-admin"
+                        className="menu-item apply-admin-btn"
+                        onClick={() => setState(prev => ({ ...prev, menuOpen: false }))}
+                      >
+                        🛡️ Apply for Admin
+                      </Link>
+                    )}
                   <button
                     onClick={() => {
                       setState(prev => ({

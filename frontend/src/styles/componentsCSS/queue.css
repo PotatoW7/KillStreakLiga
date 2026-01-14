@@ -5,6 +5,8 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 1.5rem;
+  border: 1px solid rgba(71, 85, 105, 0.4);
+  background: rgba(30, 41, 59, 0.8);
   min-height: 100vh;
   background: linear-gradient(135deg, #0a0e17 0%, #1a1f2e 50%, #0f1525 100%);
   color: #e8f4f8;
@@ -132,8 +134,8 @@
   background: rgba(30, 41, 59, 0.8);
   padding: 0.7rem 0.9rem;
   border-radius: 8px;
-  font-size: 0.85rem;
   border: 1px solid rgba(71, 85, 105, 0.4);
+  font-size: 0.85rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -436,11 +438,13 @@
   white-space: nowrap;
 }
 
+/* Filter Select - Fixed for Queue Type and Region */
 .filter-select {
+  width: 100%;
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
   border: 1px solid rgba(71, 85, 105, 0.4);
-  background: rgba(30, 41, 59, 0.8);
+  background: rgba(30, 41, 59, 0.8) url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E") no-repeat right 0.7rem top 50% / 0.65rem auto !important;
   color: #f1f5f9;
   font-size: 0.85rem;
   cursor: pointer;
@@ -448,11 +452,21 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.7rem top 50%;
-  background-size: 0.65rem auto;
   padding-right: 2.5rem;
+  min-height: 38px;
+  box-sizing: border-box;
+}
+
+.filter-select:hover {
+  border-color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.15);
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236366f1%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E") !important;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
 .filter-select option {
@@ -460,7 +474,7 @@
   color: #f1f5f9;
 }
 
-/* Rank Filter Dropdown Styles */
+/* Updated Rank Filter Styles */
 .rank-filter-wrapper {
   position: relative;
   width: 100%;
@@ -480,6 +494,7 @@
   transition: all 0.3s ease;
   width: 100%;
   box-sizing: border-box;
+  min-height: 38px;
 }
 
 .rank-filter-display:hover {
@@ -575,7 +590,6 @@
 }
 
 .reset-filters-btn:hover {
-  
   border-color: #6366f1;
   background: rgba(99, 102, 241, 0.15);
   color: #f1f5f9;
@@ -594,7 +608,7 @@
   color: #94a3b8;
   font-weight: 600;
   font-size: 0.85rem;
-  margin-right: rem;
+  margin-right: 1rem;
 }
 
 .filter-tag {
@@ -607,7 +621,7 @@
   color: #cbd5e1;
   font-size: 0.8rem;
   border: 1px solid rgba(71, 85, 105, 0.3);
-  margin: 0.25rem; 
+  margin: 0.25rem;
 }
 
 .remove-filter-btn {
@@ -659,13 +673,15 @@
   display: flex;
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.85) 100%);
   border-radius: 14px;
-  padding: 1.5rem; /* Increased padding for bigger cards */
+  padding: 1.5rem;
+  /* Increased padding for bigger cards */
   border: 1px solid rgba(71, 85, 105, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   animation: fadeIn 0.4s ease-out;
-  min-height: 220px; /* Increased minimum height */
+  min-height: 220px;
+  /* Increased minimum height */
 }
 
 .game-card-compact:hover {
@@ -690,7 +706,8 @@
   flex: 1;
   min-width: 260px;
   max-width: 320px;
-  padding-right: 1.5rem; /* Increased padding */
+  padding-right: 1.5rem;
+  /* Increased padding */
   border-right: 1px solid rgba(71, 85, 105, 0.3);
   display: flex;
   flex-direction: column;
@@ -699,13 +716,15 @@
 .user-info-compact {
   display: flex;
   align-items: flex-start;
-  gap: 1rem; /* Increased gap */
+  gap: 1rem;
+  /* Increased gap */
   margin-bottom: 1rem;
   flex: 1;
 }
 
 .user-avatar-small {
-  width: 60px; /* Bigger avatar */
+  width: 60px;
+  /* Bigger avatar */
   height: 60px;
   border-radius: 50%;
   overflow: hidden;
@@ -733,7 +752,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px; /* Bigger font */
+  font-size: 18px;
+  /* Bigger font */
   font-weight: bold;
   color: white;
   text-transform: uppercase;
@@ -745,13 +765,15 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; /* Increased gap */
+  gap: 0.5rem;
+  /* Increased gap */
 }
 
 .user-name-small {
   color: #f8fafc;
   font-weight: 700;
-  font-size: 1.1rem; /* Bigger font */
+  font-size: 1.1rem;
+  /* Bigger font */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -778,7 +800,8 @@
 
 .riot-account-small {
   color: #94a3b8;
-  font-size: 0.85rem; /* Bigger font */
+  font-size: 0.85rem;
+  /* Bigger font */
   font-family: monospace;
   background: rgba(30, 41, 59, 0.7);
   padding: 0.3rem 0.6rem;
@@ -842,7 +865,8 @@
 }
 
 .rank-icon-small {
-  width: 48px; /* Bigger icons */
+  width: 48px;
+  /* Bigger icons */
   height: 48px;
   border-radius: 6px;
   flex-shrink: 0;
@@ -850,13 +874,14 @@
 
 .rank-details {
   flex: 1;
-  display: flex;  
+  display: flex;
   flex-direction: column;
   gap: 0.2rem;
 }
 
 .rank-queue {
-  font-size: 0.8rem; /* Bigger font */
+  font-size: 0.8rem;
+  /* Bigger font */
   color: #94a3b8;
   font-weight: 600;
   text-transform: uppercase;
@@ -864,7 +889,8 @@
 }
 
 .rank-tier {
-  font-size: 0.9rem; /* Bigger font */
+  font-size: 0.9rem;
+  /* Bigger font */
   font-weight: 600;
   color: #f1f5f9;
 }
@@ -872,7 +898,8 @@
 .rank-stats {
   display: flex;
   gap: 0.5rem;
-  font-size: 0.8rem; /* Bigger font */
+  font-size: 0.8rem;
+  /* Bigger font */
 }
 
 .rank-stats .winrate {
@@ -906,17 +933,20 @@
 /* Card Middle - Game Details - DESCRIPTION MOVED UP */
 .card-middle-section {
   flex: 2;
-  padding: 0 1.5rem; /* Increased padding */
+  padding: 0 1.5rem;
+  /* Increased padding */
   border-right: 1px solid rgba(71, 85, 105, 0.3);
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Align to top */
+  justify-content: flex-start;
+  /* Align to top */
 }
 
 .roles-grid-compact {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem; /* Slightly bigger gap */
+  gap: 0.6rem;
+  /* Slightly bigger gap */
   margin-bottom: 0.75rem;
 }
 
@@ -939,19 +969,23 @@
   line-height: 1.5;
   color: #cbd5e1;
   background: rgba(30, 41, 59, 0.6);
-  padding: 0.9rem; /* Increased padding */
+  padding: 0.9rem;
+  /* Increased padding */
   border-radius: 8px;
   border-left: 3px solid #6366f1;
   word-break: break-word;
   height: auto;
-  min-height: 80px; /* Increased minimum height */
-  max-height: 140px; /* Increased maximum height */
+  min-height: 80px;
+  /* Increased minimum height */
+  max-height: 140px;
+  /* Increased maximum height */
   overflow-y: auto;
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-wrap: break-word;
   flex: 1;
-  margin-top: 0; /* Ensure it's at the top */
+  margin-top: 0;
+  /* Ensure it's at the top */
 }
 
 /* Card Right - Actions - ALIGNED WITH DESCRIPTION */
@@ -962,7 +996,8 @@
   padding-left: 1.5rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Align buttons to top with description */
+  justify-content: flex-start;
+  /* Align buttons to top with description */
   padding-top: 0;
 }
 
@@ -971,7 +1006,8 @@
   flex-direction: column;
   gap: 0.6rem;
   width: 100%;
-  margin-top: 0; /* Remove top margin to align with description */
+  margin-top: 0;
+  /* Remove top margin to align with description */
 }
 
 .action-row {
@@ -1041,19 +1077,22 @@
 .join-btn-compact,
 .friend-btn-compact {
   width: 100%;
-  padding: 0.8rem 0.6rem; /* Increased padding for bigger buttons */
+  padding: 0.8rem 0.6rem;
+  /* Increased padding for bigger buttons */
   border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.85rem; /* Slightly bigger font */
+  font-size: 0.85rem;
+  /* Slightly bigger font */
   text-align: center;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  min-height: 42px; /* Taller buttons */
+  min-height: 42px;
+  /* Taller buttons */
 }
 
 /* Loading State */
@@ -1070,8 +1109,13 @@
 }
 
 @keyframes queue-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .queue-loading p {
@@ -1159,6 +1203,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1196,6 +1241,7 @@
     transform: translateY(50px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -1323,7 +1369,8 @@
   background: rgba(26, 35, 56, 0.9);
 }
 
-.cancel-btn, .submit-btn {
+.cancel-btn,
+.submit-btn {
   padding: 0.7rem 1.25rem;
   border-radius: 8px;
   font-weight: 600;
@@ -1546,7 +1593,9 @@
   justify-content: flex-end;
 }
 
-.request-accept-btn, .request-decline-btn, .request-profile-btn {
+.request-accept-btn,
+.request-decline-btn,
+.request-profile-btn {
   padding: 0.6rem 1rem;
   border: none;
   border-radius: 8px;
@@ -1628,17 +1677,17 @@
   .queue-container {
     max-width: 1400px;
   }
-  
+
   .game-card-compact {
     padding: 1.75rem;
     min-height: 240px;
   }
-  
+
   .card-left-section {
     min-width: 280px;
     max-width: 350px;
   }
-  
+
   .card-right-section {
     min-width: 160px;
     max-width: 200px;
@@ -1650,13 +1699,13 @@
   .role-grid-compact {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .game-card-compact {
     flex-direction: column;
     gap: 1.25rem;
     min-height: auto;
   }
-  
+
   .card-left-section,
   .card-middle-section,
   .card-right-section {
@@ -1666,55 +1715,55 @@
     max-width: none;
     width: 100%;
   }
-  
+
   .card-left-section {
     border-bottom: 1px solid rgba(71, 85, 105, 0.3);
     padding-bottom: 1.25rem;
     margin-bottom: 1.25rem;
   }
-  
+
   .card-middle-section {
     border-bottom: 1px solid rgba(71, 85, 105, 0.3);
     padding-bottom: 1.25rem;
     margin-bottom: 1.25rem;
     min-height: auto;
   }
-  
+
   .user-info-compact {
     align-items: center;
   }
-  
+
   .user-avatar-small {
     width: 55px;
     height: 55px;
   }
-  
+
   .rank-info-container {
     width: 100%;
     margin-left: 0;
     padding-left: 0;
     padding-right: 0;
   }
-  
+
   .card-right-section {
     justify-content: center;
     padding-top: 0;
     min-width: 100%;
     max-width: 100%;
   }
-  
+
   .actions-container {
     flex-direction: row;
     justify-content: center;
     gap: 0.75rem;
   }
-  
+
   .owner-actions-compact,
   .actions-compact {
     flex-direction: row;
     justify-content: center;
   }
-  
+
   .edit-btn-compact,
   .delete-btn-compact,
   .join-btn-compact,
@@ -1722,7 +1771,7 @@
     min-width: 150px;
     padding: 0.8rem 1rem;
   }
-  
+
   /* Rank filter responsive */
   .rank-filter-dropdown {
     position: fixed;
@@ -1741,15 +1790,15 @@
   .queue-container {
     padding: 1.5rem;
   }
-  
+
   .game-card-compact {
     padding: 1.5rem;
   }
-  
+
   .card-left-section {
     min-width: 240px;
   }
-  
+
   .card-right-section {
     min-width: 140px;
   }
@@ -1760,23 +1809,23 @@
   .form-grid-compact {
     grid-template-columns: 1fr;
   }
-  
+
   .compact-post-form {
     padding: 1.5rem;
   }
-  
+
   .queue-header h1 {
     font-size: 1.6rem;
   }
-  
+
   .listings-title {
     font-size: 1.4rem;
   }
-  
+
   .filters-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   /* Rank filter responsive */
   .rank-filter-dropdown {
     position: fixed;
@@ -1788,11 +1837,11 @@
     max-height: 80vh;
     z-index: 1000;
   }
-  
+
   .rank-filter-option {
     padding: 0.8rem 1rem;
   }
-  
+
   .rank-filter-display {
     padding: 0.7rem 0.9rem;
     font-size: 0.9rem;
@@ -1804,66 +1853,66 @@
   .queue-container {
     padding: 1.25rem;
   }
-  
+
   .queue-header {
     padding: 1.25rem;
   }
-  
+
   .queue-header h1 {
     font-size: 1.5rem;
   }
-  
+
   .queue-header p {
     font-size: 0.9rem;
   }
-  
+
   .header-actions {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .role-grid-compact {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .game-card-compact {
     padding: 1.25rem;
   }
-  
+
   .user-avatar-small {
     width: 55px;
     height: 55px;
   }
-  
+
   .description-compact {
     font-size: 0.85rem;
     min-height: 70px;
     max-height: 120px;
   }
-  
+
   .rank-info-item {
     padding: 0.5rem;
   }
-  
+
   .rank-icon-small {
     width: 42px;
     height: 42px;
   }
-  
+
   .role-icon-img-compact {
     width: 25px;
     height: 25px;
   }
-  
+
   .filters-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .request-actions {
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   /* Rank filter responsive */
   .rank-filter-dropdown {
     position: fixed;
@@ -1882,73 +1931,74 @@
   .queue-container {
     padding: 1rem;
   }
-  
+
   .queue-header {
     padding: 1.25rem;
     margin-bottom: 1.5rem;
   }
-  
+
   .queue-header h1 {
     font-size: 1.5rem;
   }
-  
+
   .queue-header p {
     font-size: 0.9rem;
   }
-  
+
   .header-actions {
     flex-direction: column;
     align-items: stretch;
   }
-  
-  .post-game-btn, .manage-requests-btn {
+
+  .post-game-btn,
+  .manage-requests-btn {
     width: 100%;
     text-align: center;
   }
-  
+
   .compact-post-form h3 {
     font-size: 1.2rem;
   }
-  
+
   .role-grid-compact {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .role-btn-compact {
     min-height: 65px;
     font-size: 0.8rem;
   }
-  
+
   .role-icon-img-compact {
     width: 25px;
     height: 25px;
   }
-  
+
   .game-card-compact {
     padding: 1.25rem;
   }
-  
+
   .user-info-compact {
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: 0.75rem;
   }
-  
+
   .user-avatar-small {
     width: 60px;
     height: 60px;
   }
-  
+
   .user-text-small {
     width: 100%;
     text-align: center;
   }
-  
+
   .riot-account-with-copy {
     justify-content: center;
   }
-  
+
   .rank-info-item {
     flex-direction: column;
     align-items: center;
@@ -1956,39 +2006,39 @@
     padding: 0.6rem;
     gap: 0.4rem;
   }
-  
+
   .rank-icon-small {
     width: 45px;
     height: 45px;
   }
-  
+
   .rank-details {
     align-items: center;
   }
-  
+
   .rank-stats {
     justify-content: center;
     width: 100%;
   }
-  
+
   .description-compact {
     font-size: 0.85rem;
     padding: 0.8rem;
     min-height: 70px;
     max-height: 100px;
   }
-  
+
   .actions-container {
     flex-direction: column;
     gap: 0.6rem;
   }
-  
+
   .owner-actions-compact,
   .actions-compact {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .edit-btn-compact,
   .delete-btn-compact,
   .join-btn-compact,
@@ -1997,50 +2047,53 @@
     font-size: 0.85rem;
     min-width: 100%;
   }
-  
+
   .form-actions-compact {
     flex-direction: column;
     align-items: stretch;
     gap: 0.6rem;
   }
-  
+
   .cancel-btn-compact,
   .submit-btn-compact {
     width: 100%;
     min-width: auto;
   }
-  
+
   .filters-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .join-modal-footer,
   .request-actions {
     flex-direction: column;
   }
-  
-  .cancel-btn, .submit-btn,
-  .request-accept-btn, .request-decline-btn, .request-profile-btn {
+
+  .cancel-btn,
+  .submit-btn,
+  .request-accept-btn,
+  .request-decline-btn,
+  .request-profile-btn {
     width: 100%;
   }
-  
+
   /* Rank filter responsive */
   .rank-filter-display-icon {
     width: 20px;
     height: 20px;
   }
-  
+
   .rank-filter-option-icon {
     width: 20px;
     height: 20px;
   }
-  
+
   .active-filters-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
-  
+
   .reset-filters-btn-small {
     align-self: flex-start;
   }
@@ -2051,68 +2104,68 @@
   .queue-header h1 {
     font-size: 1.4rem;
   }
-  
+
   .queue-header p {
     font-size: 0.85rem;
   }
-  
+
   .compact-post-form h3 {
     font-size: 1.1rem;
   }
-  
+
   .role-btn-compact {
     min-height: 60px;
     font-size: 0.75rem;
     padding: 0.5rem 0.1rem;
   }
-  
+
   .role-icon-img-compact {
     width: 22px;
     height: 22px;
   }
-  
+
   .listings-title {
     font-size: 1.3rem;
   }
-  
+
   .game-card-compact {
     padding: 1rem;
   }
-  
+
   .user-avatar-small {
     width: 55px;
     height: 55px;
   }
-  
+
   .user-name-small {
     font-size: 1rem;
   }
-  
+
   .rank-icon-small {
     width: 40px;
     height: 40px;
   }
-  
+
   .rank-tier {
     font-size: 0.85rem;
   }
-  
+
   .rank-stats {
     font-size: 0.75rem;
   }
-  
+
   .role-tag {
     padding: 0.4rem 0.6rem;
     font-size: 0.8rem;
   }
-  
+
   .description-compact {
     font-size: 0.8rem;
     padding: 0.7rem;
     min-height: 60px;
     max-height: 90px;
   }
-  
+
   .edit-btn-compact,
   .delete-btn-compact,
   .join-btn-compact,
@@ -2120,13 +2173,13 @@
     padding: 0.6rem 0.5rem;
     font-size: 0.8rem;
   }
-  
+
   /* Rank filter responsive */
   .rank-filter-display {
     padding: 0.6rem 0.8rem;
     font-size: 0.8rem;
   }
-  
+
   .rank-filter-display-icon {
     width: 18px;
     height: 18px;

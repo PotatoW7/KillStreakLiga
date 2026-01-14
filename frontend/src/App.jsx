@@ -13,14 +13,18 @@ import Announcement from "./components/Announcement";
 import BecomeCoach from "./components/BecomeCoach";
 import CoachRules from "./components/CoachRules";
 import Coaching from "./components/Coaching";
+import AdminPanel from "./components/AdminPanel";
+import AdminApplication from "./components/AdminApplication";
 
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import "./styles/index.css";
 
+const OWNER_EMAIL = "mainprofile@gmail.com";
+
 function App() {
   const [user, setUser] = useState(null);
-
+  const [userRole, setUserRole] = useState('user');
   const [loading, setLoading] = useState(true);
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [showSocial, setShowSocial] = useState(false);
@@ -31,8 +35,10 @@ function App() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        await initializeUserInFirestore(firebaseUser);
+        const role = await initializeUserInFirestore(firebaseUser);
+        setUserRole(role);
       } else {
+        setUserRole('user');
       }
       setUser(firebaseUser);
       setLoading(false);
@@ -43,16 +49,39 @@ function App() {
   const initializeUserInFirestore = async (user) => {
     const userRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userRef);
+    const isOwner = user.email?.toLowerCase() === OWNER_EMAIL;
 
     if (!userDoc.exists()) {
-      await setDoc(userRef, {
-        username: user.displayName,
+      const newUserData = {
+        username: isOwner ? "Owner" : user.displayName,
         email: user.email,
         createdAt: new Date(),
         friends: [],
         pendingRequests: [],
-        role: "user",
-      });
+        role: isOwner ? "owner" : "user",
+      };
+      await setDoc(userRef, newUserData);
+
+      if (isOwner) {
+        await setDoc(doc(db, "owners", user.uid), {
+          username: "Owner",
+          email: user.email,
+          createdAt: new Date()
+        });
+      }
+      return newUserData.role;
+    } else {
+      const existingData = userDoc.data();
+      if (isOwner && existingData.role !== 'owner') {
+        await setDoc(userRef, { role: 'owner', username: 'Owner' }, { merge: true });
+        await setDoc(doc(db, "owners", user.uid), {
+          username: "Owner",
+          email: user.email,
+          createdAt: new Date()
+        }, { merge: true });
+        return 'owner';
+      }
+      return existingData.role || 'user';
     }
   };
 
@@ -122,8 +151,11 @@ function App() {
             <Link className="nav-link" to="/coaching">
               Coaching
             </Link>
-
-
+            {(userRole === 'admin' || userRole === 'owner') && (
+              <Link className="nav-link admin-link" to="/admin">
+                {userRole === 'owner' ? '👑 Owner Panel' : '🛡️ Admin Panel'}
+              </Link>
+            )}
             <button className="nav-link logout-btn" onClick={handleLogout}>
               Logout
             </button>
@@ -147,14 +179,14 @@ function App() {
           <Route path="/become-coach" element={<BecomeCoach />} />
           <Route path="/coach-rules" element={<CoachRules />} />
           <Route path="/coaching" element={<Coaching />} />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/apply-admin" element={<AdminApplication />} />
 
           <Route
             path="*"
             element={<p className="error-box">404: Page not found</p>}
           />
         </Routes>
-
-        {/* Floating Notification Button - Left Side */}
         {user && (
           <Announcement
             notificationCount={notificationCount}
@@ -163,8 +195,6 @@ function App() {
             showPanel={false}
           />
         )}
-
-        {/* Floating Chat Button - Right Side */}
         {user && (
           <>
             <button
