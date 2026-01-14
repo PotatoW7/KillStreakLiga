@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import '../styles/componentsCSS/coaching.css';
 
 const MINIMUM_RANK_TIER = ['PLATINUM', 'EMERALD', 'DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER'];
+const REAPPLY_COOLDOWN_MS = 3 * 30 * 24 * 60 * 60 * 1000; // 3 months in milliseconds
 
 function BecomeCoach() {
     const [user, setUser] = useState(null);
@@ -19,6 +20,8 @@ function BecomeCoach() {
     });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [canReapply, setCanReapply] = useState(true);
+    const [cooldownRemaining, setCooldownRemaining] = useState(null);
     const navigate = useNavigate();
 
     const specialtyOptions = [
@@ -42,6 +45,19 @@ function BecomeCoach() {
                             setError('You are already a verified coach!');
                         } else if (data.coachApplication?.status === 'pending') {
                             setError('You already have a pending coach application.');
+                        }
+
+                        if (data.coachApplication?.status === 'rejected' && data.coachApplication?.reviewedAt) {
+                            const reviewedDate = data.coachApplication.reviewedAt.toDate ?
+                                data.coachApplication.reviewedAt.toDate() : new Date(data.coachApplication.reviewedAt);
+                            const timeSinceRejection = Date.now() - reviewedDate.getTime();
+
+                            if (timeSinceRejection < REAPPLY_COOLDOWN_MS) {
+                                setCanReapply(false);
+                                const remaining = REAPPLY_COOLDOWN_MS - timeSinceRejection;
+                                const daysRemaining = Math.ceil(remaining / (24 * 60 * 60 * 1000));
+                                setCooldownRemaining(daysRemaining);
+                            }
                         }
                     }
                 } catch (err) {
@@ -86,6 +102,11 @@ function BecomeCoach() {
         e.preventDefault();
         setError('');
         setSuccess('');
+
+        if (!canReapply) {
+            setError(`You cannot reapply for coaching yet. Please wait ${cooldownRemaining} more days.`);
+            return;
+        }
 
         if (!userData?.riotAccount) {
             setError('You must link a Riot Games account first.');
@@ -143,6 +164,7 @@ function BecomeCoach() {
     const meetsRankRequirement = isEligibleRank(userData?.rankedData);
     const hasPendingApplication = userData?.coachApplication?.status === 'pending';
     const isAlreadyCoach = userData?.role === 'coach';
+    const wasRejected = userData?.coachApplication?.status === 'rejected';
 
     return (
         <div className="become-coach-page">
@@ -150,6 +172,13 @@ function BecomeCoach() {
                 <div className="coach-header">
                     <h1>🎓 Become a Coach</h1>
                     <p>Share your knowledge and help other players improve</p>
+                </div>
+
+                <div className="coach-rules-banner">
+                    <p>📜 <strong>Before you start:</strong> Please read the coach guidelines</p>
+                    <Link to="/coach-rules" className="view-rules-link">
+                        View complete coach rules and requirements →
+                    </Link>
                 </div>
 
                 <div className="requirements-summary">
@@ -169,9 +198,6 @@ function BecomeCoach() {
                                 </span>
                             )}
                         </li>
-                        <li className="info">
-                            📋 <Link to="/coach-rules">Read the Coach Guidelines</Link>
-                        </li>
                     </ul>
                 </div>
 
@@ -189,22 +215,40 @@ function BecomeCoach() {
                     </div>
                 )}
 
-                {userData?.coachApplication?.status === 'rejected' && (
+                {wasRejected && !canReapply && (
                     <div className="status-banner rejected">
                         <span>❌</span>
                         <div>
                             <p>Your previous application was rejected.</p>
                             {userData.coachApplication.rejectionReason && (
-                                <p className="rejection-reason">Reason: {userData.coachApplication.rejectionReason}</p>
+                                <p className="rejection-reason">
+                                    Reason: {userData.coachApplication.rejectionReason}
+                                </p>
                             )}
-                            <p>You may apply again after addressing the feedback.</p>
+                            <p className="cooldown-notice">
+                                ⏰ You can reapply in <strong>{cooldownRemaining} days</strong> (3 month cooldown).
+                            </p>
                         </div>
                     </div>
                 )}
 
-                {!isAlreadyCoach && !hasPendingApplication && hasRiotAccount && meetsRankRequirement && (
+                {wasRejected && canReapply && (
+                    <div className="status-banner info">
+                        <span>ℹ️</span>
+                        <div>
+                            <p>Your previous application was rejected, but you can now reapply.</p>
+                            {userData.coachApplication.rejectionReason && (
+                                <p className="rejection-reason">
+                                    Previous rejection reason: {userData.coachApplication.rejectionReason}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {!isAlreadyCoach && !hasPendingApplication && canReapply && hasRiotAccount && meetsRankRequirement && (
                     <form onSubmit={handleSubmit} className="coach-application-form">
-                        <h3>Coach Application</h3>
+                        <h3>Application Form</h3>
 
                         <div className="form-group">
                             <label htmlFor="experience">Your League of Legends Experience *</label>

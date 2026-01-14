@@ -52,7 +52,6 @@ function Coaching() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch all coaches
             const coachesQuery = query(collection(db, "users"), where("role", "==", "coach"));
             const coachesSnapshot = await getDocs(coachesQuery);
             const coachesData = coachesSnapshot.docs.map(doc => ({
@@ -61,7 +60,6 @@ function Coaching() {
             }));
             setCoaches(coachesData);
 
-            // Fetch all coaching sessions
             const sessionsQuery = query(collection(db, "coachingSessions"), orderBy("createdAt", "desc"));
             const sessionsSnapshot = await getDocs(sessionsQuery);
             const sessionsData = sessionsSnapshot.docs.map(doc => ({
@@ -152,11 +150,30 @@ function Coaching() {
                             {showCreateForm ? '✕ Cancel' : '+ Create Coaching Session'}
                         </button>
                     )}
-                    {userRole === 'user' && (
-                        <Link to="/become-coach" className="become-coach-link">
-                            Want to become a coach?
-                        </Link>
+                    {(userRole === 'user' || !user) && (
+                        <div className="coach-cta-buttons">
+                            <Link to="/become-coach" className="become-coach-link">
+                                Want to become a coach?
+                            </Link>
+                            <Link to="/coach-rules" className="coach-rules-link">
+                                📜 View Coach Rules
+                            </Link>
+                        </div>
                     )}
+                </div>
+                <div className="coach-rules-preview">
+                    <div className="rules-preview-content">
+                        <div className="rule-item">
+                            <span className="rule-icon">📜</span>
+                            <div>
+                                <strong>Full Guidelines</strong>
+                                <p>Before you start coaching or applying to become a coach, please read the guidelines</p>
+                                <Link to="/coach-rules" className="view-full-rules">
+                                    View complete coach rules and requirements →
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {showCreateForm && userRole === 'coach' && (
@@ -295,6 +312,11 @@ function Coaching() {
                             {filteredSessions.length === 0 ? (
                                 <div className="no-results">
                                     <p>No coaching sessions found. {userRole === 'coach' && 'Be the first to create one!'}</p>
+                                    {!user && (
+                                        <p>
+                                            <Link to="/login">Login</Link> to see all available coaching sessions.
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
                                 filteredSessions.map(session => {

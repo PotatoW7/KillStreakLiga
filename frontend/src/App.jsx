@@ -153,7 +153,7 @@ function App() {
             </Link>
             {(userRole === 'admin' || userRole === 'owner') && (
               <Link className="nav-link admin-link" to="/admin">
-                {userRole === 'owner' ? '👑 Owner Panel' : '🛡️ Admin Panel'}
+                {userRole === 'owner' ? ' Owner Panel' : ' Admin Panel'}
               </Link>
             )}
             <button className="nav-link logout-btn" onClick={handleLogout}>
@@ -250,4 +250,3 @@ function App() {
 }
 
 export default App;
-

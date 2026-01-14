@@ -11,8 +11,7 @@ import {
     updateDoc,
     setDoc,
     serverTimestamp,
-    orderBy,
-    deleteDoc
+    orderBy
 } from 'firebase/firestore';
 import '../styles/componentsCSS/admin.css';
 
@@ -434,7 +433,7 @@ function AdminPanel() {
                         </div>
                     )}
 
-                    {activeTab === 'coach-applications' && (
+                    {activeTab === 'coach-applications' && (userRole === 'owner' || userRole === 'admin') && (
                         <div className="requests-section">
                             <h2>Pending Coach Applications</h2>
                             {coachApplications.length === 0 ? (

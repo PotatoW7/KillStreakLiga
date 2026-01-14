@@ -876,3 +876,130 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Coach Rules Preview Section */
+/* Simplified Coach Rules Preview Section */
+.coach-rules-preview {
+    background: linear-gradient(135deg, #383d54 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    color: white;
+}
+
+.rules-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.rule-item {
+    display: flex;
+    align-items: flex-start;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    width: 100%;
+}
+
+.rule-icon {
+    font-size: 2rem;
+    margin-right: 15px;
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+
+.rule-item strong {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 1.1rem;
+}
+
+.rule-item p {
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.view-full-rules {
+    display: inline-block;
+    color: #ffd700;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.view-full-rules:hover {
+    text-decoration: underline;
+}
+
+/* Coach CTA Buttons */
+.coach-cta-buttons {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.coach-rules-link {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.coach-rules-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Coach Rules Banner */
+.coach-rules-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin: 20px 0;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.coach-rules-banner p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.coach-rules-banner strong {
+    font-weight: 600;
+}
+
+.view-rules-link {
+    color: #ffd700;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.view-rules-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Status banner improvements */
+.status-banner.rejected .cooldown-notice {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255, 0, 0, 0.1);
+    border-radius: 6px;
+    border-left: 4px solid #ff4757;
+}

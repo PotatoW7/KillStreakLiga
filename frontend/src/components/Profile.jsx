@@ -575,7 +575,7 @@ function Profile() {
           </h2>
           {userRole !== "user" && (
             <span className={`role-badge ${userRole}`}>
-              {userRole === "coach" ? "🎓 Coach" : userRole === "admin" ? "🛡️ Admin" : userRole === "owner" ? "Owner" : ""}
+              {userRole === "coach" ? "🎓 Coach" : userRole === "admin" ? "Admin" : userRole === "owner" ? "Owner" : ""}
             </span>
           )}
           {coachAppStatus === "pending" && state.isOwnProfile && (
@@ -607,7 +607,7 @@ function Profile() {
                         className="menu-item apply-admin-btn"
                         onClick={() => setState(prev => ({ ...prev, menuOpen: false }))}
                       >
-                        🛡️ Apply for Admin
+                        Apply for Admin
                       </Link>
                     )}
                   <button
