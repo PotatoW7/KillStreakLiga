@@ -866,7 +866,6 @@
 
 .rank-icon-small {
   width: 48px;
-  /* Bigger icons */
   height: 48px;
   border-radius: 6px;
   flex-shrink: 0;
@@ -2184,4 +2183,10 @@
     width: 18px;
     height: 18px;
   }
+}
+
+.rank-icon-small {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }

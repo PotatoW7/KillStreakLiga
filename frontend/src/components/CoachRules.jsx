@@ -7,12 +7,12 @@ function CoachRules() {
         <div className="coach-rules-page">
             <div className="coach-rules-container">
                 <div className="rules-header">
-                    <h1>📜 Coaching Guidelines & Requirements</h1>
+                    <h1>Coaching Guidelines & Requirements</h1>
                     <p>Everything you need to know about becoming a Killstreak coach</p>
                 </div>
 
                 <section className="rules-section">
-                    <h2>🎯 Eligibility Requirements</h2>
+                    <h2>Eligibility Requirements</h2>
                     <div className="rules-card">
                         <ul>
                             <li>
@@ -32,7 +32,7 @@ function CoachRules() {
                 </section>
 
                 <section className="rules-section">
-                    <h2>⚖️ Code of Conduct</h2>
+                    <h2>Code of Conduct</h2>
                     <div className="rules-card">
                         <ul>
                             <li>
@@ -55,7 +55,7 @@ function CoachRules() {
                 </section>
 
                 <section className="rules-section">
-                    <h2>💰 Pricing Guidelines</h2>
+                    <h2>Pricing Guidelines</h2>
                     <div className="rules-card">
                         <ul>
                             <li>
@@ -80,7 +80,7 @@ function CoachRules() {
                 </section>
 
                 <section className="rules-section">
-                    <h2>📋 Application Process</h2>
+                    <h2>Application Process</h2>
                     <div className="rules-card steps">
                         <div className="step">
                             <span className="step-number">1</span>
@@ -114,7 +114,7 @@ function CoachRules() {
                 </section>
 
                 <section className="rules-section">
-                    <h2>⚠️ Violations & Consequences</h2>
+                    <h2>Violations & Consequences</h2>
                     <div className="rules-card warning">
                         <p>Violating these guidelines may result in:</p>
                         <ul>

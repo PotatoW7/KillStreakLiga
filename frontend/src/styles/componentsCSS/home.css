@@ -30,16 +30,19 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 50%, rgba(30, 144, 255, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(220, 20, 60, 0.1) 0%, transparent 50%);
   animation: pulseGlow 8s ease-in-out infinite;
 }
 
 @keyframes pulseGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.5;
   }
+
   50% {
     opacity: 1;
   }
@@ -69,6 +72,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -120,7 +124,14 @@
     radial-gradient(circle 5px, #0000 92%, #000) center / 33.3% 33.3%,
     radial-gradient(circle closest-side, #0000 92%, #000) right / 33.4% 33.4%,
     radial-gradient(circle closest-side, #0000 92%, #000) bottom / 100% 33.4%;
+  mask:
+    radial-gradient(circle closest-side, #0000 92%, #000) top / 100% 33.4%,
+    radial-gradient(circle closest-side, #0000 92%, #000) left / 33.4% 33.4%,
+    radial-gradient(circle 5px, #0000 92%, #000) center / 33.3% 33.3%,
+    radial-gradient(circle closest-side, #0000 92%, #000) right / 33.4% 33.4%,
+    radial-gradient(circle closest-side, #0000 92%, #000) bottom / 100% 33.4%;
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   animation: spin 5s linear infinite;
   z-index: 3;
   filter: drop-shadow(0 0 10px #dc143c) drop-shadow(0 0 20px #dc143c);
@@ -139,6 +150,7 @@
   0% {
     transform: translateY(-50%) rotate(0deg);
   }
+
   100% {
     transform: translateY(-50%) rotate(360deg);
   }
@@ -149,6 +161,7 @@
     opacity: 0;
     transform: scale(0.8);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -156,9 +169,12 @@
 }
 
 @keyframes gradientShift {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% center;
   }
+
   50% {
     background-position: 100% center;
   }
@@ -175,6 +191,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -190,6 +207,7 @@
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -303,12 +321,16 @@
 }
 
 @keyframes shake {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(0);
   }
+
   25% {
     transform: translateX(-10px);
   }
+
   75% {
     transform: translateX(10px);
   }
@@ -339,6 +361,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -360,6 +383,7 @@
     opacity: 0;
     transform: translateX(-50px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -386,7 +410,8 @@
   right: -2px;
   background: linear-gradient(135deg, #1e90ff 0%, #4169e1 100%);
   color: white;
-  border-radius: 6px; /* Square with slight rounding */
+  border-radius: 6px;
+  /* Square with slight rounding */
   width: 31px;
   height: 31px;
   display: flex;
@@ -548,31 +573,36 @@
 }
 
 .feature-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  animation: bounce 2s ease infinite;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+.feature-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(30, 144, 255, 0.3));
+  transition: all 0.3s ease;
 }
 
-.feature-card:hover .feature-icon {
-  animation: spin 0.6s ease;
+.feature-card:hover .feature-icon img {
+  filter: drop-shadow(0 0 15px rgba(30, 144, 255, 0.6));
+  transform: scale(1.1);
 }
 
 @keyframes spin {
   from {
     transform: rotate(0deg) scale(1);
   }
+
   50% {
     transform: rotate(180deg) scale(1.2);
   }
+
   to {
     transform: rotate(360deg) scale(1);
   }
@@ -603,7 +633,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 30% 50%, rgba(30, 144, 255, 0.15) 0%, transparent 50%),
     radial-gradient(circle at 70% 50%, rgba(220, 20, 60, 0.15) 0%, transparent 50%);
   animation: pulseGlow 8s ease-in-out infinite;
@@ -703,11 +733,11 @@
     width: 35px;
     height: 35px;
   }
-  
+
   .shuriken-left {
     left: -60px;
   }
-  
+
   .shuriken-right {
     right: -60px;
   }

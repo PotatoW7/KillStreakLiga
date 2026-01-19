@@ -139,7 +139,7 @@ function Coaching() {
             <div className="coaching-container">
                 <div className="coaching-header">
                     <div className="header-content">
-                        <h1>🎓 Coaching Marketplace</h1>
+                        <h1>Coaching Marketplace</h1>
                         <p>Learn from verified high-rank players and improve your game</p>
                     </div>
                     {userRole === 'coach' && (
@@ -156,7 +156,7 @@ function Coaching() {
                                 Want to become a coach?
                             </Link>
                             <Link to="/coach-rules" className="coach-rules-link">
-                                📜 View Coach Rules
+                                View Coach Rules
                             </Link>
                         </div>
                     )}
@@ -164,7 +164,7 @@ function Coaching() {
                 <div className="coach-rules-preview">
                     <div className="rules-preview-content">
                         <div className="rule-item">
-                            <span className="rule-icon">📜</span>
+                            <img src="/project-icons/Coaching icons/guide.png" alt="Rules" className="rule-icon" />
                             <div>
                                 <strong>Full Guidelines</strong>
                                 <p>Before you start coaching or applying to become a coach, please read the guidelines</p>
@@ -263,13 +263,15 @@ function Coaching() {
                         className={`tab ${activeTab === 'sessions' ? 'active' : ''}`}
                         onClick={() => setActiveTab('sessions')}
                     >
-                        📚 Coaching Sessions
+                        <img src="/project-icons/Coaching icons/coaching session.png" alt="" className="tab-icon" />
+                        Coaching Sessions
                     </button>
                     <button
                         className={`tab ${activeTab === 'coaches' ? 'active' : ''}`}
                         onClick={() => setActiveTab('coaches')}
                     >
-                        👥 All Coaches
+                        <img src="/project-icons/Coaching icons/available coaches.png" alt="" className="tab-icon" />
+                        All Coaches
                     </button>
                 </div>
 
@@ -348,7 +350,7 @@ function Coaching() {
                                             <p className="session-description">{session.description}</p>
                                             <div className="session-meta">
                                                 <span className="session-specialty">{session.specialty}</span>
-                                                <span className="session-duration">⏱️ {session.duration} min</span>
+                                                <span className="session-duration">Duration: {session.duration} min</span>
                                             </div>
                                             <button className="book-session-btn">Book Session</button>
                                         </div>

@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import '../styles/componentsCSS/coaching.css';
 
 const MINIMUM_RANK_TIER = ['PLATINUM', 'EMERALD', 'DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER'];
-const REAPPLY_COOLDOWN_MS = 3 * 30 * 24 * 60 * 60 * 1000; // 3 months in milliseconds
+const REAPPLY_COOLDOWN_MS = 3 * 30 * 24 * 60 * 60 * 1000;
 
 function BecomeCoach() {
     const [user, setUser] = useState(null);
@@ -170,12 +170,14 @@ function BecomeCoach() {
         <div className="become-coach-page">
             <div className="become-coach-container">
                 <div className="coach-header">
-                    <h1>🎓 Become a Coach</h1>
+                    <h1>Become a Coach</h1>
                     <p>Share your knowledge and help other players improve</p>
                 </div>
 
                 <div className="coach-rules-banner">
-                    <p>📜 <strong>Before you start:</strong> Please read the coach guidelines</p>
+                    <p>
+                        <strong>Before you start:</strong> Please read the coach guidelines
+                    </p>
                     <Link to="/coach-rules" className="view-rules-link">
                         View complete coach rules and requirements →
                     </Link>
@@ -203,21 +205,18 @@ function BecomeCoach() {
 
                 {isAlreadyCoach && (
                     <div className="status-banner success">
-                        <span>🎉</span>
                         <p>You are already a verified coach! <Link to="/coaching">Go to Coaching tab</Link></p>
                     </div>
                 )}
 
                 {hasPendingApplication && (
                     <div className="status-banner pending">
-                        <span>⏳</span>
                         <p>Your application is pending review. We'll notify you once it's been reviewed.</p>
                     </div>
                 )}
 
                 {wasRejected && !canReapply && (
                     <div className="status-banner rejected">
-                        <span>❌</span>
                         <div>
                             <p>Your previous application was rejected.</p>
                             {userData.coachApplication.rejectionReason && (
@@ -226,7 +225,7 @@ function BecomeCoach() {
                                 </p>
                             )}
                             <p className="cooldown-notice">
-                                ⏰ You can reapply in <strong>{cooldownRemaining} days</strong> (3 month cooldown).
+                                You can reapply in <strong>{cooldownRemaining} days</strong> (3 month cooldown).
                             </p>
                         </div>
                     </div>
@@ -234,7 +233,6 @@ function BecomeCoach() {
 
                 {wasRejected && canReapply && (
                     <div className="status-banner info">
-                        <span>ℹ️</span>
                         <div>
                             <p>Your previous application was rejected, but you can now reapply.</p>
                             {userData.coachApplication.rejectionReason && (

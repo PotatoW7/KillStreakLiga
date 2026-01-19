@@ -335,13 +335,13 @@ function AdminPanel() {
                 <div className="admin-header">
                     <div className="header-content">
                         <h1>
-                            {userRole === 'owner' ? '👑 Owner Dashboard' : '🛡️ Admin Panel'}
+                            {userRole === 'owner' ? ' Owner Dashboard' : ' Admin Panel'}
                         </h1>
                         <p>Manage applications and user roles</p>
                     </div>
                     <div className="role-indicator">
                         <span className={`role-badge ${userRole}`}>
-                            {userRole === 'owner' ? '👑 Owner' : '🛡️ Admin'}
+                            {userRole === 'owner' ? ' Owner' : ' Admin'}
                         </span>
                     </div>
                 </div>
@@ -358,7 +358,7 @@ function AdminPanel() {
                             className={`tab ${activeTab === 'admin-requests' ? 'active' : ''}`}
                             onClick={() => setActiveTab('admin-requests')}
                         >
-                            👤 Admin Requests
+                            Admin Requests
                             {adminRequests.length > 0 && (
                                 <span className="badge">{adminRequests.length}</span>
                             )}
@@ -368,7 +368,7 @@ function AdminPanel() {
                         className={`tab ${activeTab === 'coach-applications' ? 'active' : ''}`}
                         onClick={() => setActiveTab('coach-applications')}
                     >
-                        🎓 Coach Applications
+                        Coach Applications
                         {coachApplications.length > 0 && (
                             <span className="badge">{coachApplications.length}</span>
                         )}
@@ -523,7 +523,7 @@ function AdminPanel() {
                         <p>Please provide a reason for rejection (optional):</p>
                         {showRejectModal.type === 'admin' && (
                             <p className="cooldown-warning">
-                                ⚠️ Note: Rejected users can only reapply for admin after 5 months.
+                                Note: Rejected users can only reapply for admin after 5 months.
                             </p>
                         )}
                         <textarea

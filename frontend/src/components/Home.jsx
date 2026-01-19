@@ -135,7 +135,7 @@ function Home() {
                 <Link to="/summoner" className="profile-action-btn secondary">
                   Search Players
                 </Link>
-                <Link to="/find-duo" className="find-duo-btn">
+                <Link to="/queue" className="find-duo-btn">
                   Find Duo
                 </Link>
               </div>
@@ -149,27 +149,37 @@ function Home() {
           <h2 className="section-title">Why Use Killstreak?</h2>
           <div className="features-grid">
             <div className="feature-card">
-              <div className="feature-icon">🔍</div>
+              <div className="feature-icon">
+                <img src="/project-icons/Home icons/player search.png" alt="Player Search" />
+              </div>
               <h3>Player Search</h3>
               <p>Look up any player across all regions with detailed statistics and match history.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">📊</div>
+              <div className="feature-icon">
+                <img src="/project-icons/Home icons/statistics.png" alt="Advanced Stats" />
+              </div>
               <h3>Advanced Stats</h3>
               <p>Deep analytics including champion mastery and win rates.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">👥</div>
+              <div className="feature-icon">
+                <img src="/project-icons/Home icons/teammates.png" alt="Find Teammates" />
+              </div>
               <h3>Find Teammates</h3>
               <p>Find players to play with in any gamemode and have fun.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">💬</div>
+              <div className="feature-icon">
+                <img src="/project-icons/Home icons/socialChat.png" alt="Social Features" />
+              </div>
               <h3>Social Features</h3>
               <p>Chat with friends and share your achievements.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">🎓</div>
+              <div className="feature-icon">
+                <img src="/project-icons/Home icons/coaching.png" alt="Pro Coaching" />
+              </div>
               <h3>Pro Coaching</h3>
               <p>Learn from verified high-rank coaches and improve your gameplay.</p>
             </div>

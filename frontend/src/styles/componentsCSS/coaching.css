@@ -23,7 +23,7 @@
 .coach-header,
 .rules-header,
 .coaching-header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 2rem;
 }
 
@@ -31,11 +31,16 @@
 .rules-header h1,
 .coaching-header h1 {
     font-size: 2.5rem;
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--accent-gold);
+    /* Guaranteed visible gold color */
     margin-bottom: 0.5rem;
+    -webkit-text-fill-color: initial;
+    /* Reset global transparency */
+    background: none;
+    /* Reset global gradient */
+    background-clip: initial;
+    -webkit-background-clip: initial;
+    text-align: left;
 }
 
 .coach-header p,
@@ -47,14 +52,31 @@
 
 .coaching-header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: row;
+    justify-content: flex-start;
     align-items: center;
     text-align: left;
+    gap: 2rem;
+    margin-bottom: 2rem;
 }
 
-.header-content {
-    flex: 1;
+.coach-header,
+.rules-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    margin-bottom: 2rem;
 }
+
+.coaching-main-icon {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    margin-bottom: 1rem;
+    display: block;
+}
+
 
 /* ---------- Requirements Summary ---------- */
 .requirements-summary {
@@ -135,7 +157,16 @@
 
 .status-banner span {
     font-size: 1.5rem;
+    display: flex;
+    align-items: center;
 }
+
+.status-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
 
 .status-banner.success {
     background: rgba(74, 222, 128, 0.1);
@@ -508,6 +539,15 @@
     transition: all 0.2s;
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
 }
 
 .coaching-tabs .tab:hover {
@@ -904,11 +944,21 @@
 }
 
 .rule-icon {
-    font-size: 2rem;
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
     margin-right: 15px;
     margin-top: 5px;
     flex-shrink: 0;
 }
+
+.coaching-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
 
 .rule-item strong {
     display: block;

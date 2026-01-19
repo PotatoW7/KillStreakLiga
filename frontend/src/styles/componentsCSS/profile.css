@@ -250,27 +250,6 @@
   text-align: left;
 }
 
-.detail-label::before {
-  font-size: var(--font-size-sm);
-  width: 20px;
-  text-align: center;
-}
-
-/* Email */
-.profile-detail:nth-child(1) .detail-label::before {
-  content: '📧';
-}
-
-/* Joined */
-.profile-detail:nth-child(1) .detail-label::before {
-  content: '📅';
-}
-
-/* Last Login */
-.profile-detail:nth-child(2) .detail-label::before {
-  content: '🕒';
-}
-
 .detail-value {
   color: var(--text-primary);
   font-size: var(--font-size-sm);
@@ -324,11 +303,16 @@
   text-align: left;
 }
 
-.verification-label::before {
-  content: '✅';
+.verification-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  min-width: 120px;
   font-size: var(--font-size-sm);
-  width: 20px;
-  text-align: center;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: left;
 }
 
 .verification-value {
@@ -665,9 +649,15 @@
   justify-content: center;
 }
 
-.riot-account-section h4::before {
-  content: '⚔️';
-  font-size: 1.2em;
+.riot-account-section h4 {
+  color: var(--text-primary);
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  justify-content: center;
 }
 
 /* ===== ENHANCED LINKED ACCOUNT STYLES ===== */
@@ -781,8 +771,17 @@
   white-space: nowrap;
 }
 
-.account-region::before {
-  content: '🌎';
+.account-region {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
 /* ===== ENHANCED RANKED INFORMATION ===== */
@@ -837,13 +836,13 @@
 .rank-info {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xl);
   height: 100%;
 }
 
-.rank-icon {
-  width: 48px;
-  height: 48px;
+.profile-page .rank-icon {
+  width: 76px;
+  height: 76px;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
@@ -1625,8 +1624,8 @@ select.riot-id-input {
   }
 
   .rank-icon {
-    width: 40px;
-    height: 40px;
+    width: 60px;
+    height: 60px;
   }
 
   .summoner-icon {
@@ -1715,11 +1714,6 @@ select.riot-id-input {
   min-width: 200px;
 }
 
-.last-update::before {
-  content: '⏱️';
-  font-size: 10px;
-}
-
 .update-hint {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
@@ -1757,4 +1751,24 @@ select.riot-id-input {
     min-width: 160px;
     padding: var(--space-xs) var(--space-md);
   }
+}
+
+.detail-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.btn-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.update-ranked-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }

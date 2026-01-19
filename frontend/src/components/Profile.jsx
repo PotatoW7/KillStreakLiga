@@ -575,14 +575,14 @@ function Profile() {
           </h2>
           {userRole !== "user" && (
             <span className={`role-badge ${userRole}`}>
-              {userRole === "coach" ? "🎓 Coach" : userRole === "admin" ? "Admin" : userRole === "owner" ? "Owner" : ""}
+              {userRole === "coach" ? "Coach" : userRole === "admin" ? "Admin" : userRole === "owner" ? "Owner" : ""}
             </span>
           )}
           {coachAppStatus === "pending" && state.isOwnProfile && (
-            <span className="role-badge pending">⏳ Coach App Pending</span>
+            <span className="role-badge pending">Coach App Pending</span>
           )}
           {state.profileData?.adminApplication?.status === "pending" && state.isOwnProfile && (
-            <span className="role-badge pending">⏳ Admin App Pending</span>
+            <span className="role-badge pending">Admin App Pending</span>
           )}
         </div>
 
@@ -624,7 +624,7 @@ function Profile() {
                     }}
                     className={`menu-item terminate-menu-btn ${state.terminationButtonActive ? 'active' : ''}`}
                   >
-                    🗑️ Terminate Account
+                    Terminate Account
                     {state.ripple && <span className="ripple"></span>}
                   </button>
                 </div>
@@ -676,7 +676,7 @@ function Profile() {
                     disabled={state.uploading}
                     className="context-menu-btn"
                   >
-                    📁 {state.uploading ? "Uploading..." : "Upload Image"}
+                    {state.uploading ? "Uploading..." : "Upload Image"}
                   </button>
                   {state.profileImage && (
                     <button
@@ -687,7 +687,7 @@ function Profile() {
                       }}
                       className="context-menu-btn delete-btn"
                     >
-                      🗑️ Delete Image
+                      Delete Image
                     </button>
                   )}
                 </div>
@@ -711,7 +711,7 @@ function Profile() {
                   <h4 className="about-me-label">About Me</h4>
                   {!state.isEditingAbout && state.isOwnProfile && (
                     <button onClick={startEditingAbout} className="edit-about-btn">
-                      ✏️ Edit
+                      <img src="/project-icons/Profile icons/edit.png" alt="Edit" className="btn-icon" />
                     </button>
                   )}
                 </div>
@@ -764,7 +764,10 @@ function Profile() {
               {state.isOwnProfile && state.user && (
                 <div className="profile-details">
                   <div className="profile-detail">
-                    <span className="detail-label">Email:</span>
+                    <span className="detail-label">
+                      <img src="/project-icons/Profile icons/mail.png" alt="Email" className="detail-icon" />
+                      Email:
+                    </span>
                     <span className="detail-value">{displayEmail || "No email"}</span>
                   </div>
                 </div>
@@ -775,7 +778,7 @@ function Profile() {
                   <div className="verification-detail">
                     <span className="verification-label">Verified:</span>
                     <span className={`verification-value ${state.user?.emailVerified ? "verified" : "not-verified"}`}>
-                      {state.user?.emailVerified ? "✅ Yes" : "❌ No"}
+                      {state.user?.emailVerified ? "✅ Yes" : "No"}
                     </span>
                   </div>
                   {!state.user?.emailVerified && (
@@ -805,14 +808,20 @@ function Profile() {
               )}
               <div className="profile-details">
                 <div className="profile-detail">
-                  <span className="detail-label">Joined:</span>
+                  <span className="detail-label">
+                    <img src="/project-icons/Profile icons/join date.png" alt="Joined" className="detail-icon" />
+                    Joined:
+                  </span>
                   <span className="detail-value">
                     {joinedDate.toLocaleDateString()} ({accountAgeDays} days ago)
                   </span>
                 </div>
                 {state.isOwnProfile && state.user?.metadata?.lastSignInTime && (
                   <div className="profile-detail">
-                    <span className="detail-label">Last Login:</span>
+                    <span className="detail-label">
+                      <img src="/project-icons/Profile icons/last joined.png" alt="Last Login" className="detail-icon" />
+                      Last Login:
+                    </span>
                     <span className="detail-value">{new Date(state.user.metadata.lastSignInTime).toLocaleString()}</span>
                   </div>
                 )}
@@ -846,6 +855,7 @@ function Profile() {
                     <span className="account-status verified">✅ Verified</span>
                   </div>
                   <span className="account-region">
+                    <img src="/project-icons/Profile icons/globe icon.png" alt="Region" className="detail-icon" />
                     Region: {REGIONS.find(r => r.value === state.linkedAccount.region)?.label || state.linkedAccount.region}
                   </span>
 
@@ -860,7 +870,8 @@ function Profile() {
                           className="update-ranked-btn"
                           disabled={state.rankedUpdateLoading}
                         >
-                          {state.rankedUpdateLoading ? "🔄 Updating..." : "🔄 Update Ranked Data"}
+                          <img src="/project-icons/Profile icons/update icon.png" alt="Update" className="btn-icon" />
+                          {state.rankedUpdateLoading ? "Updating..." : "Update Ranked Data"}
                         </button>
                       </div>
                       <span className="update-hint">
@@ -879,7 +890,7 @@ function Profile() {
 
                 {state.isOwnProfile && (
                   <button onClick={unlinkRiotAccount} className="unlink-account-btn">
-                    🗑️ Unlink Account
+                    Unlink Account
                   </button>
                 )}
               </div>
@@ -923,7 +934,7 @@ function Profile() {
             <div className="delete-modal">
               <h3>Confirm Account Termination</h3>
               <div className="delete-warning">
-                <span className="delete-icon">🗑️</span>
+                <span className="delete-icon"></span>
                 <div>
                   <p>Are you sure you want to terminate your account? This action is permanent and cannot be undone.</p>
                   <ul>
@@ -950,7 +961,7 @@ function Profile() {
             <div className="reauth-modal">
               <h3>Verify Your Identity</h3>
               <div className="reauth-warning">
-                <span className="reauth-icon">🔒</span>
+                <span className="reauth-icon"></span>
                 <p>For security reasons, please enter your password to confirm account deletion.</p>
               </div>
               <div className="form-group">
