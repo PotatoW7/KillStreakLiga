@@ -1,0 +1,21 @@
+/* Import all CSS files */
+@import './variables.css';
+@import './base.css';
+@import './utilities.css';
+@import './layout/navigation.css';
+@import './layout/responsive.css';
+
+
+/* Component Styles */
+@import './componentsCSS/auth.css';
+@import './componentsCSS/profile.css';
+@import './componentsCSS/summoner.css';
+@import './componentsCSS/matches.css';
+@import './componentsCSS/ranked.css';
+@import './componentsCSS/mastery.css';
+@import './componentsCSS/chat.css';
+@import './componentsCSS/friends.css';
+@import './componentsCSS/queue.css';
+@import './componentsCSS/home.css';
+@import './componentsCSS/announcement.css';
+@import './componentsCSS/coaching.css';

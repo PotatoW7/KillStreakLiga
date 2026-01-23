@@ -1,0 +1,92 @@
+/* Champion Mastery */
+.mastery-container {
+  margin-top: var(--space-lg);
+}
+
+.mastery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-md);
+}
+
+.mastery-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  transition: all 0.2s;
+}
+
+.mastery-card:hover {
+  border-color: var(--accent-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(200, 155, 60, 0.15);
+}
+
+.champion-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--accent-gold);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.mastery-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mastery-info strong {
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  display: block;
+  margin-bottom: var(--space-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.mastery-level {
+  color: var(--accent-blue);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.mastery-points {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+/* Player Tags */
+.player-tags-section {
+  margin: var(--space-lg) 0;
+  padding: var(--space-lg);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.player-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.player-tag {
+  background: rgba(200, 155, 60, 0.12);
+  color: var(--accent-gold);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid rgba(200, 155, 60, 0.25);
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.player-tag:hover {
+  background: rgba(200, 155, 60, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(200, 155, 60, 0.2);
+}

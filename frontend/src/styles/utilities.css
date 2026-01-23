@@ -1,0 +1,126 @@
+/* ------------------------------------------ */
+/* IONIAN SHADOW ORDER - Utility Classes */
+/* ------------------------------------------ */
+
+/* Text utilities */
+.text-center {
+  text-align: center;
+}
+
+/* ------------------------------------------ */
+/* Loading states */
+/* ------------------------------------------ */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  color: var(--accent-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  font-family: 'Cinzel', serif;
+}
+
+.loading-matches {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ------------------------------------------ */
+/* Error and status messages */
+/* ------------------------------------------ */
+.error-box {
+  background: rgba(220, 20, 60, 0.1);
+  border: 1px solid rgba(220, 20, 60, 0.3);
+  color: var(--accent-light);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  margin: 0 auto var(--space-xl);
+  max-width: 600px;
+  text-align: center;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ------------------------------------------ */
+/* Form Elements (inputs, selects) */
+/* ------------------------------------------ */
+input,
+select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  outline: none;
+  font-weight: var(--font-weight-medium);
+  position: relative;
+  z-index: 1;
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dc143c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 18px;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+input:hover,
+select:hover {
+  border-color: var(--accent-primary);
+}
+
+input:focus,
+select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--bg-tertiary);
+}
+
+input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* ------------------------------------------ */
+/* Button Base Styles - Crimson Theme */
+/* ------------------------------------------ */
+
+button {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  z-index: 1;
+}
+
+button:hover:not(:disabled):not(.nav-link):not(.logout-btn) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Ensure all pseudo-elements on buttons don't block clicks */
+button::before,
+button::after {
+  pointer-events: none;
+}
