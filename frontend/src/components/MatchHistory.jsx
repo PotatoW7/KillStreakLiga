@@ -23,7 +23,7 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
   };
 
   const formatChampionName = (championName) => {
-    
+
     return championName
       .split('')
       .map((letter, index) => {
@@ -32,13 +32,13 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
         }
         return letter;
       })
-      .join(''); 
+      .join('');
   };
 
-  
+
   const getTimeAgo = (timestamp) => {
     if (!timestamp) return "Recently";
-    
+
     const now = Date.now();
     const diff = now - timestamp;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -211,7 +211,7 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
     const key = `${p.puuid}-${p.championName}`;
 
 
-    const trinketId = p.item6; 
+    const trinketId = p.item6;
     const normalItems = p.items.slice(0, 6).filter((id) => id > 0);
     const emptySlots = 6 - normalItems.length;
     const itemsOrdered = [...normalItems, ...Array(emptySlots).fill(0)];
