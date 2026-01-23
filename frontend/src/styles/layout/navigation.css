@@ -1,5 +1,5 @@
 /* ------------------------------------------------------ */
-/* Navigation Bar Layout */
+/* IONIAN SHADOW ORDER - Navigation Bar */
 /* ------------------------------------------------------ */
 nav {
   display: flex;
@@ -7,69 +7,137 @@ nav {
   align-items: center;
   gap: var(--space-md);
   width: 100%;
-  padding: var(--space-md);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(10, 10, 15, 0.85);
+  border-bottom: 1px solid var(--border-accent);
   flex-wrap: wrap;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  z-index: 100;
+}
+
+/* Crimson glow line at bottom */
+nav::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      var(--accent-primary) 20%,
+      var(--accent-light) 50%,
+      var(--accent-primary) 80%,
+      transparent 100%);
+  opacity: 0.6;
 }
 
 /* ------------------------------------------------------ */
-/* Navigation Links */
+/* Navigation Links - Blade Style */
 /* ------------------------------------------------------ */
 .nav-link {
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
   text-decoration: none;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   font-size: var(--font-size-sm);
   border: 1px solid transparent;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Hover effect for normal nav buttons */
+/* Hover blade effect */
+.nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(220, 20, 60, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.nav-link:hover::before {
+  left: 100%;
+}
+
 .nav-link:hover {
   color: var(--text-primary);
-  background: rgba(200, 155, 60, 0.12);
+  background: rgba(220, 20, 60, 0.1);
   border-color: var(--border-accent);
+  text-shadow: 0 0 10px rgba(220, 20, 60, 0.5);
   transform: translateY(-2px);
 }
 
 /* Active/current page state */
 .nav-link.active {
-  color: var(--text-primary);
-  background: rgba(200, 155, 60, 0.18);
-  border-color: var(--border-accent);
+  color: var(--accent-primary);
+  background: rgba(220, 20, 60, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 15px rgba(220, 20, 60, 0.3);
+}
+
+/* Admin Link - Special Styling */
+.admin-link {
+  color: var(--cherry-blossom) !important;
+  border-color: rgba(255, 183, 197, 0.3) !important;
+}
+
+.admin-link:hover {
+  background: rgba(255, 183, 197, 0.1) !important;
+  border-color: var(--cherry-blossom) !important;
+  box-shadow: 0 0 15px var(--cherry-glow) !important;
 }
 
 /* ------------------------------------------------------ */
-/* Logout Button */
+/* Logout Button - Shadow Strike */
 /* ------------------------------------------------------ */
 .logout-btn {
-  background: rgba(255, 0, 0, 0.6) !important;
-  border: 1px solid rgba(255, 0, 0, 0.7) !important;
+  background: var(--gradient-crimson) !important;
+  border: 1px solid var(--accent-primary) !important;
   color: #fff !important;
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
   border-radius: var(--radius-sm);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   font-size: var(--font-size-sm);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Glow effect ONLY — background stays constant */
+.logout-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+}
+
+.logout-btn:hover::before {
+  width: 200px;
+  height: 200px;
+}
+
 .logout-btn:hover {
-  background: rgba(255, 0, 0, 0.6) !important;
-  border-color: rgba(255, 0, 0, 0.7) !important;
-  color: #fff !important;
-  box-shadow:
-    0 0 10px rgba(255, 80, 80, 0.8),
-    0 0 20px rgba(255, 80, 80, 0.6),
-    0 0 35px rgba(255, 80, 80, 0.4);
   transform: translateY(-3px);
+  box-shadow: var(--shadow-crimson-lg);
 }
 
 /* ------------------------------------------------------ */

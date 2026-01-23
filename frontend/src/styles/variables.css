@@ -1,53 +1,87 @@
 :root {
-  /* ===== COLOR SYSTEM ===== */
-  --bg-primary: #0f1419;
-  --bg-secondary: #16181d;
-  --bg-tertiary: #1c1e24;
+  /* ===== IONIAN SHADOW ORDER COLOR SYSTEM ===== */
+  /* Primary Backgrounds - Deep Shadow */
+  --bg-primary: #0e0e15;
+  --bg-secondary: #13131a;
+  --bg-tertiary: #191922;
+  --bg-hover: #1e1e2a;
+
+  /* Crimson Blood Accents */
+  --accent-primary: #dc143c;
+  --accent-secondary: #8b0000;
+  --accent-light: #ff4757;
+  --accent-glow: rgba(220, 20, 60, 0.4);
+
+  /* Cherry Blossom Pink */
+  --cherry-blossom: #ffb7c5;
+  --cherry-glow: rgba(255, 183, 197, 0.3);
+
+  /* Legacy Gold (for ranks/special) */
   --accent-gold: #c89b3c;
   --accent-gold-light: #f0e6d2;
   --accent-blue: #0bc6e3;
-  --text-primary: #f9f9f9;
-  --text-secondary: #a0a0a0;
+
+  /* Text Colors */
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0a8;
+  --text-tertiary: #6a6a75;
+  --text-dark: #0a0a0f;
+
+  /* Status Colors */
   --victory: #00c98d;
-  --defeat: #f85c70;
-  
+  --defeat: #dc143c;
+  --success: #00c98d;
+  --success-light: #10dca0;
+  --error: #dc143c;
+
   /* ===== BORDERS ===== */
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-accent: rgba(200, 155, 60, 0.25);
-  
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-accent: rgba(220, 20, 60, 0.3);
+  --border-glow: rgba(220, 20, 60, 0.5);
+
   /* ===== SHADOWS ===== */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
-  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.7);
+  --shadow-crimson: 0 4px 20px rgba(220, 20, 60, 0.3);
+  --shadow-crimson-lg: 0 8px 40px rgba(220, 20, 60, 0.4);
+
+  /* ===== GRADIENTS ===== */
+  --gradient-crimson: linear-gradient(135deg, #dc143c 0%, #8b0000 100%);
+  --gradient-shadow: linear-gradient(135deg, #0a0a0f 0%, #1a1a24 50%, #12121a 100%);
+  --gradient-blade: linear-gradient(135deg, #dc143c 0%, #ff4757 50%, #dc143c 100%);
+
   /* ===== SPACING ===== */
-  --space-xs: 0.25rem;   /* 4px */
-  --space-sm: 0.5rem;    /* 8px */
-  --space-md: 0.75rem;   /* 12px */
-  --space-lg: 1rem;      /* 16px */
-  --space-xl: 1.5rem;    /* 24px */
-  --space-2xl: 2rem;     /* 32px */
-  
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
+
   /* ===== BORDER RADIUS ===== */
-  --radius-sm: 0.25rem;  /* 4px */
-  --radius-md: 0.5rem;   /* 8px */
-  --radius-lg: 0.75rem;  /* 12px */
-  --radius-xl: 1rem;     /* 16px */
-  
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
   /* ===== TYPOGRAPHY ===== */
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
   --font-weight-extrabold: 800;
-  
+
   /* SCALED FONT SIZES */
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.875rem;   /* 14px */
-  --font-size-base: 1rem;     /* 16px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.25rem;    /* 20px */
-  --font-size-2xl: 1.5rem;    /* 24px */
-  --font-size-3xl: 1.75rem;   /* 28px */
-  --font-size-4xl: 2rem;      /* 32px */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.75rem;
+  --font-size-4xl: 2rem;
 }

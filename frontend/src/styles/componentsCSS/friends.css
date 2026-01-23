@@ -1,4 +1,7 @@
-/* Friends List */
+/* ============================================ */
+/* IONIAN SHADOW ORDER - Friends List */
+/* ============================================ */
+
 .friends-container {
   flex: 1;
   display: flex;
@@ -13,8 +16,10 @@
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-accent);
   background: var(--bg-tertiary);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
 }
 
 /* Search Section */
@@ -22,7 +27,7 @@
   padding: var(--space-md) var(--space-lg);
   display: flex;
   gap: 10px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-accent);
 }
 
 .search-friends input {
@@ -38,14 +43,14 @@
 
 .search-friends input:focus {
   outline: none;
-  border-color: var(--accent-gold);
-  box-shadow: 0 0 0 2px rgba(200, 155, 60, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .search-friends button {
   padding: var(--space-md) var(--space-lg);
-  background: linear-gradient(135deg, var(--accent-gold) 0%, #a0782d 100%);
-  color: var(--bg-primary);
+  background: var(--gradient-crimson);
+  color: white;
   border: none;
   border-radius: var(--radius-md);
   font-weight: var(--font-weight-semibold);
@@ -56,7 +61,7 @@
 
 .search-friends button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 0 10px rgba(200, 155, 60, 0.6), 0 0 20px rgba(200, 155, 60, 0.4);
+  box-shadow: var(--shadow-crimson);
 }
 
 .search-friends button:disabled {
@@ -68,7 +73,7 @@
 /* Search Results */
 .search-results {
   padding: var(--space-md) var(--space-lg);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-accent);
   background: var(--bg-secondary);
 }
 
@@ -78,7 +83,7 @@
   color: var(--text-secondary);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .search-result-item {
@@ -101,7 +106,7 @@
   height: 40px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid var(--border-subtle);
+  border: 2px solid var(--border-accent);
   background: var(--bg-tertiary);
 }
 
@@ -130,7 +135,7 @@
 
 .search-result-item button {
   padding: 6px 12px;
-  background: var(--accent-blue);
+  background: var(--accent-primary);
   color: white;
   border: none;
   border-radius: var(--radius-sm);
@@ -141,7 +146,7 @@
 }
 
 .search-result-item button:hover {
-  background: #0099cc;
+  background: var(--accent-light);
   transform: translateY(-1px);
 }
 
@@ -160,7 +165,7 @@
 /* Pending Requests */
 .pending-requests {
   padding: var(--space-md) var(--space-lg);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-accent);
   background: var(--bg-secondary);
 }
 
@@ -170,7 +175,7 @@
   color: var(--text-secondary);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .request-item {
@@ -213,12 +218,12 @@
 }
 
 .request-actions button:last-child {
-  background: var(--defeat);
+  background: var(--accent-primary);
   color: white;
 }
 
 .request-actions button:last-child:hover {
-  background: #e5455c;
+  background: var(--accent-light);
   transform: translateY(-1px);
 }
 
@@ -258,7 +263,8 @@
 }
 
 .friend-item:hover {
-  background: var(--bg-tertiary);
+  background: rgba(220, 20, 60, 0.08);
+  border-left: 3px solid var(--accent-primary);
 }
 
 .friend-item:last-child {
@@ -266,8 +272,8 @@
 }
 
 .friend-item.has-unread {
-  background: rgba(0, 201, 141, 0.08);
-  border-left: 3px solid var(--victory);
+  background: rgba(220, 20, 60, 0.12);
+  border-left: 3px solid var(--accent-primary);
 }
 
 .friend-content {
@@ -290,19 +296,19 @@
   font-size: var(--font-size-sm);
   flex-shrink: 0;
   overflow: hidden;
-  border: 2px solid var(--accent-gold);
+  border: 2px solid var(--accent-primary);
 }
 
 .avatar-placeholder {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-gold) 0%, #a0782d 100%);
+  background: var(--gradient-crimson);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: var(--font-weight-semibold);
-  color: var(--bg-primary);
+  color: white;
 }
 
 .friend-avatar img {
@@ -330,7 +336,7 @@
 }
 
 .unread-badge {
-  background: #a0782d;
+  background: var(--gradient-crimson);
   color: white;
   border-radius: 50%;
   width: 25px;
@@ -343,10 +349,11 @@
   min-width: 20px;
   margin-left: 10px;
   flex-shrink: 0;
+  box-shadow: var(--shadow-crimson);
 }
 
 .unfriend-btn {
-  background: var(--defeat);
+  background: var(--accent-primary);
   color: white;
   border: none;
   padding: var(--space-xs) var(--space-md);
@@ -361,66 +368,34 @@
 }
 
 .unfriend-btn:hover {
-  background: #e5455c;
+  background: var(--accent-light);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(248, 92, 112, 0.3);
+  box-shadow: var(--shadow-crimson);
 }
 
 /* Scrollbar Styling */
-.friends-list::-webkit-scrollbar,
-.chat-messages::-webkit-scrollbar {
+.friends-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.friends-list::-webkit-scrollbar-track,
-.chat-messages::-webkit-scrollbar-track {
+.friends-list::-webkit-scrollbar-track {
   background: var(--bg-primary);
 }
 
-.friends-list::-webkit-scrollbar-thumb,
-.chat-messages::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
+.friends-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
   border-radius: 3px;
 }
 
-.friends-list::-webkit-scrollbar-thumb:hover,
-.chat-messages::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-gold);
+.friends-list::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-light);
 }
 
-.social-container-wrapper {
-  position: fixed;
-  bottom: 90px;
-  right: 20px;
-  width: 350px;
-  height: 500px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-accent);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  /* Add this */
-  transform: translateY(20px) scale(0.95);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.social-container-wrapper.open {
-  opacity: 1;
-  visibility: visible;
-  /* Add this */
-  transform: translateY(0) scale(1);
-}
-
-/* Social Tabs */
+/* Social Tabs - Crimson */
 .social-tabs {
   display: flex;
   background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-accent);
 }
 
 .social-tab {
@@ -441,19 +416,19 @@
 }
 
 .social-tab:hover {
-  background: rgba(200, 155, 60, 0.1);
+  background: rgba(220, 20, 60, 0.1);
   color: var(--text-primary);
 }
 
 .social-tab.active {
   background: var(--bg-secondary);
-  color: var(--accent-gold);
-  border-bottom: 2px solid var(--accent-gold);
+  color: var(--accent-primary);
+  border-bottom: 2px solid var(--accent-primary);
 }
 
 /* Tab notification badge */
 .tab-notification-badge {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background: var(--gradient-crimson);
   color: white;
   font-size: 10px;
   font-weight: bold;
@@ -465,6 +440,7 @@
   justify-content: center;
   padding: 0 4px;
   animation: pulse 2s infinite;
+  box-shadow: var(--shadow-crimson);
 }
 
 /* Floating button notification badge */
@@ -472,7 +448,7 @@
   position: absolute;
   top: -5px;
   right: -5px;
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background: var(--gradient-crimson);
   color: white;
   font-size: 11px;
   font-weight: bold;
@@ -483,7 +459,7 @@
   align-items: center;
   justify-content: center;
   padding: 0 4px;
-  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.5);
+  box-shadow: var(--shadow-crimson);
   animation: pulse 2s infinite;
 }
 
@@ -516,7 +492,7 @@
 }
 
 .embedded-notification-content .notification-panel-footer {
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-accent);
   background: var(--bg-tertiary);
 }
 
@@ -531,6 +507,6 @@
 }
 
 .embedded-notification-content .notification-item:hover {
-  border-color: var(--accent-gold);
+  border-color: var(--accent-primary);
   transform: translateX(3px);
 }
