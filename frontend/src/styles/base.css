@@ -1,4 +1,4 @@
-/* base.css - IONIAN SHADOW ORDER GLOBAL STYLES */
+/* base.css - KILLSTREAK Premium Global Styles */
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
 * {
@@ -30,14 +30,14 @@ body {
   color: var(--text-primary);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
-  line-height: 1.5;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   position: relative;
 }
 
-/* Animated Shadow Mist Background */
+/* ===== SUBTLE ANIMATED BACKGROUND ===== */
 body::before {
   content: '';
   position: fixed;
@@ -46,23 +46,21 @@ body::before {
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(220, 20, 60, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(139, 0, 0, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(255, 183, 197, 0.03) 0%, transparent 60%);
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(226, 54, 73, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 50% at 90% 90%, rgba(196, 30, 58, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 50% at 10% 90%, rgba(0, 212, 255, 0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
-  animation: shadowMist 15s ease-in-out infinite alternate;
+  animation: ambientGlow 15s ease-in-out infinite alternate;
 }
 
-@keyframes shadowMist {
+@keyframes ambientGlow {
   0% {
-    opacity: 0.6;
-    transform: scale(1);
+    opacity: 0.8;
   }
 
   100% {
     opacity: 1;
-    transform: scale(1.1);
   }
 }
 
@@ -70,47 +68,65 @@ body::before {
   min-height: 100vh;
   position: relative;
   z-index: 1;
-}
-
-/* Main app structure */
-.app {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Main content area */
-.app-container {
+/* ===== MAIN APP STRUCTURE ===== */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--space-lg) var(--space-md);
-  flex: 1;
+  align-items: center;
 }
 
-/* Ionian Heading Styles */
+/* CENTERED Main Content Container */
+.app-container {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  z-index: 1;
+  padding: 0 var(--space-xl);
+}
+
+/* Ensure child pages are also centered if they don't use the container */
+main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ===== TYPOGRAPHY ===== */
 h1,
 h2,
 h3 {
   font-family: 'Cinzel', 'Times New Roman', serif;
   letter-spacing: 1px;
+  line-height: 1.3;
 }
 
 h1 {
-  font-size: clamp(1.5rem, 4vw, var(--font-size-4xl));
+  font-size: clamp(2rem, 5vw, var(--font-size-5xl));
   font-weight: var(--font-weight-bold);
-  background: linear-gradient(135deg, #dc143c 0%, #ff4757 40%, #dc143c 60%, #8b0000 100%);
+  background: linear-gradient(135deg, #e23649 0%, #ff5c72 40%, #ff7a8a 60%, #e23649 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-xl);
   text-align: center;
-  animation: crimsonShimmer 4s ease-in-out infinite;
-  text-shadow: 0 0 30px rgba(220, 20, 60, 0.3);
+  animation: crimsonFlow 4s ease-in-out infinite;
 }
 
-@keyframes crimsonShimmer {
+@keyframes crimsonFlow {
 
   0%,
   100% {
@@ -123,39 +139,39 @@ h1 {
 }
 
 h2 {
-  font-size: clamp(1.25rem, 3vw, var(--font-size-3xl));
+  font-size: clamp(1.5rem, 4vw, var(--font-size-4xl));
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
 }
 
 h3 {
-  font-size: clamp(1.125rem, 2.5vw, var(--font-size-2xl));
+  font-size: clamp(1.25rem, 3vw, var(--font-size-2xl));
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   margin-bottom: var(--space-md);
 }
 
 h4 {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--text-secondary);
   margin-bottom: var(--space-md);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
 }
 
-/* Form elements - Shadow Order Style */
+/* ===== FORM ELEMENTS ===== */
 input,
 select {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   color: var(--text-primary);
   padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-md);
   font-size: var(--font-size-base);
   font-family: 'Inter', sans-serif;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
   outline: none;
   font-weight: var(--font-weight-medium);
 }
@@ -164,7 +180,7 @@ input:focus,
 select:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px var(--accent-glow), var(--shadow-crimson);
-  background: var(--bg-tertiary);
+  background: var(--bg-elevated);
 }
 
 input::placeholder {
@@ -174,7 +190,7 @@ input::placeholder {
 
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dc143c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e23649' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px;
@@ -182,7 +198,7 @@ select {
   cursor: pointer;
 }
 
-/* Custom Scrollbar - Crimson Blood */
+/* ===== CUSTOM SCROLLBAR ===== */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -201,22 +217,24 @@ select {
   background: var(--accent-light);
 }
 
-/* Selection - Blood Red */
+/* ===== TEXT SELECTION ===== */
 ::selection {
-  background: rgba(220, 20, 60, 0.4);
+  background: rgba(226, 54, 73, 0.4);
   color: var(--text-primary);
 }
 
-/* Loading states */
+/* ===== LOADING STATES ===== */
 .loading {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  width: 100%;
   color: var(--accent-primary);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   font-family: 'Cinzel', serif;
+  background: var(--bg-primary);
 }
 
 .loading-matches {
@@ -226,25 +244,57 @@ select {
   font-weight: var(--font-weight-semibold);
 }
 
-/* Error and status messages */
+/* ===== ERROR STATES ===== */
 .error-box {
-  background: rgba(220, 20, 60, 0.15);
+  background: rgba(226, 54, 73, 0.12);
   border: 1px solid var(--border-accent);
-  color: var(--accent-primary);
-  padding: var(--space-md) var(--space-lg);
-  border-radius: var(--radius-md);
-  margin: 0 auto var(--space-xl);
+  color: var(--accent-light);
+  padding: var(--space-lg) var(--space-xl);
+  border-radius: var(--radius-lg);
+  margin: var(--space-xl) auto;
   max-width: 600px;
   text-align: center;
   font-weight: var(--font-weight-semibold);
   box-shadow: var(--shadow-crimson);
 }
 
+/* ===== UTILITY CLASSES ===== */
 .text-center {
   text-align: center;
 }
 
-/* Prevent zoom on iOS input focus */
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== iOS INPUT ZOOM FIX ===== */
 @media (max-width: 768px) {
 
   input,
@@ -254,7 +304,7 @@ select {
   }
 }
 
-/* Reduced motion support */
+/* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
 
   *,

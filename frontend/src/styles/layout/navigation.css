@@ -1,23 +1,26 @@
-/* ------------------------------------------------------ */
-/* IONIAN SHADOW ORDER - Navigation Bar */
-/* ------------------------------------------------------ */
+/* ============================================ */
+/* KILLSTREAK - Premium Navigation Bar */
+/* Full-width sticky with blur effect */
+/* ============================================ */
+
 nav {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   width: 100%;
-  padding: var(--space-md) var(--space-lg);
-  background: rgba(10, 10, 15, 0.85);
-  border-bottom: 1px solid var(--border-accent);
+  padding: var(--space-md) var(--space-2xl);
+  background: rgba(8, 8, 16, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   flex-wrap: wrap;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  position: relative;
-  z-index: 100;
 }
 
-/* Crimson glow line at bottom */
+/* Animated glow line */
 nav::after {
   content: '';
   position: absolute;
@@ -27,21 +30,19 @@ nav::after {
   height: 1px;
   background: linear-gradient(90deg,
       transparent 0%,
-      var(--accent-primary) 20%,
-      var(--accent-light) 50%,
-      var(--accent-primary) 80%,
+      rgba(220, 20, 60, 0.3) 20%,
+      rgba(255, 71, 87, 0.5) 50%,
+      rgba(220, 20, 60, 0.3) 80%,
       transparent 100%);
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
-/* ------------------------------------------------------ */
-/* Navigation Links - Blade Style */
-/* ------------------------------------------------------ */
+/* ===== NAVIGATION LINKS ===== */
 .nav-link {
   padding: var(--space-sm) var(--space-lg);
   text-decoration: none;
   color: var(--text-secondary);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   font-size: var(--font-size-sm);
@@ -53,7 +54,7 @@ nav::after {
   letter-spacing: 0.5px;
 }
 
-/* Hover blade effect */
+/* Hover glow effect */
 .nav-link::before {
   content: '';
   position: absolute;
@@ -61,7 +62,7 @@ nav::after {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(220, 20, 60, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(220, 20, 60, 0.15), transparent);
   transition: left 0.5s ease;
 }
 
@@ -71,41 +72,39 @@ nav::after {
 
 .nav-link:hover {
   color: var(--text-primary);
-  background: rgba(220, 20, 60, 0.1);
-  border-color: var(--border-accent);
-  text-shadow: 0 0 10px rgba(220, 20, 60, 0.5);
-  transform: translateY(-2px);
+  background: rgba(220, 20, 60, 0.08);
+  border-color: rgba(220, 20, 60, 0.2);
+  text-shadow: 0 0 20px rgba(220, 20, 60, 0.4);
+  transform: translateY(-1px);
 }
 
-/* Active/current page state */
+/* Active state */
 .nav-link.active {
   color: var(--accent-primary);
-  background: rgba(220, 20, 60, 0.15);
+  background: rgba(220, 20, 60, 0.12);
   border-color: var(--accent-primary);
-  box-shadow: 0 0 15px rgba(220, 20, 60, 0.3);
+  box-shadow: 0 0 20px rgba(220, 20, 60, 0.3);
 }
 
-/* Admin Link - Special Styling */
+/* ===== ADMIN LINK - Special Style ===== */
 .admin-link {
   color: var(--cherry-blossom) !important;
-  border-color: rgba(255, 183, 197, 0.3) !important;
+  border-color: rgba(255, 183, 197, 0.2) !important;
 }
 
 .admin-link:hover {
-  background: rgba(255, 183, 197, 0.1) !important;
+  background: rgba(255, 183, 197, 0.08) !important;
   border-color: var(--cherry-blossom) !important;
-  box-shadow: 0 0 15px var(--cherry-glow) !important;
+  box-shadow: 0 0 20px var(--cherry-glow) !important;
 }
 
-/* ------------------------------------------------------ */
-/* Logout Button - Shadow Strike */
-/* ------------------------------------------------------ */
+/* ===== LOGOUT BUTTON ===== */
 .logout-btn {
   background: var(--gradient-crimson) !important;
   border: 1px solid var(--accent-primary) !important;
   color: #fff !important;
-  padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-xl);
+  border-radius: var(--radius-md);
   font-weight: var(--font-weight-bold);
   font-size: var(--font-size-sm);
   cursor: pointer;
@@ -136,23 +135,21 @@ nav::after {
 }
 
 .logout-btn:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-crimson-lg);
 }
 
-/* ------------------------------------------------------ */
-/* Responsive Navigation */
-/* ------------------------------------------------------ */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   nav {
     justify-content: center;
-    gap: var(--space-sm);
-    padding: var(--space-sm);
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
   }
 
   .nav-link,
   .logout-btn {
-    padding: var(--space-xs) var(--space-sm);
+    padding: var(--space-xs) var(--space-md);
     font-size: var(--font-size-xs);
   }
 }
@@ -163,13 +160,14 @@ nav::after {
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--space-xs);
+    padding: var(--space-sm);
   }
 
   .nav-link,
   .logout-btn {
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
     text-align: center;
-    padding: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
   }
 }
