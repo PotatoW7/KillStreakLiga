@@ -1,4 +1,4 @@
-/* Import all CSS files */
+
 @import './variables.css';
 @import './base.css';
 @import './utilities.css';
@@ -6,7 +6,6 @@
 @import './layout/responsive.css';
 
 
-/* Component Styles */
 @import './componentsCSS/auth.css';
 @import './componentsCSS/profile.css';
 @import './componentsCSS/summoner.css';

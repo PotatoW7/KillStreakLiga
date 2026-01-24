@@ -1426,22 +1426,7 @@ function Profile() {
                           ))}
                         </div>
                       )}
-                      {((post.likes?.length > 0) || (post.dislikes?.length > 0)) && (
-                        <div className="reaction-summary">
-                          {post.likes?.length > 0 && (
-                            <span className="summary-item liked">
-                              Liked by {post.likes[0].username}
-                              {post.likes.length > 1 && ` and ${post.likes.length - 1} others`}
-                            </span>
-                          )}
-                          {post.dislikes?.length > 0 && (
-                            <span className="summary-item disliked">
-                              Disliked by {post.dislikes[0].username}
-                              {post.dislikes.length > 1 && ` and ${post.dislikes.length - 1} others`}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      
 
                       <div className="post-interactions">
                         <button
