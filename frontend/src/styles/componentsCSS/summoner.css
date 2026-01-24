@@ -1,8 +1,25 @@
-/* Summoner Page Layout */
+/* Summoner Page - KILLSTREAK Premium Styles */
+
+/* ===== FULL-WIDTH IMMERSIVE LAYOUT ===== */
 .summoner-page {
-  padding: 70px 20px 40px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  min-height: calc(100vh - 64px);
+  padding: var(--space-2xl);
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(220, 20, 60, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 20% 100%, rgba(139, 0, 0, 0.05) 0%, transparent 50%),
+    var(--bg-primary);
+  position: relative;
+}
+
+.summoner-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(220, 20, 60, 0.3), transparent);
 }
 
 /* Search Container */
@@ -10,16 +27,38 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-md);
   margin: 0 auto var(--space-2xl);
   flex-wrap: wrap;
-  max-width: 900px;
+  max-width: 1000px;
+  padding: 0 var(--space-lg);
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .search-container input {
-  min-width: 250px;
+  min-width: 280px;
   flex: 1;
-  max-width: 350px;
+  max-width: 400px;
+  background: rgba(12, 12, 20, 0.8);
+  border: 1px solid var(--border-color);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+}
+
+.search-container input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .search-container button {

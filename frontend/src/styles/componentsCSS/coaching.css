@@ -10,6 +10,9 @@
     min-height: 100vh;
     padding: 2rem;
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .become-coach-container,
@@ -40,7 +43,7 @@
     /* Reset global gradient */
     background-clip: initial;
     -webkit-background-clip: initial;
-    text-align: left;
+    text-align: center;
 }
 
 .coach-header p,
@@ -52,11 +55,11 @@
 
 .coaching-header {
     display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    text-align: left;
-    gap: 2rem;
+    text-align: center;
+    gap: 1rem;
     margin-bottom: 2rem;
 }
 
@@ -64,8 +67,8 @@
 .rules-header {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
+    align-items: center;
+    text-align: center;
     margin-bottom: 2rem;
 }
 
@@ -1052,4 +1055,16 @@
     background: rgba(255, 0, 0, 0.1);
     border-radius: 6px;
     border-left: 4px solid #ff4757;
+}
+
+/* Hide spin buttons for numeric inputs */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+    appearance: none;
 }
