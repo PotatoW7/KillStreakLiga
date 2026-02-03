@@ -443,6 +443,17 @@
   box-shadow: var(--shadow-crimson);
 }
 
+.social-tab-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  transition: transform 0.2s;
+}
+
+.social-tab:hover .social-tab-icon {
+  transform: scale(1.1);
+}
+
 /* Floating button notification badge */
 .floating-notification-badge {
   position: absolute;

@@ -200,9 +200,15 @@ function App() {
             <button
               className="floating-chat-btn"
               onClick={toggleSocial}
-              title={showSocial ? "Close Chat" : "Open Friends & Chat"}
+              title={showSocial ? "Close Chat" : "Open Friends & Social"}
             >
-              💬
+              <div className="btn-split-container">
+                <img src="/project-icons/Friends and Chat icons/comment chat balloon.png" alt="Chat" className="floating-icon icon-chat" />
+                <img src="/project-icons/Friends and Chat icons/bell.png" alt="Notifications" className="floating-icon icon-bell" />
+              </div>
+              {notificationCount > 0 && (
+                <span className="floating-notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span>
+              )}
             </button>
 
             <div className={`social-container-wrapper ${showSocial ? "open" : ""}`}>
@@ -211,13 +217,13 @@ function App() {
                   className={`social-tab ${!selectedFriend && activeTab === 'friends' ? 'active' : ''}`}
                   onClick={() => { setActiveTab('friends'); setSelectedFriend(null); }}
                 >
-                  💬 Friends
+                  <img src="/project-icons/Friends and Chat icons/comment chat balloon.png" alt="Friends" className="social-tab-icon" /> Friends
                 </button>
                 <button
                   className={`social-tab ${activeTab === 'requests' ? 'active' : ''}`}
                   onClick={() => { setActiveTab('requests'); setSelectedFriend(null); }}
                 >
-                  🔔 Requests
+                  <img src="/project-icons/Friends and Chat icons/bell.png" alt="Requests" className="social-tab-icon" /> Requests
                   {notificationCount > 0 && (
                     <span className="tab-notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span>
                   )}

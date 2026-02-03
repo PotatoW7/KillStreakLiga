@@ -114,14 +114,14 @@ function Profile() {
     rankedUpdateLoading: false,
     lastUpdateTime: null,
     newPostContent: "",
-    newPostImages: [], // Changed to array
+    newPostImages: [],
     posts: [],
     creatingPost: false,
     loadingPosts: false,
     editingPostId: null,
     editContent: "",
     updatingPost: false,
-    newCommentText: {}, // Map of postId -> currentComment
+    newCommentText: {},
     postingCommentId: null,
     openCommentsPostId: null
   });
@@ -274,7 +274,7 @@ function Profile() {
         comments: [],
         mediaUrls: [],
         socialPreview: socialPreview || null,
-        postImages: state.newPostImages || [], // Changed to array
+        postImages: state.newPostImages || [],
         comments: []
       };
 
@@ -283,7 +283,7 @@ function Profile() {
       setState(prev => ({
         ...prev,
         newPostContent: "",
-        newPostImages: [], // Changed to array
+        newPostImages: [],
         creatingPost: false
       }));
 
@@ -352,7 +352,6 @@ function Profile() {
     const postRef = doc(db, "posts", post.id);
     const userId = state.user.uid;
 
-    // Detailed user info for reaction display
     const userData = {
       uid: userId,
       username: state.user.displayName || "Anonymous User",
@@ -497,12 +496,9 @@ function Profile() {
 
     setState(prev => ({ ...prev, loadingPosts: true }));
 
-    // FIX: Simplified query without orderBy to avoid index requirement
     const postsQuery = query(
       collection(db, "posts"),
       where("userId", "==", targetUserId)
-      // Removed orderBy temporarily until index is created
-      // orderBy("createdAt", "desc")
     );
 
     postsUnsubscribe.current = onSnapshot(postsQuery, (snapshot) => {
@@ -511,11 +507,10 @@ function Profile() {
         ...doc.data()
       }));
 
-      // Sort posts by createdAt manually (client-side)
       posts.sort((a, b) => {
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
-        return dateB - dateA; // Descending order
+        return dateB - dateA;
       });
 
       setState(prev => ({
@@ -1426,7 +1421,7 @@ function Profile() {
                           ))}
                         </div>
                       )}
-                      
+
 
                       <div className="post-interactions">
                         <button
