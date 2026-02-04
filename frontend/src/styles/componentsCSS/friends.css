@@ -1,6 +1,80 @@
-/* ============================================ */
-/* IONIAN SHADOW ORDER - Friends List */
-/* ============================================ */
+/* Social Header */
+.social-header {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-accent);
+}
+
+.social-header-title {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.5px;
+}
+
+/* Mini Tabs for Friends List */
+.friends-mini-tabs {
+  display: flex;
+  gap: 4px;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Mini Tabs for Friends List */
+.friends-mini-tabs {
+  display: flex;
+  gap: 4px;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.friends-mini-tab {
+  padding: 6px 12px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.friends-mini-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.friends-mini-tab.active {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.mini-tab-badge {
+  background: var(--accent-light);
+  color: var(--text-dark);
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.friends-mini-tab.active .mini-tab-badge {
+  background: white;
+  color: var(--accent-primary);
+}
 
 .friends-container {
   flex: 1;
@@ -208,12 +282,12 @@
 }
 
 .request-actions button:first-child {
-  background: var(--victory);
+  background: #00b37d;
   color: white;
 }
 
 .request-actions button:first-child:hover {
-  background: #00b37d;
+  background: #009c6d;
   transform: translateY(-1px);
 }
 
@@ -224,6 +298,54 @@
 
 .request-actions button:last-child:hover {
   background: var(--accent-light);
+  transform: translateY(-1px);
+}
+
+/* Pending Section Headers */
+.pending-section-header {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: var(--space-md) 0 var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-xs);
+}
+
+.pending-section-header:not(:first-child) {
+  margin-top: var(--space-md);
+}
+
+/* Sent Request Items */
+.sent-request-item {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+  padding: 10px var(--space-sm) !important;
+  margin: var(--space-xs) 0;
+}
+
+/* Pending Status Button */
+.pending-status-btn {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-secondary) !important;
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+.pending-status-btn:hover {
+  transform: none !important;
+}
+
+/* Cancel Request Button */
+.cancel-request-btn {
+  background: var(--accent-primary) !important;
+  color: white !important;
+}
+
+.cancel-request-btn:hover {
+  background: var(--accent-light) !important;
   transform: translateY(-1px);
 }
 
@@ -454,25 +576,6 @@
   transform: scale(1.1);
 }
 
-/* Floating button notification badge */
-.floating-notification-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: var(--gradient-crimson);
-  color: white;
-  font-size: 11px;
-  font-weight: bold;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  box-shadow: var(--shadow-crimson);
-  animation: pulse 2s infinite;
-}
 
 @keyframes pulse {
 

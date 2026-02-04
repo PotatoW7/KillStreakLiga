@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDocs, orderBy, getDoc 
+import {
+  collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDocs, orderBy, getDoc
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
-function FriendsList({ onSelectFriend }) {
+function FriendsList({ onSelectFriend, onUnreadCountChange }) {
   const [friends, setFriends] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [sentFriendRequests, setSentFriendRequests] = useState([]);
   const [searchUsername, setSearchUsername] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [friendsTabView, setFriendsTabView] = useState('all');
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -22,15 +24,16 @@ function FriendsList({ onSelectFriend }) {
         const friendsList = data.friends || [];
         setFriends(friendsList);
         setPendingRequests(data.pendingRequests || []);
+        setSentFriendRequests(data.sentFriendRequests || []);
 
         friendsList.forEach(friend => {
           const friendRef = doc(db, 'users', friend.id);
           const unsubscribeFriend = onSnapshot(friendRef, (friendDoc) => {
             if (friendDoc.exists()) {
               const friendData = friendDoc.data();
-              setFriends(prevFriends => 
-                prevFriends.map(f => 
-                  f.id === friend.id 
+              setFriends(prevFriends =>
+                prevFriends.map(f =>
+                  f.id === friend.id
                     ? { ...f, profileImage: friendData.profileImage }
                     : f
                 )
@@ -55,19 +58,19 @@ function FriendsList({ onSelectFriend }) {
       const chatId = [auth.currentUser.uid, friend.id].sort().join('_');
       const messagesRef = collection(db, 'chats', chatId, 'messages');
       const q = query(messagesRef, orderBy('timestamp', 'asc'));
-      
+
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const unread = messages.filter(msg => 
+        const unread = messages.filter(msg =>
           msg.senderId !== auth.currentUser.uid && !msg.read
         ).length;
-        
+
         setUnreadCounts(prev => ({
           ...prev,
           [friend.id]: unread
         }));
       });
-      
+
       unsubscribeFunctions.push(unsubscribe);
     });
 
@@ -75,6 +78,14 @@ function FriendsList({ onSelectFriend }) {
       unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     };
   }, [friends]);
+
+
+  useEffect(() => {
+    const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
+    if (onUnreadCountChange) {
+      onUnreadCountChange(totalUnread);
+    }
+  }, [unreadCounts, onUnreadCountChange]);
 
   const searchUsers = async () => {
     if (!searchUsername.trim()) {
@@ -97,13 +108,15 @@ function FriendsList({ onSelectFriend }) {
         if (docSnap.id !== auth.currentUser.uid) {
           const userData = docSnap.data();
           const isAlreadyFriend = friends.some(friend => friend.id === docSnap.id);
-          
+          const hasPendingRequest = sentFriendRequests.some(req => req.to === docSnap.id);
+
           results.push({
             id: docSnap.id,
             username: userData.username || 'Anonymous',
             email: userData.email,
             profileImage: userData.profileImage,
-            isAlreadyFriend
+            isAlreadyFriend,
+            hasPendingRequest
           });
         }
       });
@@ -118,13 +131,29 @@ function FriendsList({ onSelectFriend }) {
 
   const sendFriendRequest = async (targetUserId, targetUsername) => {
     try {
+      const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const targetUserRef = doc(db, 'users', targetUserId);
+
+      const requestData = {
+        from: auth.currentUser.uid,
+        fromUsername: auth.currentUser.displayName || 'Anonymous',
+        timestamp: new Date()
+      };
+
+      const sentRequestData = {
+        to: targetUserId,
+        toUsername: targetUsername,
+        timestamp: new Date()
+      };
+
+
       await updateDoc(targetUserRef, {
-        pendingRequests: arrayUnion({
-          from: auth.currentUser.uid,
-          fromUsername: auth.currentUser.displayName || 'Anonymous',
-          timestamp: new Date()
-        })
+        pendingRequests: arrayUnion(requestData)
+      });
+
+
+      await updateDoc(currentUserRef, {
+        sentFriendRequests: arrayUnion(sentRequestData)
       });
 
       setSearchResults([]);
@@ -147,6 +176,7 @@ function FriendsList({ onSelectFriend }) {
       const currentUserDoc = await getDoc(userRef);
       const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
 
+
       await updateDoc(userRef, {
         friends: arrayUnion({
           id: request.from,
@@ -164,6 +194,16 @@ function FriendsList({ onSelectFriend }) {
         })
       });
 
+      // Remove from sender's sentFriendRequests
+      const sentRequest = (friendData.sentFriendRequests || []).find(
+        req => req.to === auth.currentUser.uid
+      );
+      if (sentRequest) {
+        await updateDoc(friendRef, {
+          sentFriendRequests: arrayRemove(sentRequest)
+        });
+      }
+
     } catch (error) {
       console.error('Error accepting friend request:', error);
       alert('Error accepting friend request: ' + error.message);
@@ -173,56 +213,118 @@ function FriendsList({ onSelectFriend }) {
   const rejectFriendRequest = async (request) => {
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
+      const senderRef = doc(db, 'users', request.from);
+
+
       await updateDoc(userRef, {
         pendingRequests: arrayRemove(request)
       });
+
+
+      const senderDoc = await getDoc(senderRef);
+      if (senderDoc.exists()) {
+        const senderData = senderDoc.data();
+        const sentRequest = (senderData.sentFriendRequests || []).find(
+          req => req.to === auth.currentUser.uid
+        );
+
+        if (sentRequest) {
+
+          await updateDoc(senderRef, {
+            sentFriendRequests: arrayRemove(sentRequest)
+          });
+        }
+
+
+        await updateDoc(senderRef, {
+          friendNotifications: arrayUnion({
+            type: 'rejection',
+            from: auth.currentUser.uid,
+            fromUsername: auth.currentUser.displayName || 'Anonymous',
+            timestamp: new Date(),
+            read: false
+          })
+        });
+      }
     } catch (error) {
       console.error('Error rejecting friend request:', error);
       alert('Error rejecting friend request: ' + error.message);
     }
   };
 
-const unfriend = async (friendId, friendUsername) => {
-  if (!window.confirm(`Are you sure you want to unfriend ${friendUsername}?`)) {
-    return;
-  }
+  const cancelSentRequest = async (request) => {
+    try {
+      const currentUserRef = doc(db, 'users', auth.currentUser.uid);
+      const targetUserRef = doc(db, 'users', request.to);
 
-     try {
-    const userRef = doc(db, 'users', auth.currentUser.uid);
-    const friendRef = doc(db, 'users', friendId);
 
-    const userSnap = await getDoc(userRef);
-    const userData = userSnap.data();
+      await updateDoc(currentUserRef, {
+        sentFriendRequests: arrayRemove(request)
+      });
 
-    const friendToRemove = (userData.friends || []).find(f => f.id === friendId);
-    if (!friendToRemove) {
-      alert("Friend not found in your list.");
+
+      const targetDoc = await getDoc(targetUserRef);
+      if (targetDoc.exists()) {
+        const targetData = targetDoc.data();
+        const pendingRequest = (targetData.pendingRequests || []).find(
+          req => req.from === auth.currentUser.uid
+        );
+
+        if (pendingRequest) {
+          await updateDoc(targetUserRef, {
+            pendingRequests: arrayRemove(pendingRequest)
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error canceling friend request:', error);
+      alert('Error canceling friend request: ' + error.message);
+    }
+  };
+
+  const unfriend = async (friendId, friendUsername) => {
+    if (!window.confirm(`Are you sure you want to unfriend ${friendUsername}?`)) {
       return;
     }
 
-    await updateDoc(userRef, {
-      friends: arrayRemove(friendToRemove)
-    });
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const friendRef = doc(db, 'users', friendId);
 
-    const friendSnap = await getDoc(friendRef);
-    const friendData = friendSnap.data();
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.data();
 
-    const userToRemove = (friendData.friends || []).find(f => f.id === auth.currentUser.uid);
-    if (userToRemove) {
-      await updateDoc(friendRef, {
-        friends: arrayRemove(userToRemove)
+      const friendToRemove = (userData.friends || []).find(f => f.id === friendId);
+      if (!friendToRemove) {
+        alert("Friend not found in your list.");
+        return;
+      }
+
+      await updateDoc(userRef, {
+        friends: arrayRemove(friendToRemove)
       });
-    }
 
-    alert(`You are no longer friends with ${friendUsername}`);
-  } catch (error) {
-    console.error('Error unfriending:', error);
-    alert('Error unfriending: ' + error.message);
-  }
-};
+      const friendSnap = await getDoc(friendRef);
+      const friendData = friendSnap.data();
+
+      const userToRemove = (friendData.friends || []).find(f => f.id === auth.currentUser.uid);
+      if (userToRemove) {
+        await updateDoc(friendRef, {
+          friends: arrayRemove(userToRemove)
+        });
+      }
+
+      alert(`You are no longer friends with ${friendUsername}`);
+    } catch (error) {
+      console.error('Error unfriending:', error);
+      alert('Error unfriending: ' + error.message);
+    }
+  };
+
+  const totalPendingCount = pendingRequests.length + sentFriendRequests.length;
+
   return (
     <div className="friends-container">
-      <h3>Friends</h3>
 
       <div className="search-friends">
         <input
@@ -244,8 +346,8 @@ const unfriend = async (friendId, friendUsername) => {
             <div key={user.id} className="search-result-item">
               <div className="user-info">
                 <div className="user-avatar">
-                  <img 
-                    src={user.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"} 
+                  <img
+                    src={user.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
                     alt={user.username}
                     className="avatar-img"
                     onError={(e) => {
@@ -261,6 +363,10 @@ const unfriend = async (friendId, friendUsername) => {
                 <button disabled className="already-friends-btn">
                   Already Friends
                 </button>
+              ) : user.hasPendingRequest ? (
+                <button disabled className="pending-status-btn">
+                  Pending
+                </button>
               ) : (
                 <button onClick={() => sendFriendRequest(user.id, user.username)}>
                   Add Friend
@@ -270,72 +376,129 @@ const unfriend = async (friendId, friendUsername) => {
           ))}
         </div>
       )}
-      {pendingRequests.length > 0 && (
-        <div className="pending-requests">
-          <h4>Pending Requests ({pendingRequests.length})</h4>
-          {pendingRequests.map((req, idx) => (
-            <div key={idx} className="request-item">
-              <span className="username">{req.fromUsername || 'Anonymous'}</span>
-              <div className="request-actions">
-                <button onClick={() => acceptFriendRequest(req)}>Accept</button>
-                <button onClick={() => rejectFriendRequest(req)}>Reject</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
-      <div className="friends-list">
-        {friends.length === 0 ? (
-          <p>No friends yet. Search to add!</p>
-        ) : (
-          friends.map(friend => (
-            <div 
-              key={friend.id} 
-              className={`friend-item ${unreadCounts[friend.id] > 0 ? 'has-unread' : ''}`}
-            >
-              <div 
-                className="friend-content"
-                onClick={() => onSelectFriend({
-                  id: friend.id,
-                  username: friend.username,
-                  profileImage: friend.profileImage || null
-                })}
-              >
-                <div className="friend-avatar">
-                  <img 
-                    src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"} 
-                    alt={friend.username}
-                    className="avatar-img"
-                    onError={(e) => {
-                      e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                    }}
-                  />
-                </div>
-                <div className="friend-info">
-                  <span className="friend-name">{friend.username}</span>
-                </div>
-                {unreadCounts[friend.id] > 0 && (
-                  <div className="unread-badge">
-                    {unreadCounts[friend.id]}
-                  </div>
-                )}
-              </div>
-              
-              <button 
-                className="unfriend-btn"
-                onClick={(e) => {
-                  e.stopPropagation(); 
-                  unfriend(friend.id, friend.username);
-                }}
-                title="Unfriend"
-              >
-                Unfriend
-              </button>
-            </div>
-          ))
-        )}
+      {/* Mini Tabs for Friends/Pending */}
+      <div className="friends-mini-tabs">
+        <button
+          className={`friends-mini-tab ${friendsTabView === 'all' ? 'active' : ''}`}
+          onClick={() => setFriendsTabView('all')}
+        >
+          All Friends
+        </button>
+        <button
+          className={`friends-mini-tab ${friendsTabView === 'pending' ? 'active' : ''}`}
+          onClick={() => setFriendsTabView('pending')}
+        >
+          Pending
+          {totalPendingCount > 0 && (
+            <span className="mini-tab-badge">{totalPendingCount}</span>
+          )}
+        </button>
       </div>
+
+      {/* Show content based on selected mini tab */}
+      {friendsTabView === 'pending' ? (
+        <div className="pending-requests" style={{ borderBottom: 'none' }}>
+          {/* Received Requests Section */}
+          {pendingRequests.length > 0 && (
+            <>
+              <div className="pending-section-header">Received Requests</div>
+              {pendingRequests.map((req, idx) => (
+                <div key={`received-${idx}`} className="request-item">
+                  <span className="username">{req.fromUsername || 'Anonymous'}</span>
+                  <div className="request-actions">
+                    <button onClick={() => acceptFriendRequest(req)}>Accept</button>
+                    <button onClick={() => rejectFriendRequest(req)}>Reject</button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Sent Requests Section */}
+          {sentFriendRequests.length > 0 && (
+            <>
+              <div className="pending-section-header">Sent Requests</div>
+              {sentFriendRequests.map((req, idx) => (
+                <div key={`sent-${idx}`} className="request-item sent-request-item">
+                  <span className="username">{req.toUsername || 'Anonymous'}</span>
+                  <div className="request-actions">
+                    <button disabled className="pending-status-btn">Pending</button>
+                    <button
+                      className="cancel-request-btn"
+                      onClick={() => cancelSentRequest(req)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Empty state */}
+          {pendingRequests.length === 0 && sentFriendRequests.length === 0 && (
+            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 'var(--space-lg)' }}>
+              No pending friend requests
+            </p>
+          )}
+        </div>
+      ) : (
+        <>
+
+          <div className="friends-list">
+            {friends.length === 0 ? (
+              <p>No friends yet. Search to add!</p>
+            ) : (
+              friends.map(friend => (
+                <div
+                  key={friend.id}
+                  className={`friend-item ${unreadCounts[friend.id] > 0 ? 'has-unread' : ''}`}
+                >
+                  <div
+                    className="friend-content"
+                    onClick={() => onSelectFriend({
+                      id: friend.id,
+                      username: friend.username,
+                      profileImage: friend.profileImage || null
+                    })}
+                  >
+                    <div className="friend-avatar">
+                      <img
+                        src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                        alt={friend.username}
+                        className="avatar-img"
+                        onError={(e) => {
+                          e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                        }}
+                      />
+                    </div>
+                    <div className="friend-info">
+                      <span className="friend-name">{friend.username}</span>
+                    </div>
+                    {unreadCounts[friend.id] > 0 && (
+                      <div className="unread-badge">
+                        {unreadCounts[friend.id]}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    className="unfriend-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      unfriend(friend.id, friend.username);
+                    }}
+                    title="Unfriend"
+                  >
+                    Unfriend
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -23,7 +23,7 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
   };
 
   const formatChampionName = (championName) => {
-    
+
     return championName
       .split('')
       .map((letter, index) => {
@@ -32,13 +32,13 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
         }
         return letter;
       })
-      .join(''); 
+      .join('');
   };
 
-  
+
   const getTimeAgo = (timestamp) => {
     if (!timestamp) return "Recently";
-    
+
     const now = Date.now();
     const diff = now - timestamp;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -93,7 +93,7 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
 
   const getRuneIconPath = (perkId) => {
     const runeMap = {
-      // Domination
+
       8100: 'Domination/7200_Domination', 8112: 'Domination/Electrocute',
       8128: 'Domination/DarkHarvest', 9923: 'Domination/HailOfBlades',
       8126: 'Domination/CheapShot', 8139: 'Domination/GreenTerror_TasteOfBlood',
@@ -101,26 +101,26 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
       8140: 'Domination/GrislyMementos', 8141: 'Domination/DeepWard',
       8135: 'Domination/TreasureHunter', 8105: 'Domination/RelentlessHunter',
       8106: 'Domination/UltimateHunter',
-      // Precision
+
       8000: 'Precision/7201_Precision', 8005: 'Precision/PressTheAttack',
       8008: 'Precision/LethalTempoTemp', 8021: 'Precision/FleetFootwork',
       8010: 'Precision/Conqueror', 9101: 'Precision/AbsorbLife', 9111: 'Precision/Triumph',
       8009: 'Precision/PresenceOfMind', 9104: 'Precision/LegendAlacrity',
       9105: 'Precision/LegendHaste', 9103: 'Precision/LegendBloodline',
       8014: 'Precision/CoupDeGrace', 8017: 'Precision/CutDown', 8299: 'Precision/LastStand',
-      // Sorcery
+
       8200: 'Sorcery/7202_Sorcery', 8214: 'Sorcery/SummonAery', 8229: 'Sorcery/ArcaneComet',
       8230: 'Sorcery/PhaseRush', 8224: 'Sorcery/Axiom_Arcanist', 8226: 'Sorcery/ManaflowBand',
       8275: 'Sorcery/NimbusCloak', 8210: 'Sorcery/Transcendence', 8234: 'Sorcery/CelerityTemp',
       8233: 'Sorcery/AbsoluteFocus', 8237: 'Sorcery/Scorch', 8232: 'Sorcery/Waterwalking',
       8236: 'Sorcery/GatheringStorm',
-      // Resolve
+
       8400: 'Resolve/7204_Resolve', 8437: 'Resolve/GraspOfTheUndying',
       8439: 'Resolve/VeteranAftershock', 8465: 'Resolve/Guardian',
       8446: 'Resolve/Demolish', 8463: 'Resolve/FontOfLife', 8401: 'Resolve/BonePlating',
       8429: 'Resolve/Conditioning', 8444: 'Resolve/SecondWind', 8473: 'Resolve/BonePlating',
       8451: 'Resolve/Overgrowth', 8453: 'Resolve/Revitalize', 8242: 'Resolve/Unflinching',
-      // Inspiration
+
       8300: 'Inspiration/7203_Whimsy', 8351: 'Inspiration/GlacialAugment',
       8360: 'Inspiration/UnsealedSpellbook', 8369: 'Inspiration/FirstStrike',
       8306: 'Inspiration/HextechFlashtraption', 8304: 'Inspiration/MagicalFootwear',
@@ -128,7 +128,7 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
       8352: 'Inspiration/TimeWarpTonic', 8345: 'Inspiration/BiscuitDelivery',
       8347: 'Inspiration/CosmicInsight', 8410: 'Inspiration/ApproachVelocity',
       8316: 'Inspiration/JackofAllTrades2',
-      // Stat Mods
+
       5001: 'stat-modifiers/StatModsHealthScalingIcon', 5005: 'stat-modifiers/StatModsAttackSpeedIcon',
       5007: 'stat-modifiers/StatModsCDRScalingIcon', 5008: 'stat-modifiers/StatModsAdaptiveForceIcon',
       5010: 'stat-modifiers/StatModsMovementSpeedIcon', 5011: 'stat-modifiers/StatModsHealthPlusIcon',
@@ -211,7 +211,7 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
     const key = `${p.puuid}-${p.championName}`;
 
 
-    const trinketId = p.item6; 
+    const trinketId = p.item6;
     const normalItems = p.items.slice(0, 6).filter((id) => id > 0);
     const emptySlots = 6 - normalItems.length;
     const itemsOrdered = [...normalItems, ...Array(emptySlots).fill(0)];

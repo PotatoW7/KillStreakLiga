@@ -30,6 +30,8 @@ function App() {
   const [showSocial, setShowSocial] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [activeTab, setActiveTab] = useState('friends');
+  const [socialMode, setSocialMode] = useState('chat');
+  const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -198,41 +200,58 @@ function App() {
         {user && (
           <>
             <button
-              className="floating-chat-btn"
-              onClick={toggleSocial}
-              title={showSocial ? "Close Chat" : "Open Friends & Social"}
+              className="notification-side-btn"
+              onClick={() => {
+                if (showSocial && socialMode === 'notifications') {
+                  setShowSocial(false);
+                } else {
+                  setShowSocial(true);
+                  setSocialMode('notifications');
+                  setActiveTab('requests');
+                  setSelectedFriend(null);
+                }
+              }}
+              title="Notifications"
             >
-              <div className="btn-split-container">
-                <img src="/project-icons/Friends and Chat icons/comment chat balloon.png" alt="Chat" className="floating-icon icon-chat" />
-                <img src="/project-icons/Friends and Chat icons/bell.png" alt="Notifications" className="floating-icon icon-bell" />
-              </div>
+              <img src="/project-icons/Friends and Chat icons/bell.png" alt="Notifications" className="side-tab-icon" />
               {notificationCount > 0 && (
-                <span className="floating-notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span>
+                <span className="side-notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span>
+              )}
+            </button>
+
+            <button
+              className="floating-chat-btn"
+              onClick={() => {
+                if (showSocial && socialMode === 'chat') {
+                  setShowSocial(false);
+                } else {
+                  setShowSocial(true);
+                  setSocialMode('chat');
+                  setActiveTab('friends');
+                  setSelectedFriend(null);
+                }
+              }}
+              title={showSocial ? "Close Chat" : "Open Friends & Chat"}
+            >
+              <img src="/project-icons/Friends and Chat icons/comment chat balloon.png" alt="Chat" className="floating-chat-icon" />
+              {totalUnreadMessages > 0 && (
+                <span className="chat-unread-badge">{totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}</span>
               )}
             </button>
 
             <div className={`social-container-wrapper ${showSocial ? "open" : ""}`}>
-              <div className="social-tabs">
-                <button
-                  className={`social-tab ${!selectedFriend && activeTab === 'friends' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('friends'); setSelectedFriend(null); }}
-                >
-                  <img src="/project-icons/Friends and Chat icons/comment chat balloon.png" alt="Friends" className="social-tab-icon" /> Friends
-                </button>
-                <button
-                  className={`social-tab ${activeTab === 'requests' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('requests'); setSelectedFriend(null); }}
-                >
-                  <img src="/project-icons/Friends and Chat icons/bell.png" alt="Requests" className="social-tab-icon" /> Requests
-                  {notificationCount > 0 && (
-                    <span className="tab-notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span>
-                  )}
-                </button>
+              <div className="social-header">
+                <h4 className="social-header-title">
+                  {socialMode === 'chat' ? ' Friends & Chat' : ' Notifications'}
+                </h4>
               </div>
               <div className="social-container">
-                {activeTab === 'friends' ? (
+                {socialMode === 'chat' ? (
                   !selectedFriend ? (
-                    <FriendsList onSelectFriend={handleSelectFriend} />
+                    <FriendsList
+                      onSelectFriend={handleSelectFriend}
+                      onUnreadCountChange={setTotalUnreadMessages}
+                    />
                   ) : (
                     <Chat
                       selectedFriend={selectedFriend}
