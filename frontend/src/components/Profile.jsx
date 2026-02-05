@@ -123,7 +123,11 @@ function Profile() {
     updatingPost: false,
     newCommentText: {},
     postingCommentId: null,
-    openCommentsPostId: null
+    openCommentsPostId: null,
+    editingCommentId: null,
+    editCommentText: "",
+    updatingComment: false,
+    deletingCommentId: null
   });
 
   const contextMenuRef = useRef(null);
@@ -435,6 +439,75 @@ function Profile() {
     } catch (error) {
       console.error("Error adding comment:", error);
       setState(prev => ({ ...prev, postingCommentId: null }));
+    }
+  };
+
+  const startEditingComment = (comment) => {
+    setState(prev => ({
+      ...prev,
+      editingCommentId: comment.id,
+      editCommentText: comment.text
+    }));
+  };
+
+  const cancelEditingComment = () => {
+    setState(prev => ({
+      ...prev,
+      editingCommentId: null,
+      editCommentText: ""
+    }));
+  };
+
+  const updateComment = async (postId, commentId) => {
+    if (!state.editCommentText.trim() || state.updatingComment) return;
+
+    try {
+      setState(prev => ({ ...prev, updatingComment: true }));
+      const postRef = doc(db, "posts", postId);
+      const post = state.posts.find(p => p.id === postId);
+
+      if (!post) throw new Error("Post not found");
+
+      const updatedComments = post.comments.map(comment =>
+        comment.id === commentId
+          ? { ...comment, text: state.editCommentText.trim(), updatedAt: new Date().toISOString() }
+          : comment
+      );
+
+      await updateDoc(postRef, { comments: updatedComments });
+
+      setState(prev => ({
+        ...prev,
+        editingCommentId: null,
+        editCommentText: "",
+        updatingComment: false
+      }));
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      alert("Failed to update comment.");
+      setState(prev => ({ ...prev, updatingComment: false }));
+    }
+  };
+
+  const deleteComment = async (postId, commentId) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+
+    try {
+      setState(prev => ({ ...prev, deletingCommentId: commentId }));
+      const postRef = doc(db, "posts", postId);
+      const post = state.posts.find(p => p.id === postId);
+
+      if (!post) throw new Error("Post not found");
+
+      const updatedComments = post.comments.filter(comment => comment.id !== commentId);
+
+      await updateDoc(postRef, { comments: updatedComments });
+
+      setState(prev => ({ ...prev, deletingCommentId: null }));
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      alert("Failed to delete comment.");
+      setState(prev => ({ ...prev, deletingCommentId: null }));
     }
   };
 
@@ -1465,18 +1538,78 @@ function Profile() {
                         <div className="comments-list-container">
                           {post.comments && post.comments.length > 0 ? (
                             <div className="comments-list">
-                              {post.comments.map((comment) => (
-                                <div key={comment.id} className="comment-item">
-                                  <img src={comment.userProfileImage} alt={comment.username} className="comment-avatar" />
-                                  <div className="comment-body">
-                                    <div className="comment-header">
-                                      <span className="comment-author">{comment.username}</span>
-                                      <span className="comment-date">{formatPostTime(comment.createdAt)}</span>
+                              {post.comments.map((comment) => {
+                                const isCommentOwner = state.user?.uid === comment.userId;
+                                const isPostOwner = state.user?.uid === post.userId;
+                                const canEdit = isCommentOwner;
+                                const canDelete = isCommentOwner || isPostOwner;
+
+                                return (
+                                  <div key={comment.id} className="comment-item">
+                                    <img src={comment.userProfileImage} alt={comment.username} className="comment-avatar" />
+                                    <div className="comment-body">
+                                      <div className="comment-header">
+                                        <span className="comment-author">{comment.username}</span>
+                                        <div className="comment-header-right">
+                                          <span className="comment-date">{formatPostTime(comment.createdAt)}</span>
+                                          {(canEdit || canDelete) && state.editingCommentId !== comment.id && (
+                                            <div className="comment-actions">
+                                              {canEdit && (
+                                                <button
+                                                  className="comment-action-btn edit-comment-btn"
+                                                  onClick={() => startEditingComment(comment)}
+                                                  title="Edit Comment"
+                                                >
+                                                  <img src="/project-icons/Profile icons/edit.png" alt="Edit" />
+                                                </button>
+                                              )}
+                                              {canDelete && (
+                                                <button
+                                                  className="comment-action-btn delete-comment-btn"
+                                                  onClick={() => deleteComment(post.id, comment.id)}
+                                                  disabled={state.deletingCommentId === comment.id}
+                                                  title="Delete Comment"
+                                                >
+                                                  <span>{state.deletingCommentId === comment.id ? "..." : "×"}</span>
+                                                </button>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {state.editingCommentId === comment.id ? (
+                                        <div className="edit-comment-container">
+                                          <input
+                                            type="text"
+                                            className="edit-comment-input"
+                                            value={state.editCommentText}
+                                            onChange={(e) => setState(prev => ({ ...prev, editCommentText: e.target.value }))}
+                                            onKeyPress={(e) => e.key === 'Enter' && updateComment(post.id, comment.id)}
+                                          />
+                                          <div className="edit-comment-actions">
+                                            <button
+                                              className="edit-comment-save-btn"
+                                              onClick={() => updateComment(post.id, comment.id)}
+                                              disabled={state.updatingComment || !state.editCommentText.trim()}
+                                            >
+                                              {state.updatingComment ? "..." : "Save"}
+                                            </button>
+                                            <button
+                                              className="edit-comment-cancel-btn"
+                                              onClick={cancelEditingComment}
+                                              disabled={state.updatingComment}
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="comment-text">{comment.text}</div>
+                                      )}
                                     </div>
-                                    <div className="comment-text">{comment.text}</div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           ) : (
                             <div className="no-comments">No comments yet.</div>
