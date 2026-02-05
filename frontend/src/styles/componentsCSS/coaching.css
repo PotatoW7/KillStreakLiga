@@ -340,10 +340,34 @@
     padding: 0.75rem 1.5rem;
 }
 
-.become-coach-link {
-    color: var(--accent-primary);
+.coach-cta-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.become-coach-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-radius: 10px;
+    color: white;
     text-decoration: none;
-    font-size: 0.95rem;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(var(--accent-primary-rgb), 0.3);
+}
+
+.become-coach-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(var(--accent-primary-rgb), 0.4);
+}
+
+.become-coach-btn:active {
+    transform: translateY(-1px);
 }
 
 .eligibility-notice {
@@ -642,6 +666,12 @@
     font-size: 0.95rem;
 }
 
+.create-session-form select option {
+    background: #1a1a2e;
+    color: #ffffff;
+    padding: 0.5rem;
+}
+
 /* Sessions Grid */
 .sessions-grid {
     display: grid;
@@ -761,6 +791,142 @@
 .book-session-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 15px rgba(var(--accent-primary-rgb), 0.3);
+}
+
+/* Session Actions */
+.session-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.session-actions .book-session-btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+.edit-session-btn,
+.delete-session-btn {
+    padding: 0.625rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.edit-session-btn {
+    background: var(--bg-input);
+    color: var(--text-primary);
+}
+
+.edit-session-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.delete-session-btn {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.delete-session-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+}
+
+/* Session Card Editing State */
+.session-card.editing {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
+}
+
+/* Inline Edit Form */
+.edit-session-form {
+    margin-top: 0.75rem;
+}
+
+.edit-session-form .form-group {
+    margin-bottom: 0.75rem;
+}
+
+.edit-session-form label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.edit-session-form input,
+.edit-session-form textarea,
+.edit-session-form select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.edit-session-form select option {
+    background: #1a1a2e;
+    color: #ffffff;
+}
+
+.edit-session-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.save-edit-btn {
+    flex: 1;
+    padding: 0.625rem 1rem;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.save-edit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(var(--accent-primary-rgb), 0.3);
+}
+
+.save-edit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cancel-edit-btn {
+    padding: 0.625rem 1rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancel-edit-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
 }
 
 /* Coaches Grid */

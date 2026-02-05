@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { auth, db } from '../firebase';
-import { collection, query, where, getDocs, doc, getDoc, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, addDoc, deleteDoc, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import '../styles/componentsCSS/coaching.css';
 
 function Coaching() {
@@ -25,6 +25,14 @@ function Coaching() {
         specialty: ''
     });
     const [submitting, setSubmitting] = useState(false);
+    const [editingSession, setEditingSession] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+        title: '',
+        description: '',
+        price: '',
+        duration: '60',
+        specialty: ''
+    });
 
     const specialtyOptions = [
         'Top Lane', 'Jungle', 'Mid Lane', 'Bot Lane', 'Support',
@@ -111,6 +119,79 @@ function Coaching() {
         setSubmitting(false);
     };
 
+    const handleDeleteSession = async (sessionId) => {
+        if (!window.confirm('Are you sure you want to delete this coaching session?')) return;
+
+        try {
+            await deleteDoc(doc(db, "coachingSessions", sessionId));
+            fetchData();
+        } catch (err) {
+            console.error('Error deleting session:', err);
+        }
+    };
+
+    const handleEditSession = (session) => {
+        setEditingSession(session.id);
+        setEditFormData({
+            title: session.title,
+            description: session.description,
+            price: session.price.toString(),
+            duration: session.duration.toString(),
+            specialty: session.specialty
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingSession(null);
+        setEditFormData({
+            title: '',
+            description: '',
+            price: '',
+            duration: '60',
+            specialty: ''
+        });
+    };
+
+    const handleUpdateSession = async (sessionId) => {
+        setSubmitting(true);
+        try {
+            await updateDoc(doc(db, "coachingSessions", sessionId), {
+                title: editFormData.title,
+                description: editFormData.description,
+                price: parseFloat(editFormData.price),
+                duration: parseInt(editFormData.duration),
+                specialty: editFormData.specialty
+            });
+            setEditingSession(null);
+            setEditFormData({
+                title: '',
+                description: '',
+                price: '',
+                duration: '60',
+                specialty: ''
+            });
+            fetchData();
+        } catch (err) {
+            console.error('Error updating session:', err);
+        }
+        setSubmitting(false);
+    };
+
+    const canDeleteSession = (session) => {
+        if (!user) return false;
+        if (userRole === 'admin' || userRole === 'owner') return true;
+        return session.coachId === user.uid;
+    };
+
+    const canEditSession = (session) => {
+        if (!user) return false;
+        return session.coachId === user.uid;
+    };
+
+    const isOwnSession = (session) => {
+        return user && session.coachId === user.uid;
+    };
+
     const getHighestRank = (rankedData) => {
         if (!rankedData || rankedData.length === 0) return null;
         const tierOrder = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'EMERALD', 'DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER'];
@@ -152,11 +233,8 @@ function Coaching() {
                     )}
                     {(userRole === 'user' || !user) && (
                         <div className="coach-cta-buttons">
-                            <Link to="/become-coach" className="become-coach-link">
+                            <Link to="/become-coach" className="become-coach-btn">
                                 Want to become a coach?
-                            </Link>
-                            <Link to="/coach-rules" className="coach-rules-link">
-                                View Coach Rules
                             </Link>
                         </div>
                     )}
@@ -323,8 +401,10 @@ function Coaching() {
                             ) : (
                                 filteredSessions.map(session => {
                                     const rank = getHighestRank(session.coachRankedData);
+                                    const isEditing = editingSession === session.id;
+
                                     return (
-                                        <div key={session.id} className="session-card">
+                                        <div key={session.id} className={`session-card ${isEditing ? 'editing' : ''}`}>
                                             <div className="session-header">
                                                 <div className="coach-info-mini">
                                                     {session.coachRiotAccount && (
@@ -346,13 +426,107 @@ function Coaching() {
                                                 </div>
                                                 <span className="session-price">${session.price}</span>
                                             </div>
-                                            <h4 className="session-title">{session.title}</h4>
-                                            <p className="session-description">{session.description}</p>
-                                            <div className="session-meta">
-                                                <span className="session-specialty">{session.specialty}</span>
-                                                <span className="session-duration">Duration: {session.duration} min</span>
-                                            </div>
-                                            <button className="book-session-btn">Book Session</button>
+
+                                            {isEditing ? (
+                                                <div className="edit-session-form">
+                                                    <div className="form-group">
+                                                        <label>Title</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editFormData.title}
+                                                            onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label>Description</label>
+                                                        <textarea
+                                                            value={editFormData.description}
+                                                            onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                                            rows={2}
+                                                        />
+                                                    </div>
+                                                    <div className="form-row">
+                                                        <div className="form-group">
+                                                            <label>Price ($)</label>
+                                                            <input
+                                                                type="number"
+                                                                value={editFormData.price}
+                                                                onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
+                                                                min="1"
+                                                            />
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label>Duration</label>
+                                                            <select
+                                                                value={editFormData.duration}
+                                                                onChange={(e) => setEditFormData({ ...editFormData, duration: e.target.value })}
+                                                            >
+                                                                <option value="30">30 min</option>
+                                                                <option value="60">60 min</option>
+                                                                <option value="90">90 min</option>
+                                                                <option value="120">2 hours</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label>Specialty</label>
+                                                        <select
+                                                            value={editFormData.specialty}
+                                                            onChange={(e) => setEditFormData({ ...editFormData, specialty: e.target.value })}
+                                                        >
+                                                            {specialtyOptions.map(s => (
+                                                                <option key={s} value={s}>{s}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="edit-actions">
+                                                        <button
+                                                            className="save-edit-btn"
+                                                            onClick={() => handleUpdateSession(session.id)}
+                                                            disabled={submitting}
+                                                        >
+                                                            {submitting ? 'Saving...' : 'Save Changes'}
+                                                        </button>
+                                                        <button
+                                                            className="cancel-edit-btn"
+                                                            onClick={handleCancelEdit}
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <h4 className="session-title">{session.title}</h4>
+                                                    <p className="session-description">{session.description}</p>
+                                                    <div className="session-meta">
+                                                        <span className="session-specialty">{session.specialty}</span>
+                                                        <span className="session-duration">Duration: {session.duration} min</span>
+                                                    </div>
+
+                                                    <div className="session-actions">
+                                                        {!isOwnSession(session) && (
+                                                            <button className="book-session-btn">Book Session</button>
+                                                        )}
+                                                        {canEditSession(session) && (
+                                                            <button
+                                                                className="edit-session-btn"
+                                                                onClick={() => handleEditSession(session)}
+                                                            >
+                                                                ✎ Edit
+                                                            </button>
+                                                        )}
+                                                        {canDeleteSession(session) && (
+                                                            <button
+                                                                className="delete-session-btn"
+                                                                onClick={() => handleDeleteSession(session.id)}
+                                                            >
+                                                                🗑 Delete
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     );
                                 })
