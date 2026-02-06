@@ -134,15 +134,27 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const targetUserRef = doc(db, 'users', targetUserId);
 
+      // Get current user's profile image
+      const currentUserDoc = await getDoc(currentUserRef);
+      const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
+      const currentUserProfileImage = currentUserData.profileImage || null;
+
+      // Get target user's profile image
+      const targetUserDoc = await getDoc(targetUserRef);
+      const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
+      const targetProfileImage = targetUserData.profileImage || null;
+
       const requestData = {
         from: auth.currentUser.uid,
         fromUsername: auth.currentUser.displayName || 'Anonymous',
+        fromProfileImage: currentUserProfileImage,
         timestamp: new Date()
       };
 
       const sentRequestData = {
         to: targetUserId,
         toUsername: targetUsername,
+        toProfileImage: targetProfileImage,
         timestamp: new Date()
       };
 
@@ -194,7 +206,6 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         })
       });
 
-      // Remove from sender's sentFriendRequests
       const sentRequest = (friendData.sentFriendRequests || []).find(
         req => req.to === auth.currentUser.uid
       );
@@ -405,7 +416,19 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
               <div className="pending-section-header">Received Requests</div>
               {pendingRequests.map((req, idx) => (
                 <div key={`received-${idx}`} className="request-item">
-                  <span className="username">{req.fromUsername || 'Anonymous'}</span>
+                  <div className="request-user-info">
+                    <div className="request-avatar">
+                      <img
+                        src={req.fromProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                        alt={req.fromUsername || 'Anonymous'}
+                        className="avatar-img"
+                        onError={(e) => {
+                          e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                        }}
+                      />
+                    </div>
+                    <span className="username">{req.fromUsername || 'Anonymous'}</span>
+                  </div>
                   <div className="request-actions">
                     <button onClick={() => acceptFriendRequest(req)}>Accept</button>
                     <button onClick={() => rejectFriendRequest(req)}>Reject</button>
@@ -421,7 +444,19 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
               <div className="pending-section-header">Sent Requests</div>
               {sentFriendRequests.map((req, idx) => (
                 <div key={`sent-${idx}`} className="request-item sent-request-item">
-                  <span className="username">{req.toUsername || 'Anonymous'}</span>
+                  <div className="request-user-info">
+                    <div className="request-avatar">
+                      <img
+                        src={req.toProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                        alt={req.toUsername || 'Anonymous'}
+                        className="avatar-img"
+                        onError={(e) => {
+                          e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                        }}
+                      />
+                    </div>
+                    <span className="username">{req.toUsername || 'Anonymous'}</span>
+                  </div>
                   <div className="request-actions">
                     <button disabled className="pending-status-btn">Pending</button>
                     <button

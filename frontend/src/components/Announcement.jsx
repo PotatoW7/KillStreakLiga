@@ -246,6 +246,18 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
     return queueTypes[queueType] || queueType;
   };
 
+  const getRoleIcon = (role) => {
+    const roleIcons = {
+      'top': '/lane-icons/top lane.png',
+      'jungle': '/lane-icons/jg icon.png',
+      'mid': '/lane-icons/mid lane.png',
+      'adc': '/lane-icons/adc lane.png',
+      'support': '/lane-icons/sup icon.png',
+      'fill': '/lane-icons/Fill icon.png'
+    };
+    return roleIcons[role?.toLowerCase()] || '/lane-icons/Fill icon.png';
+  };
+
 
   if (isEmbedded) {
     return (
@@ -375,7 +387,7 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                             {getQueueTypeName(request.gameQueueType)}
                           </div>
                           <div className="request-info-tag">
-                            {getRoleIcon(request.role)} {request.role || 'Any role'}
+                            <img src={getRoleIcon(request.role)} alt={request.role} className="role-icon-small" /> {request.role || 'Any role'}
                           </div>
                         </div>
 
@@ -384,7 +396,7 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                         </div>
 
                         {request.message && (
-                          <div className="request-message">
+                          <div className="request-message" title={request.message}>
                             "{request.message}"
                           </div>
                         )}
@@ -503,7 +515,7 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                           {getQueueTypeName(request.gameQueueType)}
                         </div>
                         <div className="request-info-tag">
-                          {getRoleIcon(request.role)} {request.role || 'Any role'}
+                          <img src={getRoleIcon(request.role)} alt={request.role} className="role-icon-small" /> {request.role || 'Any role'}
                         </div>
                       </div>
 
@@ -512,7 +524,7 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                       </div>
 
                       {request.message && (
-                        <div className="request-message">
+                        <div className="request-message" title={request.message}>
                           "{request.message}"
                         </div>
                       )}

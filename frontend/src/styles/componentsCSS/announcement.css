@@ -404,8 +404,8 @@
 .request-modal-content {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border-radius: 20px;
-  width: 90%;
-  max-width: 800px;
+  width: 95%;
+  max-width: 1000px;
   max-height: 85vh;
   overflow: hidden;
   border: 2px solid #3498db;
@@ -549,6 +549,12 @@
   gap: 6px;
 }
 
+.request-info-tag .role-icon-small {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
 .request-applied-time {
   font-size: 13px;
   color: #7f8c8d;
@@ -567,6 +573,17 @@
   line-height: 1.6;
   color: #bdc3c7;
   border-left: 3px solid #3498db;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.request-message:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-left-width: 5px;
 }
 
 .request-actions {

@@ -1355,6 +1355,7 @@
 
 .message-input-container {
   margin-top: 1.5rem;
+  position: relative;
 }
 
 .message-input-container label {
@@ -1368,6 +1369,7 @@
 .message-input-container textarea {
   width: 100%;
   padding: 0.75rem;
+  padding-bottom: 2rem;
   background: rgba(30, 41, 59, 0.8);
   border: 1px solid rgba(71, 85, 105, 0.4);
   border-radius: 8px;
@@ -1375,7 +1377,7 @@
   font-family: inherit;
   font-size: 0.9rem;
   resize: vertical;
-  min-height: 80px;
+  min-height: 100px;
   box-sizing: border-box;
 }
 
@@ -1386,10 +1388,15 @@
 }
 
 .char-counter {
-  text-align: right;
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
   font-size: 0.75rem;
-  color: #94a3b8;
-  margin-top: 0.25rem;
+  color: rgba(148, 163, 184, 0.8);
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .join-modal-footer {
@@ -1457,8 +1464,8 @@
 .request-modal-content {
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
   border-radius: 16px;
-  width: 90%;
-  max-width: 800px;
+  width: 95%;
+  max-width: 1000px;
   max-height: 90vh;
   overflow: hidden;
   border: 1px solid rgba(220, 20, 60, 0.3);
@@ -1617,6 +1624,17 @@
   line-height: 1.4;
   color: #cbd5e1;
   border-left: 3px solid #dc143c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.request-message:hover {
+  background: rgba(30, 41, 59, 1);
+  border-left-width: 5px;
 }
 
 .request-actions {

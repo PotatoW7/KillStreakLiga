@@ -909,7 +909,7 @@ function QueueSystem() {
 
       await addFriendOnAccept(gameData.userId, applicantUserId, applicantName);
 
-      alert(`Request accepted! ${applicantName} has been added to your game and as a friend.`);
+      alert(`Request accepted! ${applicantName} has been added as a friend.`);
 
       setMyGameRequests(prev => prev.filter(req =>
         !(req.gameId === gameId && req.userId === applicantUserId)
@@ -976,13 +976,37 @@ function QueueSystem() {
     if (!auth.currentUser || userId === auth.currentUser.uid) return;
 
     try {
+      const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const targetUserRef = doc(db, 'users', userId);
+
+      // Get target user data for their username and profile image
+      const targetUserDoc = await getDoc(targetUserRef);
+      const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
+      const targetUsername = targetUserData.username || 'Anonymous';
+      const targetProfileImage = targetUserData.profileImage || null;
+
+      const requestData = {
+        from: auth.currentUser.uid,
+        fromUsername: userProfile?.displayName || auth.currentUser.displayName || 'Anonymous',
+        fromProfileImage: userProfile?.profileImage || null,
+        timestamp: new Date()
+      };
+
+      const sentRequestData = {
+        to: userId,
+        toUsername: targetUsername,
+        toProfileImage: targetProfileImage,
+        timestamp: new Date()
+      };
+
+      // Add to target user's pending requests
       await updateDoc(targetUserRef, {
-        pendingRequests: arrayUnion({
-          from: auth.currentUser.uid,
-          fromUsername: userProfile?.displayName || auth.currentUser.displayName || 'Anonymous',
-          timestamp: new Date()
-        })
+        pendingRequests: arrayUnion(requestData)
+      });
+
+      // Add to current user's sent friend requests
+      await updateDoc(currentUserRef, {
+        sentFriendRequests: arrayUnion(sentRequestData)
       });
 
       alert('Friend request sent!');
@@ -1760,7 +1784,7 @@ function QueueSystem() {
                   rows={3}
                 />
                 <div className="char-counter">
-                  {joinMessage.length}/200 characters
+                  {joinMessage.length}/200
                 </div>
               </div>
             </div>
@@ -1848,7 +1872,7 @@ function QueueSystem() {
                       </div>
 
                       {request.message && (
-                        <div className="request-message">
+                        <div className="request-message" title={request.message}>
                           "{request.message}"
                         </div>
                       )}
