@@ -235,6 +235,61 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
     return `${diffDays}d ago`;
   };
 
+  const roles = [
+    { id: 'fill', name: 'Fill', icon: '/lane-icons/Fill icon.png' },
+    { id: 'top', name: 'Top', icon: '/lane-icons/top lane.png' },
+    { id: 'jungle', name: 'Jungle', icon: '/lane-icons/jg icon.png' },
+    { id: 'mid', name: 'Mid', icon: '/lane-icons/mid lane.png' },
+    { id: 'adc', name: 'ADC', icon: '/lane-icons/adc lane.png' },
+    { id: 'support', name: 'Support', icon: '/lane-icons/sup icon.png' }
+  ];
+
+  const rankIconsMap = {
+    'UNRANKED': 'Rank=Unranked.png',
+    'IRON': 'Rank=Iron.png',
+    'BRONZE': 'Rank=Bronze.png',
+    'SILVER': 'Rank=Silver.png',
+    'GOLD': 'Rank=Gold.png',
+    'PLATINUM': 'Rank=Platinum.png',
+    'EMERALD': 'Rank=Emerald.png',
+    'DIAMOND': 'Rank=Diamond.png',
+    'MASTER': 'Rank=Master.png',
+    'GRANDMASTER': 'Rank=Grandmaster.png',
+    'CHALLENGER': 'Rank=Challenger.png'
+  };
+
+  const getQueueData = (rankedData, queueType) => {
+    if (!rankedData || !Array.isArray(rankedData)) return null;
+    return rankedData.find(queue => {
+      if (!queue.queueType) return false;
+      if (queue.queueType === queueType) return true;
+      if (queueType === 'RANKED_SOLO_5x5') {
+        return queue.queueType.includes('SOLO') || queue.queueType.includes('Solo') || queue.queueType === 'RANKED_SOLO/DUO';
+      }
+      if (queueType === 'RANKED_FLEX_SR') {
+        return queue.queueType.includes('FLEX') || queue.queueType.includes('Flex');
+      }
+      return false;
+    });
+  };
+
+  const getRankIcon = (tier) => {
+    if (!tier) return '/rank-icons/Rank=Unranked.png';
+    const tierUpper = tier.toUpperCase();
+    const fileName = rankIconsMap[tierUpper];
+    return fileName ? `/rank-icons/${fileName}` : '/rank-icons/Rank=Unranked.png';
+  };
+
+  const formatRankDisplay = (queue) => {
+    if (!queue) return 'Unranked';
+    const { tier, rank } = queue;
+    if (!tier) return 'Unranked';
+    if (tier === 'CHALLENGER' || tier === 'GRANDMASTER' || tier === 'MASTER') {
+      return `${tier} (${queue.leaguePoints || 0} LP)`;
+    }
+    return `${tier} ${rank || ''} (${queue.leaguePoints || 0} LP)`.trim();
+  };
+
   const getQueueTypeName = (queueType) => {
     const queueTypes = {
       'ranked_solo_duo': 'Ranked Solo/Duo',
@@ -256,6 +311,11 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
       'fill': '/lane-icons/Fill icon.png'
     };
     return roleIcons[role?.toLowerCase()] || '/lane-icons/Fill icon.png';
+  };
+
+  const getRoleImage = (role) => {
+    const roleObj = roles.find(r => r.id === role?.toLowerCase());
+    return roleObj ? roleObj.icon : '/lane-icons/Fill icon.png';
   };
 
 
@@ -350,79 +410,105 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                   </div>
                 ) : (
                   <div className="request-list">
-                    {gameRequests.map(request => (
-                      <div key={request.id} className="request-item">
-                        <div className="request-user-info">
-                          <div className="request-user-avatar">
-                            {request.profileImage && request.profileImage.startsWith('data:image') ? (
-                              <img
-                                src={request.profileImage}
-                                alt={request.displayName}
-                                onError={(e) => {
-                                  e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                                }}
-                              />
-                            ) : (
-                              <img
-                                src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
-                                alt={request.displayName}
-                              />
-                            )}
-                          </div>
-                          <div className="request-user-details">
-                            <div className="request-user-name">
-                              {request.displayName}
-                              <span className="request-status-badge request-status-pending">
-                                Pending
-                              </span>
+                    {gameRequests.map(request => {
+                      const soloQueue = getQueueData(request.rankedData, 'RANKED_SOLO_5x5');
+                      const rankText = soloQueue ? formatRankDisplay(soloQueue) : 'Unranked';
+                      const rankIcon = getRankIcon(soloQueue?.tier);
+
+                      return (
+                        <div key={request.id} className="request-card-new">
+                          <div className="request-card-top">
+                            <div className="request-profile-section">
+                              <div className="request-avatar-wrapper">
+                                {request.profileImage && request.profileImage.startsWith('data:image') ? (
+                                  <img
+                                    src={request.profileImage}
+                                    alt={request.displayName}
+                                    className="request-avatar"
+                                    onError={(e) => {
+                                      e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                                    }}
+                                  />
+                                ) : (
+                                  <img
+                                    src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
+                                    alt={request.displayName}
+                                    className="request-avatar"
+                                  />
+                                )}
+                              </div>
+                              <div className="request-user-info-main">
+                                <div className="name-status-row">
+                                  <span className="request-name-text">{request.displayName}</span>
+                                  <span className="request-badge">Pending</span>
+                                </div>
+                                <div className="request-riot-id">
+                                  {request.riotAccount || 'No Riot account linked'}
+                                </div>
+                                <div className="request-rank-display">
+                                  <img
+                                    src={rankIcon}
+                                    alt={rankText}
+                                    className="req-rank-icon"
+                                    onError={(e) => e.target.style.display = 'none'}
+                                  />
+                                  <span className="req-rank-text">{rankText}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="request-riot-account">
-                              {request.riotAccount || 'No Riot account linked'}
+
+                            <div className="request-details-section">
+                              <div className="request-tags-group">
+                                <span className="req-tag queue-tag">
+                                  {getQueueTypeName(request.gameQueueType)}
+                                </span>
+                                <span className="req-tag role-tag-new">
+                                  <img
+                                    src={getRoleImage(request.role || 'fill')}
+                                    alt={request.role || 'fill'}
+                                    className="tag-icon"
+                                    onError={(e) => e.target.style.display = 'none'}
+                                  />
+                                  {roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name || 'Fill'}
+                                </span>
+                              </div>
+                              <div className="request-time-text">
+                                Applied {formatTimeAgo(request.appliedAt)}
+                              </div>
+                            </div>
+
+                            <div className="request-actions-section">
+                              <button
+                                className="btn-view-profile"
+                                onClick={() => handleViewProfile(request.userId)}
+                              >
+                                View Profile
+                              </button>
+                              <button
+                                className="btn-decline"
+                                onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                              >
+                                Decline
+                              </button>
+                              <button
+                                className="btn-accept"
+                                onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                              >
+                                Accept
+                              </button>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="request-game-info">
-                          <div className="request-info-tag">
-                            {getQueueTypeName(request.gameQueueType)}
-                          </div>
-                          <div className="request-info-tag">
-                            <img src={getRoleIcon(request.role)} alt={request.role} className="role-icon-small" /> {request.role || 'Any role'}
-                          </div>
+                          {request.message && (
+                            <div className="request-message-block">
+                              <span className="quote-mark">"</span>
+                              <span className="message-content">{request.message}</span>
+                              <span className="quote-mark">"</span>
+                            </div>
+                          )}
                         </div>
-
-                        <div className="request-applied-time">
-                          Applied {formatTimeAgo(request.appliedAt)}
-                        </div>
-
-                        {request.message && (
-                          <div className="request-message" title={request.message}>
-                            "{request.message}"
-                          </div>
-                        )}
-
-                        <div className="request-actions">
-                          <button
-                            className="request-profile-btn"
-                            onClick={() => handleViewProfile(request.userId)}
-                          >
-                            👤 View Profile
-                          </button>
-                          <button
-                            className="request-decline-btn"
-                            onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                          >
-                            ❌ Decline
-                          </button>
-                          <button
-                            className="request-accept-btn"
-                            onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                          >
-                            ✅ Accept
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -470,7 +556,6 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
             <div className="request-modal-body">
               {gameRequests.length === 0 ? (
                 <div className="no-requests">
-                  <div className="no-requests-icon">📭</div>
                   <p>No pending requests</p>
                   <p style={{ fontSize: '14px', color: '#7f8c8d' }}>
                     Players who request to join your games will appear here
@@ -478,95 +563,113 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                 </div>
               ) : (
                 <div className="request-list">
-                  {gameRequests.map(request => (
-                    <div key={request.id} className="request-item">
-                      <div className="request-user-info">
-                        <div className="request-user-avatar">
-                          {request.profileImage && request.profileImage.startsWith('data:image') ? (
-                            <img
-                              src={request.profileImage}
-                              alt={request.displayName}
-                              onError={(e) => {
-                                e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                              }}
-                            />
-                          ) : (
-                            <img
-                              src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
-                              alt={request.displayName}
-                            />
-                          )}
-                        </div>
-                        <div className="request-user-details">
-                          <div className="request-user-name">
-                            {request.displayName}
-                            <span className="request-status-badge request-status-pending">
-                              ⏳ Pending
-                            </span>
+                  {gameRequests.map(request => {
+                    const soloQueue = getQueueData(request.rankedData, 'RANKED_SOLO_5x5');
+                    const rankText = soloQueue ? formatRankDisplay(soloQueue) : 'Unranked';
+                    const rankIcon = getRankIcon(soloQueue?.tier);
+
+                    return (
+                      <div key={request.id} className="request-card-new">
+                        <div className="request-card-top">
+                          <div className="request-profile-section">
+                            <div className="request-avatar-wrapper">
+                              {request.profileImage && request.profileImage.startsWith('data:image') ? (
+                                <img
+                                  src={request.profileImage}
+                                  alt={request.displayName}
+                                  className="request-avatar"
+                                  onError={(e) => {
+                                    e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+                                  }}
+                                />
+                              ) : (
+                                <img
+                                  src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
+                                  alt={request.displayName}
+                                  className="request-avatar"
+                                />
+                              )}
+                            </div>
+                            <div className="request-user-info-main">
+                              <div className="name-status-row">
+                                <span className="request-name-text">{request.displayName}</span>
+                                <span className="request-badge">Pending</span>
+                              </div>
+                              <div className="request-riot-id">
+                                {request.riotAccount || 'No Riot account linked'}
+                              </div>
+                              <div className="request-rank-display">
+                                <img
+                                  src={rankIcon}
+                                  alt={rankText}
+                                  className="req-rank-icon"
+                                  onError={(e) => e.target.style.display = 'none'}
+                                />
+                                <span className="req-rank-text">{rankText}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="request-riot-account">
-                            {request.riotAccount || 'No Riot account linked'}
+
+                          <div className="request-details-section">
+                            <div className="request-tags-group">
+                              <span className="req-tag queue-tag">
+                                {getQueueTypeName(request.gameQueueType)}
+                              </span>
+                              <span className="req-tag role-tag-new">
+                                <img
+                                  src={getRoleImage(request.role || 'fill')}
+                                  alt={request.role || 'fill'}
+                                  className="tag-icon"
+                                  onError={(e) => e.target.style.display = 'none'}
+                                />
+                                {roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name || 'Fill'}
+                              </span>
+                            </div>
+                            <div className="request-time-text">
+                              Applied {formatTimeAgo(request.appliedAt)}
+                            </div>
+                          </div>
+
+                          <div className="request-actions-section">
+                            <button
+                              className="btn-view-profile"
+                              onClick={() => handleViewProfile(request.userId)}
+                            >
+                              View Profile
+                            </button>
+                            <button
+                              className="btn-decline"
+                              onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                            >
+                              Decline
+                            </button>
+                            <button
+                              className="btn-accept"
+                              onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                            >
+                              Accept
+                            </button>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="request-game-info">
-                        <div className="request-info-tag">
-                          {getQueueTypeName(request.gameQueueType)}
-                        </div>
-                        <div className="request-info-tag">
-                          <img src={getRoleIcon(request.role)} alt={request.role} className="role-icon-small" /> {request.role || 'Any role'}
-                        </div>
+                        {request.message && (
+                          <div className="request-message-block">
+                            <span className="quote-mark">"</span>
+                            <span className="message-content">{request.message}</span>
+                            <span className="quote-mark">"</span>
+                          </div>
+                        )}
                       </div>
-
-                      <div className="request-applied-time">
-                        Applied {formatTimeAgo(request.appliedAt)}
-                      </div>
-
-                      {request.message && (
-                        <div className="request-message" title={request.message}>
-                          "{request.message}"
-                        </div>
-                      )}
-
-                      <div className="request-actions">
-                        <button
-                          className="request-profile-btn"
-                          onClick={() => handleViewProfile(request.userId)}
-                        >
-                          👤 View Profile
-                        </button>
-                        <button
-                          className="request-decline-btn"
-                          onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                        >
-                          ❌ Decline
-                        </button>
-                        <button
-                          className="request-accept-btn"
-                          onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                        >
-                          ✅ Accept
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
 
             <div className="request-modal-footer">
               <button
+                className="btn-modal-close"
                 onClick={handleCloseModal}
-                style={{
-                  background: 'rgba(52, 152, 219, 0.1)',
-                  color: '#3498db',
-                  border: '1px solid #3498db',
-                  padding: '10px 30px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
               >
                 Close
               </button>
