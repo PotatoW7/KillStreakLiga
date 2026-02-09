@@ -253,77 +253,118 @@
 }
 
 .request-item {
-  display: flex;
+  display: flex !important;
+  flex-direction: row !important;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  gap: 10px;
+  align-items: center !important;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  transition: all 0.2s ease;
+  min-width: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.request-item span {
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  flex: 1;
+.request-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Request User Info with Avatar */
 .request-user-info {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px;
   flex: 1;
+  min-width: 0;
+}
+
+.request-user-info.clickable {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.request-user-info.clickable:hover {
+  opacity: 0.8;
+}
+
+.request-user-info.clickable:hover .username {
+  text-decoration: underline;
+  color: var(--accent-primary);
 }
 
 .request-avatar {
-  width: 36px;
-  height: 36px;
+  width: 32px !important;
+  height: 32px !important;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid var(--border-accent);
   background: var(--bg-tertiary);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.request-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.request-avatar img,
+.request-avatar .avatar-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block;
 }
 
 .request-user-info .username {
-  font-weight: var(--font-weight-semibold);
+  font-weight: 700;
   color: var(--text-primary);
-  font-size: var(--font-size-sm);
+  font-size: 14px;
+  white-space: normal;
+  word-break: break-word;
+  flex: 1;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  /* Ensure internal vertical alignment if line height varies */
 }
 
 .request-actions {
   display: flex;
-  gap: var(--space-xs);
+  gap: 10px;
+  align-items: center;
 }
 
 .request-actions button {
-  padding: 6px 12px;
+  padding: 4px 10px;
   border: none;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .request-actions button:first-child {
   background: #00b37d;
   color: white;
+  box-shadow: 0 0 10px rgba(0, 179, 125, 0.2);
 }
 
 .request-actions button:first-child:hover {
-  background: #009c6d;
+  background: #00cd8f;
   transform: translateY(-1px);
+  box-shadow: 0 0 15px rgba(0, 179, 125, 0.4);
 }
 
 .request-actions button:last-child {
   background: var(--accent-primary);
   color: white;
+  box-shadow: 0 0 10px rgba(240, 62, 81, 0.2);
 }
 
 .request-actions button:last-child:hover {
@@ -349,23 +390,35 @@
 
 /* Sent Request Items */
 .sent-request-item {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: var(--radius-sm);
-  padding: 10px var(--space-sm) !important;
-  margin: var(--space-xs) 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 10px 14px !important;
+  margin: 8px 0;
+  transition: all 0.2s ease;
+}
+
+.sent-request-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-accent);
 }
 
 /* Pending Status Button */
 .pending-status-btn {
-  background: var(--bg-tertiary) !important;
-  color: var(--text-secondary) !important;
-  opacity: 0.6;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-tertiary) !important;
+  opacity: 0.8;
   cursor: not-allowed !important;
-  border: 1px solid var(--border-subtle) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding: 6px 12px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
 }
 
 .pending-status-btn:hover {
   transform: none !important;
+  background: rgba(255, 255, 255, 0.05) !important;
 }
 
 /* Cancel Request Button */

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDocs, orderBy, getDoc
 } from 'firebase/firestore';
@@ -13,6 +14,7 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [friendsTabView, setFriendsTabView] = useState('all');
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -416,7 +418,11 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
               <div className="pending-section-header">Received Requests</div>
               {pendingRequests.map((req, idx) => (
                 <div key={`received-${idx}`} className="request-item">
-                  <div className="request-user-info">
+                  <div
+                    className="request-user-info clickable"
+                    onClick={() => navigate(`/profile/${req.from}`)}
+                    title={`View ${req.fromUsername}'s profile`}
+                  >
                     <div className="request-avatar">
                       <img
                         src={req.fromProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
@@ -444,7 +450,11 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
               <div className="pending-section-header">Sent Requests</div>
               {sentFriendRequests.map((req, idx) => (
                 <div key={`sent-${idx}`} className="request-item sent-request-item">
-                  <div className="request-user-info">
+                  <div
+                    className="request-user-info clickable"
+                    onClick={() => navigate(`/profile/${req.to}`)}
+                    title={`View ${req.toUsername}'s profile`}
+                  >
                     <div className="request-avatar">
                       <img
                         src={req.toProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
