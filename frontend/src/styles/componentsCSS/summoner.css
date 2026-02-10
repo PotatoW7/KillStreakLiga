@@ -509,3 +509,131 @@
   color: var(--text-secondary);
   margin-bottom: 2px;
 }
+
+/* ===== LIVE GAME BANNER ===== */
+.live-game-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.03) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg) var(--space-xl);
+  margin-bottom: var(--space-xl);
+  animation: liveGameFadeIn 0.5s ease-out;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.live-game-banner:hover {
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.15);
+  transform: translateY(-1px);
+}
+
+@keyframes liveGameFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.live-game-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: livePulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+@keyframes livePulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
+  }
+}
+
+.live-text {
+  color: #22c55e;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.live-game-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.live-game-mode {
+  color: #f0e6d2;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-extrabold);
+  background: rgba(200, 155, 60, 0.2);
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(200, 155, 60, 0.4);
+}
+
+.live-champion-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-champion-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(34, 197, 94, 0.4);
+}
+
+.live-champion-name {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.live-game-time {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background: rgba(34, 197, 94, 0.1);
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.live-game-players {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  flex-shrink: 0;
+}

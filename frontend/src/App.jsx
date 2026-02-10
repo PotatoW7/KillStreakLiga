@@ -15,6 +15,7 @@ import CoachRules from "./components/CoachRules";
 import Coaching from "./components/Coaching";
 import AdminPanel from "./components/AdminPanel";
 import AdminApplication from "./components/AdminApplication";
+import LiveGame from "./components/LiveGame";
 
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -176,6 +177,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:userId" element={<Profile />} />
           <Route path="/summoner" element={<Summoner />} />
+          <Route path="/live-game" element={<LiveGame />} />
           <Route path="/queue" element={<QueueSystem />} />
           <Route path="/finishSignIn" element={<FinishSignIn />} />
           <Route path="/become-coach" element={<BecomeCoach />} />

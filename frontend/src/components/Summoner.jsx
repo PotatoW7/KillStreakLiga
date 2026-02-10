@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import RankedInfo from "./RankedInfo";
 import MatchHistory from "./MatchHistory";
 import ChampionMastery from "./ChampionMastery";
@@ -11,6 +11,10 @@ function Summoner() {
   const [mode, setMode] = useState("all");
   const [data, setData] = useState(null);
   const [matches, setMatches] = useState([]);
+  const [liveGame, setLiveGame] = useState(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const timerRef = useRef(null);
+  const navigate = useNavigate();
   const [champIdToName, setChampIdToName] = useState({});
   const [champNameToId, setChampNameToId] = useState({});
   const [version, setVersion] = useState("");
@@ -42,7 +46,7 @@ function Summoner() {
     };
 
     window.addEventListener('searchPlayer', handleSearchPlayer);
-    
+
     return () => {
       window.removeEventListener('searchPlayer', handleSearchPlayer);
     };
@@ -61,12 +65,12 @@ function Summoner() {
 
   const addToRecentSearches = (playerRiotId, playerRegion) => {
     const searchEntry = { riotId: playerRiotId, region: playerRegion, timestamp: Date.now() };
-    
+
     setRecentSearches(prev => {
-      const filtered = prev.filter(search => 
+      const filtered = prev.filter(search =>
         !(search.riotId === playerRiotId && search.region === playerRegion)
       );
-      
+
       return [searchEntry, ...filtered].slice(0, 10);
     });
   };
@@ -76,6 +80,9 @@ function Summoner() {
     setMatchLoading(true);
     setError(null);
     setData(null);
+    setLiveGame(null);
+    setElapsedTime(0);
+    if (timerRef.current) clearInterval(timerRef.current);
     setMatches([]);
     setRiotId(playerRiotId);
     setRegion(playerRegion);
@@ -96,24 +103,35 @@ function Summoner() {
 
       const encodedGameName = encodeURIComponent(gameName);
       const encodedTagLine = encodeURIComponent(tagLine);
-      
+
       const summonerRes = await fetch(`/summoner-info/${playerRegion}/${encodedGameName}/${encodedTagLine}`);
-      
+
       if (!summonerRes.ok) {
         if (summonerRes.status === 404) {
           throw new Error("Summoner not found. Please check the Riot ID and region.");
         }
         throw new Error("Failed to fetch summoner data.");
       }
-      
+
       const summonerData = await summonerRes.json();
       setData(summonerData);
 
       addToRecentSearches(playerRiotId, playerRegion);
 
+      fetch(`/summoner-info/spectator/${playerRegion}/${summonerData.puuid}`)
+        .then(r => r.ok ? r.json() : { inGame: false })
+        .then(spectatorData => {
+          setLiveGame(spectatorData);
+          if (spectatorData.inGame && spectatorData.gameStartTime) {
+            const startSeconds = Math.floor((Date.now() - spectatorData.gameStartTime) / 1000);
+            setElapsedTime(Math.max(0, startSeconds));
+          }
+        })
+        .catch(() => setLiveGame(null));
+
       const matchRes = await fetch(`/match-history/${playerRegion}/${summonerData.puuid}?mode=${mode}`);
       if (!matchRes.ok) throw new Error("Failed to fetch match history");
-      
+
       const matchData = await matchRes.json();
       setMatches(matchData.recentGames || []);
     } catch (err) {
@@ -140,10 +158,10 @@ function Summoner() {
 
   const generatePlayerTags = (masteryData, champIdToName) => {
     if (!masteryData || masteryData.length === 0) return [];
-    
+
     const tags = [];
     const topChamps = masteryData.slice(0, 5);
-    
+
     topChamps.forEach((mastery) => {
       const champName = champIdToName[mastery.championId];
       if (champName) {
@@ -157,26 +175,89 @@ function Summoner() {
     return [...new Set(tags)].slice(0, 8);
   };
 
-  const getSummonerInfo = async () => { 
-    await searchPlayer(riotId, region); 
+  const getSummonerInfo = async () => {
+    await searchPlayer(riotId, region);
   };
-  
-  const handleKeyPress = (e) => { 
-    if (e.key === "Enter") getSummonerInfo(); 
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") getSummonerInfo();
   };
-  
+
   const playerTags = data ? generatePlayerTags(data.mastery, champIdToName) : [];
+
+  useEffect(() => {
+    if (liveGame?.inGame) {
+      timerRef.current = setInterval(() => {
+        setElapsedTime(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [liveGame?.inGame]);
+
+  const formatElapsedTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getGameModeName = (gameMode, queueId) => {
+    const modes = {
+      '400': "Normal Draft",
+      '420': "Ranked Solo Duo",
+      '430': "Normal Blind",
+      '440': "Ranked Flex",
+      '450': "ARAM",
+      '480': "Swiftplay",
+      '490': "Swiftplay",
+      '700': "Clash",
+      '900': "URF",
+      '1020': "One For All",
+      '1300': "Nexus Blitz",
+      '1400': "Ultimate Spellbook",
+      '1700': "Arena",
+      '1900': "URF",
+      '2000': "Tutorial"
+    };
+    const qId = String(queueId);
+    if (modes[qId]) return modes[qId];
+
+    const labels = {
+      CLASSIC: 'Summoner\'s Rift',
+      ARAM: 'ARAM',
+      URF: 'URF',
+      CHERRY: 'Arena',
+      ONEFORALL: 'One For All',
+      NEXUSBLITZ: 'Nexus Blitz',
+      ULTBOOK: 'Ultimate Spellbook'
+    };
+    return labels[gameMode] || gameMode || "Live Game";
+  };
+
+  const getLiveGameChampion = () => {
+    if (!liveGame?.inGame || !liveGame.participants || !data?.puuid) return null;
+    return liveGame.participants.find(p => p.puuid === data.puuid);
+  };
+
+  const handleLiveGameClick = () => {
+    if (liveGame?.inGame && data?.puuid) {
+      navigate(`/live-game?region=${region}&puuid=${data.puuid}`);
+    }
+  };
 
   return (
     <div className="summoner-page">
       <h1 className="text-center">Summoner Lookup</h1>
 
       <div className="search-container">
-        <input 
-          type="text" 
-          value={riotId} 
-          onChange={(e) => setRiotId(e.target.value)} 
-          onKeyPress={handleKeyPress} 
+        <input
+          type="text"
+          value={riotId}
+          onChange={(e) => setRiotId(e.target.value)}
+          onKeyPress={handleKeyPress}
           placeholder="Enter Riot ID (name#tag)"
         />
         <select value={region} onChange={(e) => setRegion(e.target.value)}>
@@ -204,8 +285,8 @@ function Summoner() {
         <div className="recent-searches-section">
           <div className="recent-searches-header">
             <h4>Recent Searches</h4>
-            <button 
-              onClick={clearRecentSearches} 
+            <button
+              onClick={clearRecentSearches}
               className="clear-recent-btn"
               title="Clear all recent searches"
             >
@@ -243,9 +324,9 @@ function Summoner() {
           <div className="profile-section">
             <div className="profile-card">
               <div className="profile-icon-container">
-                <img 
-                  src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${data.profileIconId}.png`} 
-                  alt="Profile Icon" 
+                <img
+                  src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${data.profileIconId}.png`}
+                  alt="Profile Icon"
                   className="profile-icon"
                 />
                 <div className="summoner-level">{data.summonerLevel}</div>
@@ -253,13 +334,13 @@ function Summoner() {
               <div className="profile-details">
                 <h2>{data.name}</h2>
                 <div className="profile-rank-info">
-                  <RankedInfo 
-                    rankedSolo={data.ranked?.find(q => q.queueType === "RANKED_SOLO_5x5")} 
-                    rankedFlex={data.ranked?.find(q => q.queueType === "RANKED_FLEX_SR")} 
+                  <RankedInfo
+                    rankedSolo={data.ranked?.find(q => q.queueType === "RANKED_SOLO_5x5")}
+                    rankedFlex={data.ranked?.find(q => q.queueType === "RANKED_FLEX_SR")}
                     compact={true}
                   />
                 </div>
-                
+
                 {playerTags.length > 0 && (
                   <div className="player-tags-section">
                     <h4>Player Tags</h4>
@@ -272,11 +353,46 @@ function Summoner() {
                     </div>
                   </div>
                 )}
-                
+
                 <ChampionMastery masteryData={data.mastery} champIdToName={champIdToName} version={version} />
               </div>
             </div>
           </div>
+
+          {liveGame?.inGame && (
+            <div className="live-game-banner" onClick={handleLiveGameClick} title="Click to view live game details">
+              <div className="live-game-indicator">
+                <span className="live-dot"></span>
+                <span className="live-text">LIVE</span>
+              </div>
+              <div className="live-game-info">
+                <span className="live-game-mode">{getGameModeName(liveGame.gameMode, liveGame.gameQueueConfigId)}</span>
+                {(() => {
+                  const currentPlayer = getLiveGameChampion();
+                  if (currentPlayer && champIdToName[currentPlayer.championId]) {
+                    const champName = champIdToName[currentPlayer.championId];
+                    return (
+                      <div className="live-champion-info">
+                        <img
+                          src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
+                          alt={champName}
+                          className="live-champion-icon"
+                        />
+                        <span className="live-champion-name">Playing {champName}</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                <span className="live-game-time">
+                  ⏱ {formatElapsedTime(elapsedTime)}
+                </span>
+              </div>
+              <div className="live-game-view-details">
+                View Details →
+              </div>
+            </div>
+          )}
 
           <div className="match-history-section">
             {matchLoading ? (
@@ -284,10 +400,10 @@ function Summoner() {
                 <p className="text-center">Loading matches...</p>
               </div>
             ) : (
-              <MatchHistory 
-                matches={matches} 
-                champNameToId={champNameToId} 
-                version={version} 
+              <MatchHistory
+                matches={matches}
+                champNameToId={champNameToId}
+                version={version}
                 puuid={data.puuid}
                 onPlayerClick={searchPlayer}
               />
