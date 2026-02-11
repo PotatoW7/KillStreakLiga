@@ -14,7 +14,8 @@ function BecomeCoach() {
     const [submitting, setSubmitting] = useState(false);
     const [form, setForm] = useState({
         experience: '',
-        availability: '',
+        availability: '1-2 hours',
+        availabilityType: '1-2 hours',
         specialties: [],
         whyCoach: ''
     });
@@ -258,8 +259,9 @@ function BecomeCoach() {
                                 rows={4}
                                 required
                                 minLength={50}
+                                maxLength={1000}
                             />
-                            <span className="char-count">{form.experience.length}/500</span>
+                            <span className="char-count">{form.experience.length}/1000</span>
                         </div>
 
                         <div className="form-group">
@@ -279,14 +281,45 @@ function BecomeCoach() {
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="availability">Availability</label>
-                            <input
-                                type="text"
-                                id="availability"
-                                value={form.availability}
-                                onChange={(e) => setForm({ ...form, availability: e.target.value })}
-                                placeholder="e.g., Weekdays 6PM-10PM EST, Weekends flexible"
-                            />
+                            <label>Availability *</label>
+                            <div className="availability-options">
+                                <button
+                                    type="button"
+                                    className={`availability-btn ${form.availabilityType === '1-2 hours' ? 'selected' : ''}`}
+                                    onClick={() => setForm({ ...form, availabilityType: '1-2 hours', availability: '1-2 hours' })}
+                                >
+                                    1-2 hours
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`availability-btn ${form.availabilityType === '3-6 hours' ? 'selected' : ''}`}
+                                    onClick={() => setForm({ ...form, availabilityType: '3-6 hours', availability: '3-6 hours' })}
+                                >
+                                    3-6 hours
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`availability-btn ${form.availabilityType === 'custom' ? 'selected' : ''}`}
+                                    onClick={() => setForm({ ...form, availabilityType: 'custom', availability: '' })}
+                                >
+                                    Custom
+                                </button>
+                            </div>
+                            {form.availabilityType === 'custom' && (
+                                <>
+                                    <input
+                                        type="text"
+                                        id="availability"
+                                        value={form.availability}
+                                        onChange={(e) => setForm({ ...form, availability: e.target.value })}
+                                        placeholder="e.g., Weekdays 6PM-10PM EST, Weekends flexible"
+                                        required
+                                        maxLength={20}
+                                        className="custom-availability-input"
+                                    />
+                                    <span className="char-count">{form.availability.length}/20</span>
+                                </>
+                            )}
                         </div>
 
                         <div className="form-group">
@@ -297,7 +330,9 @@ function BecomeCoach() {
                                 onChange={(e) => setForm({ ...form, whyCoach: e.target.value })}
                                 placeholder="Share your motivation for coaching..."
                                 rows={3}
+                                maxLength={1000}
                             />
+                            <span className="char-count">{(form.whyCoach || '').length}/1000</span>
                         </div>
 
                         {error && <div className="form-error">{error}</div>}

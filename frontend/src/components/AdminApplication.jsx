@@ -249,8 +249,9 @@ function AdminApplication() {
                                 rows={4}
                                 required
                                 minLength={30}
+                                maxLength={1000}
                             />
-                            <span className="char-count">{form.reason.length}/500</span>
+                            <span className="char-count">{form.reason.length}/1000</span>
                         </div>
 
                         <div className="form-group">
@@ -263,8 +264,9 @@ function AdminApplication() {
                                 rows={3}
                                 required
                                 minLength={20}
+                                maxLength={1000}
                             />
-                            <span className="char-count">{form.experience.length}/500</span>
+                            <span className="char-count">{form.experience.length}/1000</span>
                         </div>
 
                         {error && <div className="form-error">{error}</div>}
