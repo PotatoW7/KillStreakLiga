@@ -402,6 +402,7 @@ function Summoner() {
             ) : (
               <MatchHistory
                 matches={matches}
+                champIdToName={champIdToName}
                 champNameToId={champNameToId}
                 version={version}
                 puuid={data.puuid}

@@ -391,6 +391,7 @@ function LiveGame() {
         const spell2 = getSummonerSpellPath(player.spell2Id);
         const loadingUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champName}_0.jpg`;
 
+
         return (
             <div
                 key={player.puuid || idx}

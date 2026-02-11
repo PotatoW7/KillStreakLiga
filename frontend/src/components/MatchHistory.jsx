@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchDDragon } from "../utils/fetchDDragon";
 
-export default function MatchHistory({ matches, champNameToId, version, puuid, onPlayerClick }) {
+export default function MatchHistory({ matches, champIdToName, champNameToId, version, puuid, onPlayerClick }) {
   const [expandedMatch, setExpandedMatch] = useState(null);
   const [latestVersion, setLatestVersion] = useState(version);
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
@@ -218,7 +218,11 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
 
     return (
       <div className={`player-row ${isCurrent ? "current-player" : ""}`} key={p.puuid}>
-        <img src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${p.championName}.png`} className="champion-icon" />
+        <img
+          src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[p.championId] || p.championName}.png`}
+          className="champion-icon"
+          onError={(e) => (e.target.src = "/placeholder-champ.png")}
+        />
         <div className="summoner-spells">
           <img src={getSummonerSpellPath(p.summoner1Id)} className="summoner-spell" />
           <img src={getSummonerSpellPath(p.summoner2Id)} className="summoner-spell" />
@@ -265,7 +269,11 @@ export default function MatchHistory({ matches, champNameToId, version, puuid, o
         <div className="match-header" onClick={() => toggleMatch(i)}>
           <div className="match-basic-info">
             <div className={`match-result ${player.win ? "victory" : "defeat"}`}>
-              <img src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${player.championName}.png`} className="match-champion-icon" />
+              <img
+                src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[player.championId] || player.championName}.png`}
+                className="match-champion-icon"
+                onError={(e) => (e.target.src = "/placeholder-champ.png")}
+              />
               <div className="champion-info">
                 <div className="champion-name">{formatChampionName(player.championName)}</div>
                 <span className="result-text">{player.win ? "VICTORY" : "DEFEAT"}</span>
