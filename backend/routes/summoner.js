@@ -100,8 +100,6 @@ router.get('/:region/:gameName/:tagLine', async (req, res) => {
 
     const masteryData = masteryRes.ok ? await masteryRes.json() : [];
 
-    console.log('Mastery data:', masteryData.slice(0, 5));
-
     res.json({
       name: `${accountData.gameName}#${accountData.tagLine}`,
       puuid,
@@ -118,4 +116,3 @@ router.get('/:region/:gameName/:tagLine', async (req, res) => {
 });
 
 module.exports = router;
-

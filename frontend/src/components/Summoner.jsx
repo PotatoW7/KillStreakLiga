@@ -385,7 +385,7 @@ function Summoner() {
                   return null;
                 })()}
                 <span className="live-game-time">
-                  ⏱ {formatElapsedTime(elapsedTime)}
+                  {formatElapsedTime(elapsedTime)}
                 </span>
               </div>
               <div className="live-game-view-details">

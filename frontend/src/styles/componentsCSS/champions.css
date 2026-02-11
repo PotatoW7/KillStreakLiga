@@ -1,0 +1,627 @@
+/* champions.css - Champion Role Manager Styles */
+
+/* ===== PAGE LAYOUT ===== */
+.champions-page {
+    min-height: 100vh;
+    padding: var(--space-xl);
+    background: var(--bg-primary);
+}
+
+.champions-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-lg);
+}
+
+/* ===== HEADER ===== */
+.champions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-lg);
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+.champions-header .header-content h1 {
+    color: var(--text-primary);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    margin: 0 0 var(--space-xs) 0;
+    background: linear-gradient(135deg, #c8aa6e 0%, #f0e6d2 50%, #c8aa6e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.champions-header .header-content p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: var(--font-size-md);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.seed-defaults-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border: none;
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.seed-defaults-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.seed-defaults-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== STATUS MESSAGE ===== */
+.status-msg {
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    animation: slideIn 0.3s ease;
+}
+
+.status-msg.success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: var(--success);
+}
+
+.status-msg.error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--error);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== PRIORITY LEGEND ===== */
+.priority-legend {
+    display: flex;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-xl);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.legend-item.main .legend-dot {
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.legend-item.secondary .legend-dot {
+    background: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.legend-item.offmeta .legend-dot {
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.legend-priority {
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+    margin-left: var(--space-xs);
+}
+
+/* ===== LAYOUT: GRID + PANEL ===== */
+.champions-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: var(--space-xl);
+    align-items: start;
+}
+
+.champions-list-panel {
+    min-width: 0;
+}
+
+/* ===== TOOLBAR ===== */
+.champions-toolbar {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.champion-search {
+    flex: 1;
+    min-width: 200px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    transition: border-color 0.3s ease;
+}
+
+.champion-search:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+}
+
+.champion-search::placeholder {
+    color: var(--text-tertiary);
+}
+
+.role-filters {
+    display: flex;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: var(--font-size-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-btn:hover {
+    border-color: var(--accent-gold);
+    color: var(--text-primary);
+}
+
+.filter-btn.active {
+    background: var(--accent-gold);
+    color: var(--text-dark);
+    border-color: var(--accent-gold);
+    font-weight: var(--font-weight-semibold);
+}
+
+.filter-role-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* ===== CHAMPION GRID ===== */
+.champions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    gap: var(--space-sm);
+    max-height: 65vh;
+    overflow-y: auto;
+    padding-right: var(--space-xs);
+}
+
+.champions-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.champions-grid::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 3px;
+}
+
+.champions-grid::-webkit-scrollbar-thumb {
+    background: var(--bg-elevated);
+    border-radius: 3px;
+}
+
+.champion-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    gap: var(--space-xs);
+}
+
+.champion-card:hover {
+    border-color: var(--accent-gold);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.champion-card.selected {
+    border-color: var(--accent-gold);
+    background: rgba(200, 170, 110, 0.1);
+    box-shadow: 0 0 15px rgba(200, 170, 110, 0.2);
+}
+
+.champion-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.champion-name {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.status-indicator {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-indicator.configured {
+    background: #22c55e;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+.status-indicator.partial {
+    background: #f59e0b;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.status-indicator.unset {
+    background: var(--text-tertiary);
+    opacity: 0.4;
+}
+
+.secondary-indicator {
+    position: absolute;
+    bottom: 24px;
+    right: 4px;
+    width: 16px;
+    height: 16px;
+    background: #f59e0b;
+    color: white;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 2;
+}
+
+.champions-count {
+    margin-top: var(--space-md);
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+}
+
+/* ===== ROLE ASSIGNMENT PANEL ===== */
+.role-assignment-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    position: sticky;
+    top: calc(var(--nav-height) + var(--space-xl));
+    transition: all 0.3s ease;
+}
+
+.assignment-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.assignment-champ-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--accent-gold);
+    box-shadow: 0 0 15px rgba(200, 170, 110, 0.3);
+}
+
+.assignment-header h2 {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: var(--font-size-xl);
+}
+
+.champ-id {
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+}
+
+/* ===== ROLE TIERS ===== */
+.role-tiers {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.role-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+}
+
+.role-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 90px;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.role-icon-small {
+    width: 22px;
+    height: 22px;
+}
+
+.tier-buttons {
+    display: flex;
+    gap: var(--space-xs);
+    flex: 1;
+}
+
+.tier-btn {
+    flex: 1;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+}
+
+.tier-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-secondary);
+}
+
+.tier-btn.main.active {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: #22c55e;
+    color: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
+}
+
+.tier-btn.secondary.active {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: #f59e0b;
+    color: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+}
+
+.tier-btn.offmeta.active {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    color: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+/* ===== ASSIGNMENT SUMMARY ===== */
+.assignment-summary {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.assignment-summary h4 {
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 var(--space-sm) 0;
+}
+
+.summary-roles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.summary-tier {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.tier-label {
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+    min-width: 70px;
+}
+
+.role-tag {
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+}
+
+.role-tag.main {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.role-tag.secondary {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.role-tag.offmeta {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.no-roles-msg {
+    color: var(--text-tertiary);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+    margin: 0;
+}
+
+/* ===== SAVE BUTTON ===== */
+.save-roles-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #c8aa6e, #a88a4e);
+    color: var(--text-dark);
+    border: none;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.save-roles-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(200, 170, 110, 0.4);
+}
+
+.save-roles-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== NO SELECTION STATE ===== */
+.no-selection {
+    text-align: center;
+    padding: var(--space-3xl) var(--space-lg);
+    color: var(--text-tertiary);
+}
+
+.no-selection-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-lg);
+}
+
+.no-selection p {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-xs) 0;
+}
+
+.no-selection span {
+    font-size: var(--font-size-sm);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+    .champions-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .role-assignment-panel {
+        position: static;
+    }
+
+    .champions-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .header-actions {
+        flex-direction: column;
+    }
+
+    .champions-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        max-height: 45vh;
+    }
+
+    .priority-legend {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    .champions-toolbar {
+        flex-direction: column;
+    }
+
+    .champion-search {
+        width: 100%;
+    }
+
+    .role-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-xs);
+    }
+
+    .tier-buttons {
+        width: 100%;
+    }
+}

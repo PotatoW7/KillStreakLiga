@@ -1723,7 +1723,7 @@ function QueueSystem() {
                               onClick={() => handleAddFriend(game.userId)}
                               disabled={isFriend}
                             >
-                              {isFriend ? 'Friends' : 'Add Friend'}
+                              {isFriend ? 'Already Friends' : 'Add Friend'}
                             </button>
                           </div>
                         </div>

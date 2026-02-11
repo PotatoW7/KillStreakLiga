@@ -80,6 +80,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  align-items: flex-start;
 }
 
 .champion-name {
@@ -386,7 +387,8 @@
   border-radius: 4px;
 }
 
-.primary-runes, .secondary-runes {
+.primary-runes,
+.secondary-runes {
   display: flex;
   flex-direction: column;
   gap: 2px;

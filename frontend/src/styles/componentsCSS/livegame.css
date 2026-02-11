@@ -30,359 +30,269 @@
     transform: translateX(-2px);
 }
 
-/* Header */
-.live-game-header {
+/* LiveGame Content Refactor */
+.live-game-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-xl);
+}
+
+.live-game-header-simple {
     display: flex;
+    justify-content: center;
     align-items: center;
-    justify-content: space-between;
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.04) 100%);
-    border: 1px solid rgba(34, 197, 94, 0.4);
-    border-radius: var(--radius-xl);
-    padding: var(--space-xl) var(--space-2xl);
-    margin-bottom: var(--space-2xl);
-    box-shadow: 0 0 30px rgba(34, 197, 94, 0.08);
-}
-
-.live-header-indicator {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.live-dot-lg {
-    width: 14px;
-    height: 14px;
-    background: #22c55e;
-    border-radius: 50%;
-    animation: livePulseLg 1.5s ease-in-out infinite;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
-}
-
-@keyframes livePulseLg {
-
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-        box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
-    }
-
-    50% {
-        opacity: 0.7;
-        transform: scale(1.3);
-        box-shadow: 0 0 16px rgba(34, 197, 94, 0.9);
-    }
-}
-
-.live-header-text {
-    color: #22c55e;
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-extrabold);
-    letter-spacing: 2px;
-}
-
-.live-header-details {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2xl);
-}
-
-.live-header-mode {
-    color: #f0e6d2;
-    /* Brighter gold for better visibility */
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-extrabold);
-    background: rgba(200, 155, 60, 0.25);
-    padding: 8px 20px;
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(200, 155, 60, 0.5);
-    text-shadow: 0 0 10px rgba(200, 155, 60, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.live-header-timer {
-    color: #22c55e;
-    font-size: var(--font-size-xl);
+    gap: 20px;
+    margin-bottom: 30px;
     font-weight: var(--font-weight-bold);
-    background: rgba(34, 197, 94, 0.1);
-    padding: 6px 16px;
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(34, 197, 94, 0.25);
-    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
 }
 
-/* Teams */
-.live-teams-container {
+.header-mode-text {
+    font-size: var(--font-size-md);
+    opacity: 0.8;
+}
+
+.header-timer-text {
+    font-size: var(--font-size-xl);
+    color: var(--accent-gold);
+}
+
+/* Main Grid Layout */
+.live-main-grid {
     display: flex;
-    gap: var(--space-xl);
-    margin-bottom: var(--space-2xl);
-    align-items: flex-start;
+    flex-direction: column;
+    gap: 30px;
+    padding-bottom: 50px;
 }
 
-.live-team {
-    flex: 1;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-xl);
+.live-team-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+}
+
+/* Player Card Styling */
+.live-player-card {
+    position: relative;
+    aspect-ratio: 2/3;
+    min-height: 320px;
+    border-radius: 12px;
+    background-size: cover;
+    background-position: center 10%;
     overflow: hidden;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    filter: brightness(1.3) contrast(1.2);
 }
 
-.live-team.blue-team {
-    border-top: 3px solid #3b82f6;
+.live-player-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent-gold);
 }
 
-.live-team.red-team {
-    border-top: 3px solid #ef4444;
-}
-
-.live-team-header-container {
+/* Card Top Overlay */
+.card-top {
+    padding: 15px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-lg) var(--space-xl);
-    background: var(--bg-tertiary);
-    border-bottom: 1px solid var(--border-subtle);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent);
 }
 
-.live-team-header {
-    font-size: var(--font-size-base);
+.card-champ-name {
+    color: #ffffff;
+    font-size: 0.95rem;
     font-weight: var(--font-weight-bold);
-    letter-spacing: 1px;
     text-transform: uppercase;
-    margin: 0;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
-.blue-team .live-team-header {
-    color: #60a5fa;
+/* Card Bottom Overlay */
+.card-bottom {
+    padding: 12px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: linear-gradient(to top, rgba(10, 12, 20, 1) 0%, rgba(10, 12, 20, 0.95) 70%, transparent 100%);
 }
 
-.red-team .live-team-header {
-    color: #f87171;
+.card-horizontal-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 }
 
-.live-team-bans {
+.card-spells-runes {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.card-role {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-right: 4px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-role-icon {
+    width: 28px;
+    height: 28px;
+    filter: drop-shadow(0 0 5px rgba(200, 170, 110, 0.5));
+}
+
+.card-spells {
+    display: flex;
+    gap: 4px;
+}
+
+.card-spell-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Simplified Runes in Card */
+.live-player-runes-simple {
+    display: flex;
+    gap: 4px;
+}
+
+.live-rune-keystone,
+.live-rune-secondary {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    padding: 1px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--accent-gold);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Summoner Details */
+.card-summoner-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.card-summoner-name {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: var(--font-weight-bold);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-streamer-badge {
+    color: #c084fc;
+    font-size: 0.8rem;
+    font-weight: var(--font-weight-bold);
+}
+
+.card-rank-details {
+    display: flex;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-medium);
+}
+
+.card-rank-text {
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+}
+
+.card-lp-wr {
+    color: var(--text-tertiary);
+}
+
+/* Bans Bar Middle */
+.live-bans-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+.team-bans {
     display: flex;
     gap: 6px;
 }
 
-.live-team-ban-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-subtle);
-    filter: grayscale(80%);
-    opacity: 0.6;
-}
-
-.live-team-ban-icon.empty-ban {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.live-team-players {
-    display: flex;
-    flex-direction: column;
-}
-
-/* Player Row */
-.live-player-row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-lg);
-    padding: var(--space-lg) var(--space-xl);
-    transition: all 0.2s;
-    border-bottom: 1px solid var(--border-subtle);
-    position: relative;
-}
-
-.live-player-row:last-child {
-    border-bottom: none;
-}
-
-.live-player-row:not(.streamer-mode):hover {
-    background: rgba(200, 155, 60, 0.04);
-}
-
-.live-player-row.streamer-mode {
-    opacity: 0.75;
-}
-
-.live-player-champion {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-}
-
-.live-player-champ-icon {
-    width: 54px;
-    height: 54px;
-    border-radius: var(--radius-md);
-    border: 2px solid var(--border-accent);
-}
-
-.live-player-spells {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.live-player-spell-icon {
+.ban-icon-mini {
     width: 24px;
     height: 24px;
     border-radius: 4px;
-    border: 1px solid var(--border-subtle);
+    filter: grayscale(1);
+    opacity: 0.6;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Runes */
-.live-player-runes {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    position: relative;
-}
-
-.live-rune-icon {
+.ban-placeholder-mini {
     width: 24px;
     height: 24px;
-    border-radius: 50%;
-    padding: 2px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
 }
 
-.primary-keystone {
-    width: 28px;
-    height: 28px;
-    cursor: help;
-}
-
-.live-runes-full {
-    position: absolute;
-    top: 0;
-    left: 36px;
-    z-index: 100;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--accent-gold);
-    border-radius: var(--radius-md);
-    padding: 12px;
-    display: flex;
-    gap: 16px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    animation: fadeIn 0.2s ease-out;
-    min-width: 140px;
-}
-
-.rune-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-
-.style-icon {
-    width: 20px;
-    height: 20px;
-    opacity: 0.7;
-    margin-bottom: 4px;
-}
-
-.rune-sub-icon {
-    width: 22px;
-    height: 22px;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateX(-5px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-.live-player-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-    min-width: 0;
-}
-
-.live-player-champ-name {
-    color: var(--text-primary);
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-bold);
-}
-
-.live-player-name {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.live-player-row:not(.streamer-mode):hover .live-player-name {
-    color: var(--accent-gold);
-}
-
-.live-player-streamer-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(168, 85, 247, 0.15);
-    color: #c084fc;
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    padding: 2px 10px;
-    border-radius: 12px;
-    border: 1px solid rgba(168, 85, 247, 0.3);
-    width: fit-content;
-}
-
-/* VS Divider */
-.live-teams-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    align-self: center;
-}
-
-.live-vs-text {
+.vs-logo {
     color: var(--text-tertiary);
-    font-size: var(--font-size-2xl);
     font-weight: var(--font-weight-extrabold);
-    letter-spacing: 3px;
-    opacity: 0.4;
+    letter-spacing: 2px;
+    font-size: 1.5rem;
+    opacity: 0.7;
+    margin: 0 10px;
 }
 
-/* Removed separate Bans Section */
-.live-bans-section {
-    display: none;
+.team-ban-label {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.6;
+}
+
+.ban-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* Loading & Error */
-.live-game-loading {
+.live-game-loading,
+.live-game-error {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 40vh;
-    gap: var(--space-lg);
+    min-height: 60vh;
+    gap: 20px;
     color: var(--text-secondary);
 }
 
 .live-loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border-subtle);
-    border-top-color: #22c55e;
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--accent-gold);
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -391,44 +301,21 @@
     }
 }
 
-.live-game-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 40vh;
-    gap: var(--space-lg);
-    color: var(--text-secondary);
-    font-size: var(--font-size-lg);
-}
-
-/* View Details link on banner */
-.live-game-view-details {
-    color: var(--accent-gold);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: all 0.2s;
-}
-
 /* Responsive */
+@media (max-width: 1200px) {
+    .live-team-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
-    .live-teams-container {
-        flex-direction: column;
+    .live-team-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
+}
 
-    .live-teams-divider {
-        align-self: center;
-    }
-
-    .live-game-header {
-        flex-direction: column;
-        gap: var(--space-md);
-        text-align: center;
-    }
-
-    .live-header-details {
-        justify-content: center;
+@media (max-width: 480px) {
+    .live-team-grid {
+        grid-template-columns: 1fr;
     }
 }

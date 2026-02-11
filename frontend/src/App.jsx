@@ -16,6 +16,7 @@ import Coaching from "./components/Coaching";
 import AdminPanel from "./components/AdminPanel";
 import AdminApplication from "./components/AdminApplication";
 import LiveGame from "./components/LiveGame";
+import Champions from "./components/Champions";
 
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -154,6 +155,11 @@ function App() {
             <Link className="nav-link" to="/coaching">
               Coaching
             </Link>
+            {(userRole === 'admin' || userRole === 'owner' || userRole === 'coach') && (
+              <Link className="nav-link" to="/champions">
+                Champions
+              </Link>
+            )}
             {(userRole === 'admin' || userRole === 'owner') && (
               <Link className="nav-link admin-link" to="/admin">
                 {userRole === 'owner' ? ' Owner Panel' : ' Admin Panel'}
@@ -185,6 +191,7 @@ function App() {
           <Route path="/coaching" element={<Coaching />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/apply-admin" element={<AdminApplication />} />
+          <Route path="/champions" element={<Champions />} />
 
           <Route
             path="*"

@@ -226,14 +226,14 @@
 
 .already-friends-btn {
   padding: 6px 12px;
-  background: var(--victory) !important;
-  color: white;
-  border: none;
+  background: rgba(0, 179, 125, 0.1) !important;
+  color: #00cd8f !important;
+  border: 1px solid #00cd8f !important;
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: not-allowed;
-  opacity: 0.7 !important;
+  opacity: 1 !important;
 }
 
 /* Pending Requests */
