@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
@@ -17,6 +17,7 @@ import AdminPanel from "./components/AdminPanel";
 import AdminApplication from "./components/AdminApplication";
 import LiveGame from "./components/LiveGame";
 import Champions from "./components/Champions";
+import Feeds from "./components/Feeds";
 
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -34,6 +35,9 @@ function App() {
   const [activeTab, setActiveTab] = useState('friends');
   const [socialMode, setSocialMode] = useState('chat');
   const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +45,16 @@ function App() {
       if (firebaseUser) {
         const role = await initializeUserInFirestore(firebaseUser);
         setUserRole(role);
+
+        // Fetch user's profile image
+        try {
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          if (userDoc.exists()) {
+            setProfileImage(userDoc.data().profileImage || null);
+          }
+        } catch (error) {
+          console.error("Error fetching profile image:", error);
+        }
       } else {
         setUserRole('user');
       }
@@ -88,6 +102,17 @@ function App() {
       return existingData.role || 'user';
     }
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -143,8 +168,8 @@ function App() {
             <Link className="nav-link" to="/">
               Home
             </Link>
-            <Link className="nav-link" to="/profile">
-              {user.displayName ? `Welcome, ${user.displayName}` : "Profile"}
+            <Link className="nav-link" to="/feeds">
+              Feeds
             </Link>
             <Link className="nav-link" to="/summoner">
               Summoner Lookup
@@ -165,9 +190,29 @@ function App() {
                 {userRole === 'owner' ? ' Owner Panel' : ' Admin Panel'}
               </Link>
             )}
-            <button className="nav-link logout-btn" onClick={handleLogout}>
-              Logout
-            </button>
+
+            {/* Profile Dropdown */}
+            <div
+              className="profile-dropdown"
+              ref={profileDropdownRef}
+              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+            >
+              <img
+                src={profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                alt="Profile"
+                className="profile-image"
+              />
+              {profileDropdownOpen && (
+                <div className="profile-dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => { navigate('/profile'); setProfileDropdownOpen(false); }}>
+                    View Profile
+                  </button>
+                  <button onClick={() => { handleLogout(); setProfileDropdownOpen(false); }} className="logout-option">
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         )}
       </nav>
@@ -182,6 +227,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:userId" element={<Profile />} />
+          <Route path="/feeds" element={<Feeds />} />
           <Route path="/summoner" element={<Summoner />} />
           <Route path="/live-game" element={<LiveGame />} />
           <Route path="/queue" element={<QueueSystem />} />
