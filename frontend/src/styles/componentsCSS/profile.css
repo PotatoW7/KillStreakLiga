@@ -2262,7 +2262,7 @@ select.riot-id-input {
 
 /* Post Comments Sidebar (Instagram Style) */
 .post-comments-sidebar {
-  width: 350px;
+  width: 420px;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   display: flex;

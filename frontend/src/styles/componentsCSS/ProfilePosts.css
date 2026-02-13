@@ -139,6 +139,11 @@
     box-shadow: none;
 }
 
+.feed-post-wrapper.comments-open {
+    position: relative;
+    z-index: 100;
+}
+
 /* Activity Feed */
 .profile-social-feed {
     display: flex;
@@ -376,5 +381,149 @@
 
     .post-interactions {
         gap: 10px;
+    }
+}
+
+/* LoL Icons Styles */
+.inline-lol-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    vertical-align: middle;
+    margin: 0 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: filter 0.2s ease;
+}
+
+.inline-lol-icon:hover {
+    border-color: var(--accent-primary, #dc143c);
+    filter: brightness(1.2);
+}
+
+/* Post/Comment Text Styles */
+.icon-rendered-text {
+    word-break: break-word;
+    line-height: 1.6;
+}
+
+/* Suggestion Dropdown for Textarea */
+.post-input-wrapper,
+.post-suggestions-wrapper,
+.comment-input-wrapper,
+.add-comment-container {
+    position: relative;
+    overflow: visible !important;
+}
+
+.suggestion-dropdown {
+    position: absolute;
+    width: 200px;
+    background: rgba(30, 30, 46, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(220, 20, 60, 0.5);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 15px rgba(220, 20, 60, 0.2);
+    z-index: 5000;
+    overflow: hidden;
+    animation: slideUpFade 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 13px;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+    background: rgba(220, 20, 60, 0.2);
+    color: #fff;
+}
+
+.suggestion-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.add-comment-btn {
+    background: linear-gradient(135deg, #e23649 0%, #ff5c72 100%);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(226, 54, 73, 0.3);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+    height: 38px;
+}
+
+.add-comment-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(226, 54, 73, 0.4);
+    filter: brightness(1.1);
+}
+
+.add-comment-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.add-comment-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #444;
+    box-shadow: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

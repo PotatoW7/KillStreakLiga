@@ -18,6 +18,31 @@ nav {
   top: 0;
   z-index: 1000;
   flex-wrap: wrap;
+  min-height: var(--nav-height);
+}
+
+.nav-brand {
+  position: absolute;
+  left: var(--space-2xl);
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-decoration: none;
+  background: linear-gradient(135deg, #e23649 0%, #ff5c72 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.nav-brand:hover {
+  transform: translateY(-50%) scale(1.05);
+  filter: drop-shadow(0 0 10px rgba(226, 54, 73, 0.4));
 }
 
 /* Animated glow line */
@@ -145,6 +170,20 @@ nav::after {
     justify-content: center;
     gap: var(--space-xs);
     padding: var(--space-sm) var(--space-md);
+    padding-top: var(--space-xl);
+    /* Make room for brand */
+  }
+
+  .nav-brand {
+    position: absolute;
+    top: var(--space-xs);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2rem;
+  }
+
+  .nav-brand:hover {
+    transform: translateX(-50%) scale(1.05);
   }
 
   .nav-link,
@@ -215,6 +254,7 @@ nav::after {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

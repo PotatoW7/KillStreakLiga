@@ -1,9 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { db } from "../firebase";
 import {
     collection, addDoc, updateDoc, deleteDoc, doc,
     serverTimestamp, arrayUnion, arrayRemove
 } from "firebase/firestore";
+import IconRenderer, { LoLSuggestions } from "./IconRenderer";
 import "../styles/componentsCSS/ProfilePosts.css";
 
 function ProfilePosts({
@@ -27,10 +28,35 @@ function ProfilePosts({
         editCommentText: "",
         updatingComment: false,
         deletingCommentId: null,
-        postVisibility: "public"
+        postVisibility: "public",
+        showSuggestions: false,
+        suggestionQuery: "",
+        suggestionIndex: 0,
+        suggestionType: null,
+        activeCommentId: null,
+        suggestionCoords: { top: 0, left: 0 }
     });
 
     const postImageInputRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (!state.showSuggestions) return;
+
+            const isInput = event.target.closest('.post-textarea') ||
+                event.target.closest('.comment-input') ||
+                event.target.closest('.edit-post-textarea') ||
+                event.target.closest('.edit-comment-input');
+            const isDropdown = event.target.closest('.suggestion-dropdown');
+
+            if (!isInput && !isDropdown) {
+                setState(prev => ({ ...prev, showSuggestions: false }));
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [state.showSuggestions]);
 
     const fileToBase64 = (file) => new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -60,6 +86,125 @@ function ProfilePosts({
         }
 
         return null;
+    };
+
+    const getCaretCoordinates = (textarea) => {
+        const { clientWidth } = textarea;
+        const styles = window.getComputedStyle(textarea);
+
+        const div = document.createElement('div');
+        div.style.position = 'absolute';
+        div.style.visibility = 'hidden';
+        div.style.whiteSpace = 'pre-wrap';
+        div.style.wordBreak = 'break-word';
+        div.style.width = clientWidth + 'px';
+        div.style.font = styles.font;
+        div.style.padding = styles.padding;
+        div.style.border = styles.border;
+        div.style.lineHeight = styles.lineHeight;
+
+        const content = textarea.value.substring(0, textarea.selectionStart);
+        div.textContent = content;
+
+        const span = document.createElement('span');
+        span.textContent = textarea.value.substring(textarea.selectionStart) || '.';
+        div.appendChild(span);
+
+        document.body.appendChild(div);
+        const { offsetLeft: spanLeft, offsetTop: spanTop } = span;
+        document.body.removeChild(div);
+
+        return {
+            top: spanTop + parseInt(styles.lineHeight || 20),
+            left: Math.min(spanLeft, clientWidth - 200)
+        };
+    };
+
+    const handleTextareaChange = (value, type, commentId = null) => {
+        const textarea = type === 'post' ?
+            document.querySelector('.post-textarea') :
+            document.querySelector(`.comment-input-${commentId}`);
+
+        const cursorPosition = textarea?.selectionStart || 0;
+        const textBeforeCursor = value.substring(0, cursorPosition);
+        const match = textBeforeCursor.match(/:([a-z0-9_']*)$/i);
+
+        if (match) {
+            const query = match[1];
+            const coords = getCaretCoordinates(textarea);
+            setState(prev => ({
+                ...prev,
+                [type === 'post' ? 'newPostContent' : 'newCommentText']:
+                    type === 'post' ? value : { ...prev.newCommentText, [commentId]: value },
+                showSuggestions: true,
+                suggestionQuery: query,
+                suggestionIndex: 0,
+                suggestionType: type,
+                activeCommentId: commentId,
+                suggestionCoords: coords
+            }));
+        } else {
+            setState(prev => ({
+                ...prev,
+                [type === 'post' ? 'newPostContent' : 'newCommentText']:
+                    type === 'post' ? value : { ...prev.newCommentText, [commentId]: value },
+                showSuggestions: false,
+                suggestionQuery: "",
+                suggestionType: null,
+                activeCommentId: null
+            }));
+        }
+    };
+
+    const insertSuggestion = (icon) => {
+        const type = state.suggestionType;
+        const commentId = state.activeCommentId;
+        const value = type === 'post' ? state.newPostContent : state.newCommentText[commentId];
+        const textarea = type === 'post' ?
+            document.querySelector('.post-textarea') :
+            document.querySelector(`.comment-input-${commentId}`);
+
+        if (!textarea) return;
+
+        const cursorPosition = textarea.selectionStart;
+        const textBeforeCursor = value.substring(0, cursorPosition);
+        const textAfterCursor = value.substring(cursorPosition);
+        const lastColonIndex = textBeforeCursor.lastIndexOf(':');
+
+        const newValue = textBeforeCursor.substring(0, lastColonIndex) + `:${icon.name.toLowerCase().replace(/\s+/g, '_').replace(/['.]/g, '')}: ` + textAfterCursor;
+
+        if (type === 'post') {
+            setState(prev => ({ ...prev, newPostContent: newValue, showSuggestions: false }));
+        } else {
+            setState(prev => ({
+                ...prev,
+                newCommentText: { ...prev.newCommentText, [commentId]: newValue },
+                showSuggestions: false
+            }));
+        }
+
+        setTimeout(() => {
+            textarea.focus();
+            const newPos = lastColonIndex + icon.name.length + 3;
+            textarea.setSelectionRange(newPos, newPos);
+        }, 0);
+    };
+
+    const handleKeyDown = (e) => {
+        if (!state.showSuggestions) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setState(prev => ({ ...prev, suggestionIndex: Math.min(prev.suggestionIndex + 1, 4) }));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setState(prev => ({ ...prev, suggestionIndex: Math.max(prev.suggestionIndex - 1, 0) }));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            document.querySelector('.suggestion-item.active')?.click();
+        } else if (e.key === 'Escape') {
+            setState(prev => ({ ...prev, showSuggestions: false }));
+        }
     };
 
     const createPost = async () => {
@@ -149,6 +294,8 @@ function ProfilePosts({
                 editContent: "",
                 updatingPost: false
             }));
+
+            if (editPostInputRef.current) editPostInputRef.current.clear();
         } catch (error) {
             console.error("Error updating post:", error);
             alert("Failed to update post.");
@@ -391,10 +538,27 @@ function ProfilePosts({
                             placeholder="Share something with the community... (Links to Youtube/TikTok/Instagram supported)"
                             className="post-textarea"
                             value={state.newPostContent}
-                            onChange={(e) => setState(prev => ({ ...prev, newPostContent: e.target.value }))}
+                            onChange={(e) => handleTextareaChange(e.target.value, 'post')}
+                            onKeyDown={handleKeyDown}
                             onPaste={handlePaste}
                             maxLength={500}
                         ></textarea>
+
+                        {state.showSuggestions && state.suggestionType === 'post' && (
+                            <div className="post-suggestions-wrapper" style={{
+                                position: 'absolute',
+                                top: state.suggestionCoords.top,
+                                left: state.suggestionCoords.left,
+                                zIndex: 4001
+                            }}>
+                                <LoLSuggestions
+                                    query={state.suggestionQuery}
+                                    activeIndex={state.suggestionIndex}
+                                    onSelect={insertSuggestion}
+                                />
+                            </div>
+                        )}
+
                         <div className="post-char-counter">
                             {state.newPostContent.length}/500 characters
                         </div>
@@ -535,7 +699,7 @@ function ProfilePosts({
                                                 </div>
                                             </div>
                                         ) : (
-                                            post.content
+                                            <IconRenderer text={post.content} />
                                         )}
                                     </div>
 
@@ -696,7 +860,7 @@ function ProfilePosts({
                                                                             </div>
                                                                         </div>
                                                                     ) : (
-                                                                        <p className="comment-text">{comment.text}</p>
+                                                                        <IconRenderer text={comment.text} className="comment-text" />
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -709,18 +873,35 @@ function ProfilePosts({
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="add-comment-form">
-                                            <input
-                                                type="text"
-                                                placeholder="Write a comment..."
-                                                className="comment-input"
-                                                value={state.newCommentText[post.id] || ""}
-                                                onChange={(e) => setState(prev => ({
-                                                    ...prev,
-                                                    newCommentText: { ...prev.newCommentText, [post.id]: e.target.value }
-                                                }))}
-                                                onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
-                                            />
+                                        <div className="add-comment-container">
+                                            <div className="comment-input-wrapper" style={{ position: 'relative', flex: 1 }}>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Write a comment..."
+                                                    className={`comment-input comment-input-${post.id}`}
+                                                    value={state.newCommentText[post.id] || ""}
+                                                    onChange={(e) => handleTextareaChange(e.target.value, 'comment', post.id)}
+                                                    onKeyDown={handleKeyDown}
+                                                    onKeyPress={(e) => e.key === 'Enter' && !state.showSuggestions && handleAddComment(post.id)}
+                                                />
+                                                {state.showSuggestions && state.suggestionType === 'comment' && state.activeCommentId === post.id && (
+                                                    <div style={{
+                                                        position: 'absolute',
+                                                        bottom: 'calc(100% + 8px)',
+                                                        left: '0',
+                                                        top: 'auto',
+                                                        zIndex: 9999,
+                                                        width: '100%',
+                                                        minWidth: '200px'
+                                                    }}>
+                                                        <LoLSuggestions
+                                                            query={state.suggestionQuery}
+                                                            activeIndex={state.suggestionIndex}
+                                                            onSelect={insertSuggestion}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                             <button
                                                 className="add-comment-btn"
                                                 onClick={() => handleAddComment(post.id)}

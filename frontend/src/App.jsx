@@ -46,7 +46,6 @@ function App() {
         const role = await initializeUserInFirestore(firebaseUser);
         setUserRole(role);
 
-        // Fetch user's profile image
         try {
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           if (userDoc.exists()) {
@@ -145,11 +144,11 @@ function App() {
   return (
     <div className="app">
       <nav>
+        <Link className="nav-brand" to="/">
+          Killstreak
+        </Link>
         {!user ? (
           <>
-            <Link className="nav-link" to="/">
-              Home
-            </Link>
             <Link className="nav-link" to="/summoner">
               Summoner Lookup
             </Link>
@@ -165,9 +164,6 @@ function App() {
           </>
         ) : (
           <>
-            <Link className="nav-link" to="/">
-              Home
-            </Link>
             <Link className="nav-link" to="/feeds">
               Feeds
             </Link>
@@ -191,7 +187,6 @@ function App() {
               </Link>
             )}
 
-            {/* Profile Dropdown */}
             <div
               className="profile-dropdown"
               ref={profileDropdownRef}
