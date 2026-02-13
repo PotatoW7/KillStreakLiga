@@ -5,7 +5,7 @@ import {
   collection, query, where, onSnapshot, doc, updateDoc,
   arrayUnion, getDoc, serverTimestamp
 } from "firebase/firestore";
-import "../styles/componentsCSS/Announcement.css";
+import "../styles/componentsCSS/announcement.css";
 
 function Announcement({ notificationCount, setNotificationCount, isEmbedded = false }) {
   const [isOpen, setIsOpen] = useState(false);
