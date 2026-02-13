@@ -302,7 +302,7 @@ function QueueSystem() {
 
         if (userData.riotAccount && userData.riotAccount.gameName && userData.riotAccount.tagLine) {
           try {
-            const response = await fetch(`http://localhost:3000/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
             if (response.ok) {
               const summonerData = await response.json();
               const rankedData = summonerData.ranked || [];
