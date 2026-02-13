@@ -234,6 +234,7 @@
   font-size: var(--font-size-sm);
   color: var(--accent-gold);
   margin-bottom: 2px;
+  text-align: left;
 }
 
 .player-info .player-name {

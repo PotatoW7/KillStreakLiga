@@ -23,6 +23,8 @@ export async function fetchDDragon() {
       const spellData = await spellRes.json();
 
       const iconMap = {};
+      const champIdToName = {};
+      const champNameToId = {};
 
       // Helper to normalize names
       const normalize = (name) => name.toLowerCase().replace(/\s+/g, '_').replace(/['.]/g, '');
@@ -30,6 +32,8 @@ export async function fetchDDragon() {
       // Process Champions
       Object.values(champData.data).forEach(champ => {
         const normalized = normalize(champ.name);
+        champIdToName[champ.key] = champ.id;
+        champNameToId[champ.id] = champ.key;
         iconMap[normalized] = {
           name: champ.name,
           url: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champ.id}.png`,
@@ -57,7 +61,7 @@ export async function fetchDDragon() {
         };
       });
 
-      return { latestVersion, iconMap };
+      return { latestVersion, iconMap, champIdToName, champNameToId };
     } catch (error) {
       console.error("Error in fetchDDragon:", error);
       ddragonCache = null; // Reset on error
