@@ -132,7 +132,7 @@ function Profile() {
     try {
       setState(prev => ({ ...prev, rankedUpdateLoading: true }));
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/${account.region}/${encodeURIComponent(account.gameName)}/${encodeURIComponent(account.tagLine)}`);
+      const response = await fetch(`/summoner-info/${account.region}/${encodeURIComponent(account.gameName)}/${encodeURIComponent(account.tagLine)}`);
       if (response.ok) {
         const summonerData = await response.json();
         const rankedData = summonerData.ranked || [];

@@ -104,7 +104,7 @@ function Summoner() {
       const encodedGameName = encodeURIComponent(gameName);
       const encodedTagLine = encodeURIComponent(tagLine);
 
-      const summonerRes = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/${playerRegion}/${encodedGameName}/${encodedTagLine}`);
+      const summonerRes = await fetch(`/summoner-info/${playerRegion}/${encodedGameName}/${encodedTagLine}`);
 
       if (!summonerRes.ok) {
         if (summonerRes.status === 404) {
@@ -118,7 +118,7 @@ function Summoner() {
 
       addToRecentSearches(playerRiotId, playerRegion);
 
-      fetch(`${import.meta.env.VITE_API_URL}/summoner-info/spectator/${playerRegion}/${summonerData.puuid}`)
+      fetch(`/summoner-info/spectator/${playerRegion}/${summonerData.puuid}`)
         .then(r => r.ok ? r.json() : { inGame: false })
         .then(spectatorData => {
           setLiveGame(spectatorData);
@@ -129,7 +129,7 @@ function Summoner() {
         })
         .catch(() => setLiveGame(null));
 
-      const matchRes = await fetch(`${import.meta.env.VITE_API_URL}/match-history/${playerRegion}/${summonerData.puuid}?mode=${mode}`);
+      const matchRes = await fetch(`/match-history/${playerRegion}/${summonerData.puuid}?mode=${mode}`);
       if (!matchRes.ok) throw new Error("Failed to fetch match history");
 
       const matchData = await matchRes.json();
