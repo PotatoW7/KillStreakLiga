@@ -60,9 +60,10 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
     });
 
     const getSocialPreview = (content) => {
-        const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-        const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[\w.-]+\/video\/\d+|vt\.tiktok\.com\/\w+)/;
+        const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/(?:v\/|e(?:mbed)\/|shorts\/|watch\?v=)|youtu\.be\/|youtube-nocookie\.com\/(?:v|e(?:mbed)\/))([a-zA-Z0-9_-]{11})/;
+        const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[\w.-]+\/video\/(\d+)|vt\.tiktok\.com\/(\w+))/;
         const instagramRegex = /(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/(?:p|reels|reel)\/([\w-]+))/;
+        const xRegex = /(?:https?:\/\/)?(?:www\.)?(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)/;
 
         const ytMatch = content.match(youtubeRegex);
         if (ytMatch) {
@@ -71,12 +72,18 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
 
         const ttMatch = content.match(tiktokRegex);
         if (ttMatch) {
-            return { type: 'tiktok', thumbnail: '/project-icons/social-placeholders/tiktok-preview.png' };
+            const videoId = ttMatch[1] || ttMatch[2];
+            return { type: 'tiktok', id: videoId, thumbnail: 'https://cdn-icons-png.flaticon.com/512/3046/3046121.png' };
         }
 
         const igMatch = content.match(instagramRegex);
         if (igMatch) {
-            return { type: 'instagram', thumbnail: '/project-icons/social-placeholders/instagram-preview.png' };
+            return { type: 'instagram', id: igMatch[1], thumbnail: 'https://cdn-icons-png.flaticon.com/512/174/174855.png' };
+        }
+
+        const xMatch = content.match(xRegex);
+        if (xMatch) {
+            return { type: 'x', id: xMatch[1], thumbnail: 'https://cdn-icons-png.flaticon.com/512/5968/5968830.png' };
         }
 
         return null;
@@ -227,6 +234,14 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                 visibility: state.postVisibility
             };
 
+
+            const estimatedSize = JSON.stringify(postData).length;
+            if (estimatedSize > 1040000) {
+                alert(`Post is too large (${Math.round(estimatedSize / 1024)}KB). Firestore limit is 1MB. Please use fewer or smaller images.`);
+                setState(prev => ({ ...prev, creatingPost: false }));
+                return;
+            }
+
             await addDoc(collection(db, "posts"), postData);
 
             setState(prev => ({
@@ -241,7 +256,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
             if (onPostCreated) onPostCreated();
         } catch (error) {
             console.error("Error creating post:", error);
-            alert("Failed to create post. Please try again.");
+            alert("Failed to create post: " + (error.message || "Unknown error"));
             setState(prev => ({ ...prev, creatingPost: false }));
         }
     };
@@ -280,8 +295,10 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         try {
             setState(prev => ({ ...prev, updatingPost: true }));
             const postRef = doc(db, "posts", postId);
+            const socialPreview = getSocialPreview(state.editContent);
             await updateDoc(postRef, {
                 content: state.editContent.trim(),
+                socialPreview: socialPreview || null,
                 updatedAt: serverTimestamp()
             });
 
@@ -467,7 +484,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         }));
     };
 
-    const resizeImage = (file, maxWidth = 800, maxHeight = 800) => new Promise((resolve, reject) => {
+
+    const resizeImage = (file, maxWidth = 600, maxHeight = 600) => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (event) => {
@@ -494,7 +512,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/webp', 0.6));
+
+                resolve(canvas.toDataURL('image/webp', 0.7));
             };
             img.onerror = (err) => reject(err);
         };
@@ -505,21 +524,23 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         const file = e.target.files[0];
         if (!file) return;
 
-        if (file.size > 5 * 1024 * 1024) return alert("Image too large (Max 5MB)");
+        if (file.size > 1 * 1024 * 1024) return alert("Image too large (Max 1MB)");
 
         try {
-            const base64 = await resizeImage(file);
+
+            const resizedBase64 = await resizeImage(file, 600, 600);
 
 
-            if (base64.length > 700000) {
-                alert("Image still too large after compression. Please choose a smaller image.");
-                e.target.value = null;
-                return;
+            if (resizedBase64.length > 500000) {
+                if (!window.confirm("This image is quite large even after compression. It might prevent posting. Add anyway?")) {
+                    e.target.value = null;
+                    return;
+                }
             }
 
             setState(prev => ({
                 ...prev,
-                newPostImages: [...prev.newPostImages, base64]
+                newPostImages: [...prev.newPostImages, resizedBase64]
             }));
             e.target.value = null;
         } catch (err) {
@@ -536,14 +557,15 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                 const file = items[i].getAsFile();
                 if (file) {
                     try {
-                        const base64 = await resizeImage(file);
-                        if (base64.length > 700000) {
-                            alert("Pasted image too large (try a smaller one)");
-                            continue;
+                        const resizedBase64 = await resizeImage(file, 600, 600);
+                        if (resizedBase64.length > 500000) {
+                            if (!window.confirm("Pasted image is large. It might prevent posting. Add anyway?")) {
+                                continue;
+                            }
                         }
                         setState(prev => ({
                             ...prev,
-                            newPostImages: [...prev.newPostImages, base64]
+                            newPostImages: [...prev.newPostImages, resizedBase64]
                         }));
                         e.preventDefault();
                     } catch (err) {
@@ -606,20 +628,6 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                             {state.newPostContent.length}/500 characters
                         </div>
 
-                        <div className="visibility-selector">
-                            <label htmlFor="post-visibility">Visibility:</label>
-                            <select
-                                id="post-visibility"
-                                value={state.postVisibility}
-                                onChange={(e) => setState(prev => ({ ...prev, postVisibility: e.target.value }))}
-                                className="visibility-select"
-                            >
-                                <option value="public">Public - Visible in feeds</option>
-                                <option value="profile-only">Profile Only - Visible on profile page</option>
-                                <option value="private">Private - Friends only</option>
-                            </select>
-                        </div>
-
                         {state.newPostImages.length > 0 && (
                             <div className="post-images-preview-grid">
                                 {state.newPostImages.map((img, index) => (
@@ -636,27 +644,43 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                             </div>
                         )}
 
-                        <div className="post-actions">
-                            <input
-                                type="file"
-                                ref={postImageInputRef}
-                                onChange={handlePostImageSelect}
-                                accept="image/*"
-                                style={{ display: "none" }}
-                            />
-                            <button
-                                className="post-media-btn"
-                                onClick={() => postImageInputRef.current?.click()}
-                            >
-                                Add Image
-                            </button>
-                            <button
-                                className="post-submit-btn"
-                                onClick={createPost}
-                                disabled={(!state.newPostContent.trim() && state.newPostImages.length === 0) || state.creatingPost}
-                            >
-                                {state.creatingPost ? "Posting..." : "Post to Feed"}
-                            </button>
+                        <div className="post-footer-row">
+                            <div className="visibility-selector">
+                                <label htmlFor="post-visibility">Visibility:</label>
+                                <select
+                                    id="post-visibility"
+                                    value={state.postVisibility}
+                                    onChange={(e) => setState(prev => ({ ...prev, postVisibility: e.target.value }))}
+                                    className="visibility-select"
+                                >
+                                    <option value="public">Public - Visible in feeds</option>
+                                    <option value="profile-only">Profile Only - Visible on profile page</option>
+                                    <option value="private">Private - Friends only</option>
+                                </select>
+                            </div>
+
+                            <div className="post-actions">
+                                <input
+                                    type="file"
+                                    ref={postImageInputRef}
+                                    onChange={handlePostImageSelect}
+                                    accept="image/*"
+                                    style={{ display: "none" }}
+                                />
+                                <button
+                                    className="post-media-btn"
+                                    onClick={() => postImageInputRef.current?.click()}
+                                >
+                                    Add Image
+                                </button>
+                                <button
+                                    className="post-submit-btn"
+                                    onClick={createPost}
+                                    disabled={(!state.newPostContent.trim() && state.newPostImages.length === 0) || state.creatingPost}
+                                >
+                                    {state.creatingPost ? "Posting..." : "Post to Feed"}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -748,11 +772,11 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
 
                                     {post.socialPreview && (
                                         <div className="social-preview-container">
-                                            {post.socialPreview.type === 'youtube' ? (
+                                            {post.socialPreview.type === 'youtube' && (
                                                 <div className="yt-embed-wrapper">
                                                     <iframe
                                                         width="100%"
-                                                        height="315"
+                                                        height="360"
                                                         src={`https://www.youtube.com/embed/${post.socialPreview.id}`}
                                                         title="YouTube video player"
                                                         frameBorder="0"
@@ -760,12 +784,40 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                         allowFullScreen
                                                     ></iframe>
                                                 </div>
-                                            ) : (
-                                                <div className="generic-social-preview">
-                                                    <img src={post.socialPreview.thumbnail} alt="Preview" className="social-thumb" />
-                                                    <div className="social-info">
-                                                        <span className="social-type">{post.socialPreview.type.toUpperCase()} PREVIEW</span>
-                                                    </div>
+                                            )}
+                                            {post.socialPreview.type === 'tiktok' && (
+                                                <div className="tt-embed-wrapper">
+                                                    <iframe
+                                                        src={`https://www.tiktok.com/embed/v2/${post.socialPreview.id}`}
+                                                        style={{ width: '100%', height: '700px', border: 'none' }}
+                                                        allowFullScreen
+                                                        title="TikTok player"
+                                                    ></iframe>
+                                                </div>
+                                            )}
+                                            {post.socialPreview.type === 'instagram' && (
+                                                <div className="ig-embed-wrapper">
+                                                    <iframe
+                                                        src={`https://www.instagram.com/p/${post.socialPreview.id}/embed`}
+                                                        width="100%"
+                                                        height="600"
+                                                        frameBorder="0"
+                                                        scrolling="no"
+                                                        allowTransparency="true"
+                                                        title="Instagram player"
+                                                    ></iframe>
+                                                </div>
+                                            )}
+                                            {post.socialPreview.type === 'x' && (
+                                                <div className="x-embed-wrapper">
+                                                    <iframe
+                                                        border="0"
+                                                        frameBorder="0"
+                                                        height="500"
+                                                        width="100%"
+                                                        src={`https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&frame=false&hideCard=false&hideThread=false&id=${post.socialPreview.id}&lang=en&origin=${window.location.origin}&theme=dark`}
+                                                        title="X (Twitter) player"
+                                                    ></iframe>
                                                 </div>
                                             )}
                                         </div>
@@ -917,7 +969,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                             )}
                                         </div>
                                         <div className="add-comment-container">
-                                            <div className="comment-input-wrapper" style={{ position: 'relative', flex: 1 }}>
+                                            <div className="comment-input-wrapper" style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                                 <input
                                                     type="text"
                                                     placeholder="Write a comment..."
@@ -926,7 +978,17 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                     onChange={(e) => handleTextareaChange(e.target.value, 'comment', post.id)}
                                                     onKeyDown={handleKeyDown}
                                                     onKeyPress={(e) => e.key === 'Enter' && !state.showSuggestions && handleAddComment(post.id)}
+                                                    maxLength={250}
                                                 />
+                                                <span className="comment-char-limit" style={{
+                                                    fontSize: '0.7rem',
+                                                    color: '#666',
+                                                    alignSelf: 'flex-end',
+                                                    marginTop: '2px',
+                                                    marginRight: '4px'
+                                                }}>
+                                                    {(state.newCommentText[post.id] || "").length}/250
+                                                </span>
 
                                                 {state.showSuggestions && state.suggestionType === 'comment' && state.activeCommentId === post.id && (
                                                     <div style={{

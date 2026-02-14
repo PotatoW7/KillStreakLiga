@@ -56,6 +56,79 @@
   box-shadow: 0 0 0 2px rgba(200, 155, 60, 0.2);
 }
 
+/* Custom Champion Filter */
+.custom-select-container {
+  min-width: 200px;
+}
+
+.champion-search-input {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  padding-right: 30px;
+  /* Space for arrow */
+  font-size: var(--font-size-sm);
+  width: 100%;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.champion-search-input:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(200, 155, 60, 0.2);
+}
+
+.custom-select-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.custom-dropdown-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+}
+
+.custom-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.custom-option:hover {
+  background: var(--bg-tertiary);
+}
+
+.option-champ-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+.custom-option span {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
 /* Match Cards */
 .match-card {
   background: var(--bg-secondary);

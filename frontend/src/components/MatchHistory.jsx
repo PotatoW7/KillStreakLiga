@@ -10,13 +10,17 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   const [filterQueue, setFilterQueue] = useState("all");
   const [hoveredItem, setHoveredItem] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [runesData, setRunesData] = useState(null);
 
   useEffect(() => {
-    if (!version) {
-      fetchDDragon()
-        .then((data) => setLatestVersion(data.latestVersion))
-        .catch((error) => console.error("Failed to fetch DDragon data:", error));
-    }
+    fetchDDragon()
+      .then((data) => {
+        if (!version) setLatestVersion(data.latestVersion);
+        setRunesData(data.runesData);
+      })
+      .catch((error) => console.error("Failed to fetch DDragon data:", error));
   }, [version]);
 
   const currentVersion = version || latestVersion;
@@ -142,6 +146,7 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     return runeMap[perkId] ? `/runes/${runeMap[perkId]}.png` : '/runes/unknown.png';
   };
 
+
   const renderPlayerRunes = (player, key) => {
     if (!player.perks || !player.perks.styles) return null;
     const primary = player.perks.styles[0];
@@ -163,13 +168,26 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
             )}
           </div>
         ) : (
-          <div className="runes-full" onMouseLeave={() => setHoveredPlayer(null)}>
+          <div className="runes-full" onMouseLeave={() => { setHoveredPlayer(null); handleItemLeave(); }}>
             {primary && (
               <>
                 <img src={getRuneIconPath(primary.style)} alt="Primary Style" className="rune-style-icon" />
                 <div className="primary-runes">
                   {primary.selections?.map((s, i) => (
-                    <img key={i} src={getRuneIconPath(s.perk)} className={`rune-icon ${i === 0 ? "keystone" : "primary-rune"}`} onError={(e) => (e.target.src = "/runes/unknown.png")} />
+                    <img
+                      key={i}
+                      src={getRuneIconPath(s.perk)}
+                      className={`rune-icon ${i === 0 ? "keystone" : "primary-rune"}`}
+                      onMouseEnter={(e) => {
+                        if (runesData && runesData[s.perk]) {
+                          setHoveredItem(runesData[s.perk]);
+                          setTooltipPos({ x: e.clientX, y: e.clientY });
+                        }
+                      }}
+                      onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+                      onMouseLeave={handleItemLeave}
+                      onError={(e) => (e.target.src = "/runes/unknown.png")}
+                    />
                   ))}
                 </div>
               </>
@@ -179,7 +197,20 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
                 <img src={getRuneIconPath(secondary.style)} alt="Secondary Style" className="rune-style-icon" />
                 <div className="secondary-runes">
                   {secondary.selections?.map((s, i) => (
-                    <img key={i} src={getRuneIconPath(s.perk)} className="rune-icon secondary-rune" onError={(e) => (e.target.src = "/runes/unknown.png")} />
+                    <img
+                      key={i}
+                      src={getRuneIconPath(s.perk)}
+                      className="rune-icon secondary-rune"
+                      onMouseEnter={(e) => {
+                        if (runesData && runesData[s.perk]) {
+                          setHoveredItem(runesData[s.perk]);
+                          setTooltipPos({ x: e.clientX, y: e.clientY });
+                        }
+                      }}
+                      onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+                      onMouseLeave={handleItemLeave}
+                      onError={(e) => (e.target.src = "/runes/unknown.png")}
+                    />
                   ))}
                 </div>
               </>
@@ -405,12 +436,60 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
       <div className="match-filters">
         <div className="filter-group">
           <label>Champion:</label>
-          <select value={filterChampion} onChange={(e) => setFilterChampion(e.target.value)}>
-            <option value="all">All Champions</option>
-            {playedChampions.map(champ => (
-              <option key={champ} value={champ}>{formatChampionName(champ)}</option>
-            ))}
-          </select>
+          <div className="custom-select-container" style={{ position: 'relative' }}>
+            <input
+              type="text"
+              className="champion-search-input"
+              placeholder="Search champion..."
+              value={isDropdownOpen ? searchQuery : (filterChampion === "all" ? "All Champions" : formatChampionName(filterChampion))}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setFilterChampion("all");
+                setIsDropdownOpen(true);
+              }}
+              onClick={() => {
+                setIsDropdownOpen(true);
+                setSearchQuery("");
+              }}
+              onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+            />
+            {isDropdownOpen && (
+              <div className="custom-dropdown-list">
+                <div
+                  className="custom-option"
+                  onClick={() => {
+                    setFilterChampion("all");
+                    setIsDropdownOpen(false);
+                    setSearchQuery("");
+                  }}
+                >
+                  <span>All Champions</span>
+                </div>
+                {playedChampions
+                  .filter(champ => champ.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map(champ => (
+                    <div
+                      key={champ}
+                      className="custom-option"
+                      onClick={() => {
+                        setFilterChampion(champ);
+                        setIsDropdownOpen(false);
+                        setSearchQuery(formatChampionName(champ));
+                      }}
+                    >
+                      <img
+                        src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[champNameToId?.[champ]] || champ}.png`}
+                        alt={champ}
+                        className="option-champ-img"
+                        onError={(e) => (e.target.src = "/placeholder-champ.png")}
+                      />
+                      <span>{formatChampionName(champ)}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+            <div className="custom-select-arrow">▼</div>
+          </div>
         </div>
 
         <div className="filter-group">
@@ -429,13 +508,15 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
         </div>
       </div>
 
-      {filteredMatches.length > 0 ? (
-        filteredMatches.map((m, i) => renderMatch(m, i))
-      ) : (
-        <p className="text-center unranked">No matches found matching filters</p>
-      )}
+      {
+        filteredMatches.length > 0 ? (
+          filteredMatches.map((m, i) => renderMatch(m, i))
+        ) : (
+          <p className="text-center unranked">No matches found matching filters</p>
+        )
+      }
 
-      {hoveredItem && <ItemTooltip item={hoveredItem} position={tooltipPos} />}
-    </div>
+      {hoveredItem && <ItemTooltip item={hoveredItem} position={tooltipPos} version={currentVersion} />}
+    </div >
   );
 }

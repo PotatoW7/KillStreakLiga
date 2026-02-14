@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDocs, orderBy, getDoc
+  collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDocs, orderBy, getDoc, writeBatch
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -20,35 +20,64 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
     if (!auth.currentUser) return;
 
     const userRef = doc(db, 'users', auth.currentUser.uid);
-    const unsubscribeUser = onSnapshot(userRef, async (docSnap) => {
+    const friendUnsubscribes = new Map();
+
+    const unsubscribeUser = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const friendsList = data.friends || [];
-        setFriends(friendsList);
+
+
+        const uniqueFriends = [];
+        const seenIds = new Set();
+        friendsList.forEach(f => {
+          if (!seenIds.has(f.id)) {
+            uniqueFriends.push(f);
+            seenIds.add(f.id);
+          }
+        });
+
+        setFriends(uniqueFriends);
         setPendingRequests(data.pendingRequests || []);
         setSentFriendRequests(data.sentFriendRequests || []);
 
-        friendsList.forEach(friend => {
-          const friendRef = doc(db, 'users', friend.id);
-          const unsubscribeFriend = onSnapshot(friendRef, (friendDoc) => {
-            if (friendDoc.exists()) {
-              const friendData = friendDoc.data();
-              setFriends(prevFriends =>
-                prevFriends.map(f =>
-                  f.id === friend.id
-                    ? { ...f, profileImage: friendData.profileImage }
-                    : f
-                )
-              );
-            }
-          });
 
-          return unsubscribeFriend;
+        const currentFriendIds = new Set(uniqueFriends.map(f => f.id));
+
+
+        for (const [id, unsub] of friendUnsubscribes.entries()) {
+          if (!currentFriendIds.has(id)) {
+            unsub();
+            friendUnsubscribes.delete(id);
+          }
+        }
+
+
+        uniqueFriends.forEach(friend => {
+          if (!friendUnsubscribes.has(friend.id)) {
+            const friendRef = doc(db, 'users', friend.id);
+            const unsub = onSnapshot(friendRef, (friendDoc) => {
+              if (friendDoc.exists()) {
+                const friendData = friendDoc.data();
+                setFriends(prevFriends =>
+                  prevFriends.map(f =>
+                    f.id === friend.id
+                      ? { ...f, profileImage: friendData.profileImage, username: friendData.username || f.username }
+                      : f
+                  )
+                );
+              }
+            });
+            friendUnsubscribes.set(friend.id, unsub);
+          }
         });
       }
     });
 
-    return () => unsubscribeUser();
+    return () => {
+      unsubscribeUser();
+      friendUnsubscribes.forEach(unsub => unsub());
+    };
   }, []);
 
   useEffect(() => {
@@ -133,6 +162,7 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
 
   const sendFriendRequest = async (targetUserId, targetUsername) => {
     try {
+      const batch = writeBatch(db);
       const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const targetUserRef = doc(db, 'users', targetUserId);
 
@@ -160,15 +190,15 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         timestamp: new Date()
       };
 
-
-      await updateDoc(targetUserRef, {
+      batch.update(targetUserRef, {
         pendingRequests: arrayUnion(requestData)
       });
 
-
-      await updateDoc(currentUserRef, {
+      batch.update(currentUserRef, {
         sentFriendRequests: arrayUnion(sentRequestData)
       });
+
+      await batch.commit();
 
       setSearchResults([]);
       setSearchUsername('');
@@ -181,6 +211,7 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
 
   const acceptFriendRequest = async (request) => {
     try {
+      const batch = writeBatch(db);
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const friendRef = doc(db, 'users', request.from);
 
@@ -191,16 +222,16 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
 
 
-      await updateDoc(userRef, {
+      batch.update(userRef, {
         friends: arrayUnion({
           id: request.from,
-          username: request.fromUsername || 'Anonymous',
+          username: friendData.username || request.fromUsername || 'Anonymous',
           profileImage: friendData.profileImage || null
         }),
         pendingRequests: arrayRemove(request)
       });
 
-      await updateDoc(friendRef, {
+      batch.update(friendRef, {
         friends: arrayUnion({
           id: auth.currentUser.uid,
           username: auth.currentUser.displayName || 'Anonymous',
@@ -212,10 +243,12 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         req => req.to === auth.currentUser.uid
       );
       if (sentRequest) {
-        await updateDoc(friendRef, {
+        batch.update(friendRef, {
           sentFriendRequests: arrayRemove(sentRequest)
         });
       }
+
+      await batch.commit();
 
     } catch (error) {
       console.error('Error accepting friend request:', error);
@@ -225,14 +258,13 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
 
   const rejectFriendRequest = async (request) => {
     try {
+      const batch = writeBatch(db);
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const senderRef = doc(db, 'users', request.from);
 
-
-      await updateDoc(userRef, {
+      batch.update(userRef, {
         pendingRequests: arrayRemove(request)
       });
-
 
       const senderDoc = await getDoc(senderRef);
       if (senderDoc.exists()) {
@@ -242,14 +274,12 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         );
 
         if (sentRequest) {
-
-          await updateDoc(senderRef, {
+          batch.update(senderRef, {
             sentFriendRequests: arrayRemove(sentRequest)
           });
         }
 
-
-        await updateDoc(senderRef, {
+        batch.update(senderRef, {
           friendNotifications: arrayUnion({
             type: 'rejection',
             from: auth.currentUser.uid,
@@ -259,6 +289,9 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
           })
         });
       }
+
+      await batch.commit();
+
     } catch (error) {
       console.error('Error rejecting friend request:', error);
       alert('Error rejecting friend request: ' + error.message);
@@ -267,14 +300,13 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
 
   const cancelSentRequest = async (request) => {
     try {
+      const batch = writeBatch(db);
       const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const targetUserRef = doc(db, 'users', request.to);
 
-
-      await updateDoc(currentUserRef, {
+      batch.update(currentUserRef, {
         sentFriendRequests: arrayRemove(request)
       });
-
 
       const targetDoc = await getDoc(targetUserRef);
       if (targetDoc.exists()) {
@@ -284,11 +316,14 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         );
 
         if (pendingRequest) {
-          await updateDoc(targetUserRef, {
+          batch.update(targetUserRef, {
             pendingRequests: arrayRemove(pendingRequest)
           });
         }
       }
+
+      await batch.commit();
+
     } catch (error) {
       console.error('Error canceling friend request:', error);
       alert('Error canceling friend request: ' + error.message);
@@ -301,6 +336,7 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
     }
 
     try {
+      const batch = writeBatch(db);
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const friendRef = doc(db, 'users', friendId);
 
@@ -313,19 +349,22 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         return;
       }
 
-      await updateDoc(userRef, {
+      batch.update(userRef, {
         friends: arrayRemove(friendToRemove)
       });
 
       const friendSnap = await getDoc(friendRef);
-      const friendData = friendSnap.data();
-
-      const userToRemove = (friendData.friends || []).find(f => f.id === auth.currentUser.uid);
-      if (userToRemove) {
-        await updateDoc(friendRef, {
-          friends: arrayRemove(userToRemove)
-        });
+      if (friendSnap.exists()) {
+        const friendData = friendSnap.data();
+        const userToRemove = (friendData.friends || []).find(f => f.id === auth.currentUser.uid);
+        if (userToRemove) {
+          batch.update(friendRef, {
+            friends: arrayRemove(userToRemove)
+          });
+        }
       }
+
+      await batch.commit();
 
       alert(`You are no longer friends with ${friendUsername}`);
     } catch (error) {

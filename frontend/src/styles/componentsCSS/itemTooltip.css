@@ -69,15 +69,17 @@
 /* Data Dragon specific tags styling */
 .item-stats {
     color: #71d5ff;
-    margin-bottom: 10px;
     font-weight: 500;
+    display: block;
+    /* Stats usually appear at the top as a block */
+    margin-bottom: 8px;
 }
 
 .item-passive,
 .item-active {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    color: #ffd700;
+    /* Gold/Yellow for passive names */
+    font-weight: 600;
 }
 
 .text-attention {

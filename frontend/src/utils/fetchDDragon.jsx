@@ -21,6 +21,25 @@ export async function fetchDDragon() {
       const spellRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/summoner.json`);
       const spellData = await spellRes.json();
 
+      const runeRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/runesReforged.json`);
+      const runeData = await runeRes.json();
+
+      const runesData = {};
+      runeData.forEach(tree => {
+        // Process the tree itself (Domination, Precision, etc.) - usually not needed for individual rune tooltips but good to have context if needed
+        // Iterate slots/runes
+        tree.slots.forEach(slot => {
+          slot.runes.forEach(rune => {
+            runesData[rune.id] = {
+              name: rune.name,
+              description: rune.shortDesc || rune.longDesc,
+              icon: rune.icon,
+              type: 'rune'
+            };
+          });
+        });
+      });
+
       const iconMap = {};
       const champIdToName = {};
       const champNameToId = {};
@@ -59,7 +78,7 @@ export async function fetchDDragon() {
         };
       });
 
-      return { latestVersion, iconMap, champIdToName, champNameToId, itemsData: itemData.data };
+      return { latestVersion, iconMap, champIdToName, champNameToId, itemsData: itemData.data, runesData };
     } catch (error) {
       console.error("Error in fetchDDragon:", error);
       ddragonCache = null;
