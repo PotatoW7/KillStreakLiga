@@ -1,0 +1,126 @@
+.cookie-consent-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: var(--space-md);
+    backdrop-filter: blur(2px);
+}
+
+.cookie-consent-banner {
+    background: var(--bg-secondary);
+    max-width: 650px;
+    width: 100%;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-subtle);
+    padding: var(--space-xl);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    animation: slideInDown 0.3s ease-out;
+    color: var(--text-secondary);
+}
+
+.cookie-consent-header h2 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+    text-align: center;
+}
+
+.cookie-consent-body {
+    margin-bottom: var(--space-xl);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.cookie-consent-body p {
+    margin-bottom: var(--space-sm);
+}
+
+.cookie-consent-body a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+/* Settings View */
+.cookie-settings {
+    text-align: left;
+    background: var(--bg-tertiary);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.setting-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.setting-info strong {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.setting-info span {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.setting-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.cookie-consent-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-md);
+}
+
+.cookie-consent-actions button {
+    padding: var(--space-sm) var(--space-xl);
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    min-width: 120px;
+}
+
+.btn-primary {
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

@@ -18,6 +18,13 @@ import AdminApplication from "./components/AdminApplication";
 import LiveGame from "./components/LiveGame";
 import Champions from "./components/Champions";
 import Feeds from "./components/Feeds";
+import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsOfService from "./components/TermsOfService";
+import Legal from "./components/Legal";
+import Contact from "./components/Contact";
+import FAQ from "./components/FAQ";
+import Footer from "./components/Footer";
+import CookieConsent from "./components/CookieConsent";
 
 import { auth, db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -145,7 +152,7 @@ function App() {
     <div className="app">
       <nav>
         <Link className="nav-brand" to="/">
-          Killstreak
+          Rifthub
         </Link>
         {!user ? (
           <>
@@ -233,6 +240,11 @@ function App() {
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/apply-admin" element={<AdminApplication />} />
           <Route path="/champions" element={<Champions />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/tos" element={<TermsOfService />} />
+          <Route path="/legal" element={<Legal />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/faq" element={<FAQ />} />
 
           <Route
             path="*"
@@ -320,6 +332,8 @@ function App() {
           </>
         )}
       </div>
+      <Footer />
+      <CookieConsent />
     </div>
   );
 }

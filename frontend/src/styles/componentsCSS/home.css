@@ -109,6 +109,27 @@
   margin-bottom: var(--space-lg);
 }
 
+/* ===== HERO LOGO ===== */
+.hero-logo {
+  height: clamp(100px, 20vw, 180px);
+  width: auto;
+  margin-bottom: var(--space-xl);
+  filter: drop-shadow(0 0 60px rgba(226, 54, 73, 0.5));
+  animation: logoFloat 6s ease-in-out infinite alternate;
+  position: relative;
+  z-index: 4;
+}
+
+@keyframes logoFloat {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-15px);
+  }
+}
+
 /* ===== KILLSTREAK TITLE ===== */
 .hero-title {
   position: relative;

@@ -10,15 +10,14 @@ export async function fetchDDragon() {
       const versions = await versionRes.json();
       const latestVersion = versions[0];
 
-      // Fetch Champions
       const champRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
       const champData = await champRes.json();
 
-      // Fetch Items
+
       const itemRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/item.json`);
       const itemData = await itemRes.json();
 
-      // Fetch Summoner Spells
+
       const spellRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/summoner.json`);
       const spellData = await spellRes.json();
 
@@ -26,10 +25,9 @@ export async function fetchDDragon() {
       const champIdToName = {};
       const champNameToId = {};
 
-      // Helper to normalize names
+
       const normalize = (name) => name.toLowerCase().replace(/\s+/g, '_').replace(/['.]/g, '');
 
-      // Process Champions
       Object.values(champData.data).forEach(champ => {
         const normalized = normalize(champ.name);
         champIdToName[champ.key] = champ.id;
@@ -41,7 +39,7 @@ export async function fetchDDragon() {
         };
       });
 
-      // Process Items
+
       Object.values(itemData.data).forEach(item => {
         const normalized = normalize(item.name);
         iconMap[normalized] = {
@@ -51,7 +49,7 @@ export async function fetchDDragon() {
         };
       });
 
-      // Process Spells
+
       Object.values(spellData.data).forEach(spell => {
         const normalized = normalize(spell.name);
         iconMap[normalized] = {
@@ -61,10 +59,10 @@ export async function fetchDDragon() {
         };
       });
 
-      return { latestVersion, iconMap, champIdToName, champNameToId };
+      return { latestVersion, iconMap, champIdToName, champNameToId, itemsData: itemData.data };
     } catch (error) {
       console.error("Error in fetchDDragon:", error);
-      ddragonCache = null; // Reset on error
+      ddragonCache = null;
       throw error;
     }
   })();

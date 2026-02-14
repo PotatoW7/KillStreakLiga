@@ -69,7 +69,7 @@ function Home() {
               <div className="shuriken shuriken-left fly-through"></div>
               <div className="shuriken shuriken-right fly-through"></div>
               <h1 className="hero-title">
-                <span className="gradient-text">Killstreak</span>
+                <span className="gradient-text">Rifthub</span>
               </h1>
             </div>
             <p className="hero-subtitle">
@@ -146,7 +146,7 @@ function Home() {
 
       <section className="features-section">
         <div className="container">
-          <h2 className="section-title">Why Use Killstreak?</h2>
+          <h2 className="section-title">Why Use Rifthub?</h2>
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">
@@ -191,7 +191,7 @@ function Home() {
         <div className="container">
           <div className="cta-content">
             <h2>Ready to Improve Your Game?</h2>
-            <p>Join thousands of players using Killstreak to track their progress and find teammates.</p>
+            <p>Join thousands of players using Rifthub to track their progress and find teammates.</p>
             <div className="cta-actions">
               {!user ? (
                 <>

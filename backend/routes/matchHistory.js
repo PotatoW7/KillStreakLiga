@@ -12,6 +12,8 @@ const queueMap = {
   aram: 450,
   swiftplay: 480,
   arena: 1700,
+  aram_mayhem: 2400,
+  urf: 900,
 };
 
 function extractObjectives(teams) {
@@ -41,48 +43,58 @@ router.get('/:region/:puuid', async (req, res) => {
   }
 
   try {
-    const queueParam = mode === 'all' ? '' : `&queue=${queueId}`;
+    const isSpecialMode = mode === 'aram_mayhem';
+    const effectiveQueueParam = (mode === 'all' || isSpecialMode) ? '' : `&queue=${queueId}`;
+    const count = isSpecialMode ? 60 : 20;
     const matchListRes = await fetch(
-      `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=20${queueParam}&api_key=${API_KEY}`
+      `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}${effectiveQueueParam}&api_key=${API_KEY}`
     );
     if (!matchListRes.ok) throw new Error('Failed to fetch match list');
 
     const matchIds = await matchListRes.json();
     if (matchIds.length === 0) return res.json({ mode, recentGames: [] });
 
-    const recentGames = [];
+    const matchPromises = matchIds.map(async (matchId) => {
+      try {
+        const matchRes = await fetch(
+          `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${API_KEY}`
+        );
+        if (!matchRes.ok) return null;
 
-    for (const matchId of matchIds) {
-      const matchRes = await fetch(
-        `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${API_KEY}`
-      );
-      if (!matchRes.ok) continue;
+        const matchData = await matchRes.json();
+        const info = matchData.info;
 
-      const matchData = await matchRes.json();
-      const info = matchData.info;
-      if (info.gameDuration < 300) continue; 
+        if (info.gameDuration < 300) return null;
 
-      const objectives = extractObjectives(info.teams);
+        if (isSpecialMode && info.queueId !== 2400) return null;
 
-      const participantsWithRank = info.participants.map((p) => ({
-        ...p,
-        riotId: `${p.riotIdGameName || p.summonerName || 'Unknown'}#${p.riotIdTagline || ''}`,
-        items: [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5],
-        trinket: p.item6,
-      }));
+        const objectives = extractObjectives(info.teams);
+        const participantsWithRank = info.participants.map((p) => ({
+          ...p,
+          riotId: `${p.riotIdGameName || p.summonerName || 'Unknown'}#${p.riotIdTagline || ''}`,
+          items: [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5],
+          trinket: p.item6,
+        }));
 
-      const endTime = info.gameEndTimestamp || (info.gameStartTimestamp + info.gameDuration * 1000);
+        const endTime = info.gameEndTimestamp || (info.gameStartTimestamp + info.gameDuration * 1000);
 
-      recentGames.push({
-        gameDuration: info.gameDuration,
-        gameMode: info.gameMode,
-        queueId: info.queueId,
-        players: participantsWithRank,
-        teams: objectives,
-        gameStartTimestamp: info.gameStartTimestamp,
-        gameEndTimestamp: endTime, 
-      });
-    }
+        return {
+          gameDuration: info.gameDuration,
+          gameMode: info.gameMode,
+          queueId: info.queueId,
+          players: participantsWithRank,
+          teams: objectives,
+          gameStartTimestamp: info.gameStartTimestamp,
+          gameEndTimestamp: endTime,
+        };
+      } catch (err) {
+        console.error(`Error fetching match ${matchId}:`, err);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(matchPromises);
+    const recentGames = results.filter(game => game !== null).slice(0, 20);
 
     res.json({ mode, recentGames });
   } catch (err) {

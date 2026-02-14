@@ -1,0 +1,123 @@
+.item-tooltip {
+    position: fixed;
+    z-index: 10001;
+    background: rgba(10, 12, 18, 0.95);
+    border: 1px solid #3c3c41;
+    border-top: 2px solid var(--accent-blue);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(59, 130, 246, 0.1);
+    padding: 16px;
+    max-width: 350px;
+    min-width: 250px;
+    border-radius: 4px;
+    pointer-events: none;
+    font-family: 'Inter', 'Roboto', sans-serif;
+    backdrop-filter: blur(8px);
+    animation: tooltipFadeIn 0.15s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tooltip-header {
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.item-main-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.item-name {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.item-cost {
+    color: #ffb400;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.gold-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.tooltip-content {
+    font-size: 0.9rem;
+    color: #ccc;
+    line-height: 1.5;
+}
+
+/* Data Dragon specific tags styling */
+.item-stats {
+    color: #71d5ff;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.item-passive,
+.item-active {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.text-attention {
+    color: #ff9d00;
+    font-weight: 600;
+}
+
+.text-limit {
+    color: #ff4e50;
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+.text-rarity {
+    color: #bf40bf;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
+
+.text-keyword {
+    color: #00ffcc;
+    text-decoration: underline;
+}
+
+.tooltip-footer {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.item-flavor {
+    color: #888;
+    font-style: italic;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+/* Override default link colors in tooltip if any */
+.tooltip-content a {
+    color: #3b82f6;
+    text-decoration: none;
+}

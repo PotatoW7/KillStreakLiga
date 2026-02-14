@@ -1,15 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Killstreak - Your League of Legends community hub. Find teammates, track stats, get coaching, and dominate the Rift." />
-    <meta name="theme-color" content="#dc143c" />
-    <title>Killstreak | League of Legends Community</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link id="favicon" rel="icon" type="image/png" href="/rifthub.png" />
+  <script>
+    (function () {
+      const img = new Image();
+      img.src = '/rifthub.png';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 64;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const zoomFactor = 0.55;
+        const sSize = img.width * zoomFactor;
+        const sOffset = (img.width - sSize) / 2;
+        ctx.drawImage(img, sOffset, sOffset, sSize, sSize, 0, 0, size, size);
+        const link = document.getElementById('favicon');
+        link.href = canvas.toDataURL('image/png');
+      };
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Rifthub - Your League of Legends community hub. Find teammates, track stats, get coaching, and dominate the Rift." />
+  <meta name="theme-color" content="#dc143c" />
+  <title>RiftHub</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

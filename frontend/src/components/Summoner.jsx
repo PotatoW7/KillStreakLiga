@@ -17,6 +17,7 @@ function Summoner() {
   const navigate = useNavigate();
   const [champIdToName, setChampIdToName] = useState({});
   const [champNameToId, setChampNameToId] = useState({});
+  const [itemsData, setItemsData] = useState({});
   const [version, setVersion] = useState("");
   const [loading, setLoading] = useState(false);
   const [matchLoading, setMatchLoading] = useState(false);
@@ -96,10 +97,11 @@ function Summoner() {
     }
 
     try {
-      const { latestVersion, champIdToName, champNameToId } = await fetchDDragon();
+      const { latestVersion, champIdToName, champNameToId, itemsData } = await fetchDDragon();
       setVersion(latestVersion);
       setChampIdToName(champIdToName);
       setChampNameToId(champNameToId);
+      setItemsData(itemsData);
 
       const encodedGameName = encodeURIComponent(gameName);
       const encodedTagLine = encodeURIComponent(tagLine);
@@ -220,7 +222,8 @@ function Summoner() {
       '1400': "Ultimate Spellbook",
       '1700': "Arena",
       '1900': "URF",
-      '2000': "Tutorial"
+      '2000': "Tutorial",
+      '2400': "Aram Mayhem"
     };
     const qId = String(queueId);
     if (modes[qId]) return modes[qId];
@@ -273,6 +276,8 @@ function Summoner() {
           <option value="ranked_flex">Flex</option>
           <option value="draft">Draft</option>
           <option value="aram">ARAM</option>
+          <option value="aram_mayhem">Aram Mayhem</option>
+          <option value="urf">URF</option>
           <option value="swiftplay">Swiftplay</option>
           <option value="arena">Arena</option>
         </select>
@@ -404,6 +409,7 @@ function Summoner() {
                 matches={matches}
                 champIdToName={champIdToName}
                 champNameToId={champNameToId}
+                itemsData={itemsData}
                 version={version}
                 puuid={data.puuid}
                 onPlayerClick={searchPlayer}

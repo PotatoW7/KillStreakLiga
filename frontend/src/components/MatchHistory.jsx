@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { fetchDDragon } from "../utils/fetchDDragon";
+import ItemTooltip from "./ItemTooltip";
 
-export default function MatchHistory({ matches, champIdToName, champNameToId, version, puuid, onPlayerClick }) {
+export default function MatchHistory({ matches, champIdToName, champNameToId, itemsData, version, puuid, onPlayerClick }) {
   const [expandedMatch, setExpandedMatch] = useState(null);
   const [latestVersion, setLatestVersion] = useState(version);
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
+  const [filterChampion, setFilterChampion] = useState("all");
+  const [filterQueue, setFilterQueue] = useState("all");
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!version) {
@@ -207,6 +212,24 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, ve
     );
   };
 
+  const handleItemEnter = (id, event) => {
+    const item = itemsData?.[id];
+    if (item) {
+      setHoveredItem(item);
+      setTooltipPos({ x: event.clientX, y: event.clientY });
+    }
+  };
+
+  const handleItemMove = (event) => {
+    if (hoveredItem) {
+      setTooltipPos({ x: event.clientX, y: event.clientY });
+    }
+  };
+
+  const handleItemLeave = () => {
+    setHoveredItem(null);
+  };
+
   const renderPlayerRow = (p, isCurrent) => {
     const key = `${p.puuid}-${p.championName}`;
 
@@ -236,13 +259,26 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, ve
         <div className="items-row">
           {itemsOrdered.map((id, i) =>
             id > 0 ? (
-              <img key={i} src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${id}.png`} className="item-icon" />
+              <img
+                key={i}
+                src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${id}.png`}
+                className="item-icon"
+                onMouseEnter={(e) => handleItemEnter(id, e)}
+                onMouseMove={handleItemMove}
+                onMouseLeave={handleItemLeave}
+              />
             ) : (
               <div key={i} className="item-icon" />
             )
           )}
           {trinketId > 0 && (
-            <img src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${trinketId}.png`} className="item-icon trinket-icon" />
+            <img
+              src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${trinketId}.png`}
+              className="item-icon trinket-icon"
+              onMouseEnter={(e) => handleItemEnter(trinketId, e)}
+              onMouseMove={handleItemMove}
+              onMouseLeave={handleItemLeave}
+            />
           )}
         </div>
       </div>
@@ -250,7 +286,7 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, ve
   };
 
   const getGameMode = (queueId) => {
-    const modes = { 420: "Solo/Duo", 440: "Flex", 400: "Draft", 450: "ARAM", 480: "Swiftplay", 900: "URF", 1700: "Arena" };
+    const modes = { 420: "Solo/Duo", 440: "Flex", 400: "Draft", 450: "ARAM", 480: "Swiftplay", 900: "URF", 1700: "Arena", 2400: "Aram Mayhem" };
     return modes[queueId] || "Normal";
   };
 
@@ -293,13 +329,26 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, ve
                 <div className="match-items">
                   {playerItems.map((id, index) =>
                     id > 0 ? (
-                      <img key={index} src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${id}.png`} className="match-item" />
+                      <img
+                        key={index}
+                        src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${id}.png`}
+                        className="match-item"
+                        onMouseEnter={(e) => handleItemEnter(id, e)}
+                        onMouseMove={handleItemMove}
+                        onMouseLeave={handleItemLeave}
+                      />
                     ) : (
                       <div key={index} className="match-item" />
                     )
                   )}
                   {player.item6 > 0 && (
-                    <img src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${player.item6}.png`} className="match-item trinket" />
+                    <img
+                      src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${player.item6}.png`}
+                      className="match-item trinket"
+                      onMouseEnter={(e) => handleItemEnter(player.item6, e)}
+                      onMouseMove={handleItemMove}
+                      onMouseLeave={handleItemLeave}
+                    />
                   )}
                 </div>
               </div>
@@ -334,10 +383,59 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, ve
     );
   };
 
+  const playedChampions = Array.from(new Set(matches.map(m => {
+    const p = m.players.find(p => p.puuid === puuid);
+    return p ? p.championName : null;
+  }))).filter(Boolean).sort();
+
+  const filteredMatches = matches.filter(match => {
+    const player = match.players.find(p => p.puuid === puuid);
+    if (!player) return false;
+
+    const champMatch = filterChampion === "all" || player.championName === filterChampion;
+    const queueMatch = filterQueue === "all" || match.queueId.toString() === filterQueue;
+
+    return champMatch && queueMatch;
+  });
+
   return (
     <div className="match-container">
       <h3 className="text-center">Match History</h3>
-      {matches.length > 0 ? matches.map((m, i) => renderMatch(m, i)) : <p className="text-center unranked">No recent matches found</p>}
+
+      <div className="match-filters">
+        <div className="filter-group">
+          <label>Champion:</label>
+          <select value={filterChampion} onChange={(e) => setFilterChampion(e.target.value)}>
+            <option value="all">All Champions</option>
+            {playedChampions.map(champ => (
+              <option key={champ} value={champ}>{formatChampionName(champ)}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label>Queue:</label>
+          <select value={filterQueue} onChange={(e) => setFilterQueue(e.target.value)}>
+            <option value="all">All Queues</option>
+            <option value="420">Solo/Duo</option>
+            <option value="440">Flex</option>
+            <option value="450">ARAM</option>
+            <option value="2400">Aram Mayhem</option>
+            <option value="900">URF</option>
+            <option value="480">Swiftplay</option>
+            <option value="400">Draft</option>
+            <option value="1700">Arena</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredMatches.length > 0 ? (
+        filteredMatches.map((m, i) => renderMatch(m, i))
+      ) : (
+        <p className="text-center unranked">No matches found matching filters</p>
+      )}
+
+      {hoveredItem && <ItemTooltip item={hoveredItem} position={tooltipPos} />}
     </div>
   );
 }
