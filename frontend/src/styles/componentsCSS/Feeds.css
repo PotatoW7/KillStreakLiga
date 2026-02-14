@@ -8,11 +8,11 @@
 }
 
 .feeds-layout {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 30px;
+    grid-template-columns: 1fr 280px;
+    gap: 40px;
     align-items: start;
 }
 

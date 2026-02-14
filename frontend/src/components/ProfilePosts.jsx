@@ -7,13 +7,7 @@ import {
 import IconRenderer, { LoLSuggestions } from "./IconRenderer";
 import "../styles/componentsCSS/ProfilePosts.css";
 
-function ProfilePosts({
-    user,
-    profileImage,
-    posts = [],
-    isOwnProfile,
-    onPostCreated
-}) {
+function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCreated, isFeedsPage }) {
     const [state, setState] = useState({
         newPostContent: "",
         newPostImages: [],
@@ -208,7 +202,10 @@ function ProfilePosts({
     };
 
     const createPost = async () => {
-        if (!user || !state.newPostContent.trim() || state.creatingPost) return;
+        const hasContent = state.newPostContent.trim().length > 0;
+        const hasImages = state.newPostImages.length > 0;
+
+        if (!user || (!hasContent && !hasImages) || state.creatingPost) return;
 
         try {
             setState(prev => ({ ...prev, creatingPost: true }));
@@ -470,20 +467,65 @@ function ProfilePosts({
         }));
     };
 
+    const resizeImage = (file, maxWidth = 800, maxHeight = 800) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/webp', 0.6));
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+
     const handlePostImageSelect = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        if (file.size > 2 * 1024 * 1024) return alert("Image too large (Max 2MB)");
+        if (file.size > 5 * 1024 * 1024) return alert("Image too large (Max 5MB)");
 
         try {
-            const base64 = await fileToBase64(file);
+            const base64 = await resizeImage(file);
+
+
+            if (base64.length > 700000) {
+                alert("Image still too large after compression. Please choose a smaller image.");
+                e.target.value = null;
+                return;
+            }
+
             setState(prev => ({
                 ...prev,
                 newPostImages: [...prev.newPostImages, base64]
             }));
+            e.target.value = null;
         } catch (err) {
+            console.error("Error processing image:", err);
             alert("Error processing image");
+            e.target.value = null;
         }
     };
 
@@ -493,12 +535,12 @@ function ProfilePosts({
             if (items[i].type.indexOf("image") !== -1) {
                 const file = items[i].getAsFile();
                 if (file) {
-                    if (file.size > 2 * 1024 * 1024) {
-                        alert("Pasted image too large (Max 2MB)");
-                        continue;
-                    }
                     try {
-                        const base64 = await fileToBase64(file);
+                        const base64 = await resizeImage(file);
+                        if (base64.length > 700000) {
+                            alert("Pasted image too large (try a smaller one)");
+                            continue;
+                        }
                         setState(prev => ({
                             ...prev,
                             newPostImages: [...prev.newPostImages, base64]
@@ -529,13 +571,13 @@ function ProfilePosts({
     };
 
     return (
-        <div className="profile-posts-container">
+        <div className={`profile-posts-container ${isFeedsPage ? 'feeds-layout-variant' : ''}`}>
             {isOwnProfile && (
-                <div className="make-post-container">
+                <div className={`make-post-container ${isFeedsPage ? 'feeds-variant' : ''}`}>
                     <h4>Create a Post</h4>
                     <div className="post-input-wrapper">
                         <textarea
-                            placeholder="Share something with the community... (Links to Youtube/TikTok/Instagram supported)"
+                            placeholder={isFeedsPage ? "Share something with the community... | TIP: Type : to add champion, item or emoji icons!" : "Share something with the community... | TIP: Type : to add champion, item or emoji icons!"}
                             className="post-textarea"
                             value={state.newPostContent}
                             onChange={(e) => handleTextareaChange(e.target.value, 'post')}
@@ -543,6 +585,7 @@ function ProfilePosts({
                             onPaste={handlePaste}
                             maxLength={500}
                         ></textarea>
+
 
                         {state.showSuggestions && state.suggestionType === 'post' && (
                             <div className="post-suggestions-wrapper" style={{
@@ -610,7 +653,7 @@ function ProfilePosts({
                             <button
                                 className="post-submit-btn"
                                 onClick={createPost}
-                                disabled={!state.newPostContent.trim() || state.creatingPost}
+                                disabled={(!state.newPostContent.trim() && state.newPostImages.length === 0) || state.creatingPost}
                             >
                                 {state.creatingPost ? "Posting..." : "Post to Feed"}
                             </button>
@@ -884,6 +927,7 @@ function ProfilePosts({
                                                     onKeyDown={handleKeyDown}
                                                     onKeyPress={(e) => e.key === 'Enter' && !state.showSuggestions && handleAddComment(post.id)}
                                                 />
+
                                                 {state.showSuggestions && state.suggestionType === 'comment' && state.activeCommentId === post.id && (
                                                     <div style={{
                                                         position: 'absolute',

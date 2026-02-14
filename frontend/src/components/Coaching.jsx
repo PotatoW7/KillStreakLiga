@@ -336,9 +336,6 @@ function Coaching() {
                     </div>
                 )}
 
-                <div className="coach-warning-banner">
-                    <p>⚠️ <strong>IMPORTANT:</strong> Boosting is strictly forbidden and bannable by Riot Games. Use coaching services at your own risk. Rifthub does not facilitate boosting.</p>
-                </div>
 
                 <div className="coaching-tabs">
                     <button

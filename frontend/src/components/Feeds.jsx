@@ -176,6 +176,7 @@ function Feeds() {
                                 profileImage={profileImage}
                                 posts={filteredPostsBySearch}
                                 isOwnProfile={true}
+                                isFeedsPage={true}
                                 onPostCreated={() => { }}
                             />
                         </div>

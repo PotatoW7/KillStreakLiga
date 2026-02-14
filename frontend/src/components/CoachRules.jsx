@@ -45,9 +45,6 @@ function CoachRules() {
                                 <strong>Punctuality:</strong> Honor your scheduled sessions and notify students of any changes in advance.
                             </li>
                             <li>
-                                <strong>No Boosting:</strong> Coaching means teaching, not playing on someone else's account.
-                            </li>
-                            <li>
                                 <strong>Constructive Feedback:</strong> Focus on improvement, not criticism. Help students grow.
                             </li>
                         </ul>
