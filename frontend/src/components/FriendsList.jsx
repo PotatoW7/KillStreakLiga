@@ -221,30 +221,47 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const currentUserDoc = await getDoc(userRef);
       const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
 
+      // Robustity: Collect all versions of the request to remove
+      const pendingToRemove = (currentUserData.pendingRequests || []).filter(
+        req => req.from === request.from
+      );
+
+      // Robustity: Prevent duplicates if already friends
+      const isAlreadyFriend = (currentUserData.friends || []).some(f => f.id === request.from);
+
+      if (!isAlreadyFriend) {
+        batch.update(userRef, {
+          friends: arrayUnion({
+            id: request.from,
+            username: friendData.username || request.fromUsername || 'Anonymous',
+            profileImage: friendData.profileImage || null
+          })
+        });
+      }
 
       batch.update(userRef, {
-        friends: arrayUnion({
-          id: request.from,
-          username: friendData.username || request.fromUsername || 'Anonymous',
-          profileImage: friendData.profileImage || null
-        }),
-        pendingRequests: arrayRemove(request)
+        pendingRequests: pendingToRemove.length > 0 ? arrayRemove(...pendingToRemove) : currentUserData.pendingRequests || []
       });
 
-      batch.update(friendRef, {
-        friends: arrayUnion({
-          id: auth.currentUser.uid,
-          username: auth.currentUser.displayName || 'Anonymous',
-          profileImage: currentUserData.profileImage || null
-        })
-      });
+      // Robustity: Prevent duplicates for the other user too
+      const friendIsAlreadyFriend = (friendData.friends || []).some(f => f.id === auth.currentUser.uid);
 
-      const sentRequest = (friendData.sentFriendRequests || []).find(
+      if (!friendIsAlreadyFriend) {
+        batch.update(friendRef, {
+          friends: arrayUnion({
+            id: auth.currentUser.uid,
+            username: auth.currentUser.displayName || 'Anonymous',
+            profileImage: currentUserData.profileImage || null
+          })
+        });
+      }
+
+      const sentRequestToRemove = (friendData.sentFriendRequests || []).filter(
         req => req.to === auth.currentUser.uid
       );
-      if (sentRequest) {
+      if (sentRequestToRemove.length > 0) {
         batch.update(friendRef, {
-          sentFriendRequests: arrayRemove(sentRequest)
+          sentFriendRequests: arrayRemove(...sentRequestToRemove)
         });
       }
 
@@ -262,20 +279,26 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const senderRef = doc(db, 'users', request.from);
 
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.exists() ? userDoc.data() : {};
+      const pendingToRemove = (userData.pendingRequests || []).filter(
+        req => req.from === request.from
+      );
+
       batch.update(userRef, {
-        pendingRequests: arrayRemove(request)
+        pendingRequests: pendingToRemove.length > 0 ? arrayRemove(...pendingToRemove) : userData.pendingRequests || []
       });
 
       const senderDoc = await getDoc(senderRef);
       if (senderDoc.exists()) {
         const senderData = senderDoc.data();
-        const sentRequest = (senderData.sentFriendRequests || []).find(
+        const sentRequestToRemove = (senderData.sentFriendRequests || []).filter(
           req => req.to === auth.currentUser.uid
         );
 
-        if (sentRequest) {
+        if (sentRequestToRemove.length > 0) {
           batch.update(senderRef, {
-            sentFriendRequests: arrayRemove(sentRequest)
+            sentFriendRequests: arrayRemove(...sentRequestToRemove)
           });
         }
 
@@ -304,20 +327,26 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const targetUserRef = doc(db, 'users', request.to);
 
+      const currentUserDoc = await getDoc(currentUserRef);
+      const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
+      const sentToRemove = (currentUserData.sentFriendRequests || []).filter(
+        req => req.to === request.to
+      );
+
       batch.update(currentUserRef, {
-        sentFriendRequests: arrayRemove(request)
+        sentFriendRequests: sentToRemove.length > 0 ? arrayRemove(...sentToRemove) : currentUserData.sentFriendRequests || []
       });
 
       const targetDoc = await getDoc(targetUserRef);
       if (targetDoc.exists()) {
         const targetData = targetDoc.data();
-        const pendingRequest = (targetData.pendingRequests || []).find(
+        const pendingToRemove = (targetData.pendingRequests || []).filter(
           req => req.from === auth.currentUser.uid
         );
 
-        if (pendingRequest) {
+        if (pendingToRemove.length > 0) {
           batch.update(targetUserRef, {
-            pendingRequests: arrayRemove(pendingRequest)
+            pendingRequests: arrayRemove(...pendingToRemove)
           });
         }
       }
@@ -341,25 +370,25 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const friendRef = doc(db, 'users', friendId);
 
       const userSnap = await getDoc(userRef);
-      const userData = userSnap.data();
+      const userData = userSnap.exists() ? userSnap.data() : {};
 
-      const friendToRemove = (userData.friends || []).find(f => f.id === friendId);
-      if (!friendToRemove) {
+      const friendsToRemove = (userData.friends || []).filter(f => f.id === friendId);
+      if (friendsToRemove.length === 0) {
         alert("Friend not found in your list.");
         return;
       }
 
       batch.update(userRef, {
-        friends: arrayRemove(friendToRemove)
+        friends: arrayRemove(...friendsToRemove)
       });
 
       const friendSnap = await getDoc(friendRef);
       if (friendSnap.exists()) {
         const friendData = friendSnap.data();
-        const userToRemove = (friendData.friends || []).find(f => f.id === auth.currentUser.uid);
-        if (userToRemove) {
+        const userToRemoveFromFriend = (friendData.friends || []).filter(f => f.id === auth.currentUser.uid);
+        if (userToRemoveFromFriend.length > 0) {
           batch.update(friendRef, {
-            friends: arrayRemove(userToRemove)
+            friends: arrayRemove(...userToRemoveFromFriend)
           });
         }
       }

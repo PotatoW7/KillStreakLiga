@@ -105,29 +105,63 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
       const hostFriends = hostData.friends || [];
       const applicantFriends = applicantData.friends || [];
 
-      const alreadyFriends = hostFriends.some(friend => friend.id === applicantUserId) ||
-        applicantFriends.some(friend => friend.id === hostUserId);
+      // Check each side independently to fix non-reciprocal states
+      const hostHasApplicant = hostFriends.some(friend => friend.id === applicantUserId);
+      const applicantHasHost = applicantFriends.some(friend => friend.id === hostUserId);
 
-      if (!alreadyFriends) {
-        await updateDoc(hostRef, {
-          friends: arrayUnion({
-            id: applicantUserId,
-            username: applicantName,
-            profileImage: applicantData.profileImage || null,
-            addedAt: new Date()
-          })
-        });
+      // Clear any stale friend requests between them
+      const hostPendingToRemove = (hostData.pendingRequests || []).filter(req => req.from === applicantUserId);
+      const hostSentToRemove = (hostData.sentFriendRequests || []).filter(req => req.to === applicantUserId);
+      const applicantPendingToRemove = (applicantData.pendingRequests || []).filter(req => req.from === hostUserId);
+      const applicantSentToRemove = (applicantData.sentFriendRequests || []).filter(req => req.to === hostUserId);
 
-        await updateDoc(applicantRef, {
-          friends: arrayUnion({
-            id: hostUserId,
-            username: hostData.username || auth.currentUser?.displayName || 'Host',
-            profileImage: hostData.profileImage || null,
-            addedAt: new Date()
-          })
-        });
+      const needsFriendUpdate = !hostHasApplicant || !applicantHasHost;
+      const needsRequestCleanup = hostPendingToRemove.length > 0 || hostSentToRemove.length > 0 ||
+        applicantPendingToRemove.length > 0 || applicantSentToRemove.length > 0;
 
-        console.log("Auto-friended users after queue acceptance");
+      if (needsFriendUpdate || needsRequestCleanup) {
+        const batch = writeBatch(db);
+
+        if (!hostHasApplicant) {
+          batch.update(hostRef, {
+            friends: arrayUnion({
+              id: applicantUserId,
+              username: applicantName || applicantData.username || 'Anonymous',
+              profileImage: applicantData.profileImage || null,
+              addedAt: new Date()
+            })
+          });
+        }
+
+        if (!applicantHasHost) {
+          batch.update(applicantRef, {
+            friends: arrayUnion({
+              id: hostUserId,
+              username: hostData.username || 'Anonymous',
+              profileImage: hostData.profileImage || null,
+              addedAt: new Date()
+            })
+          });
+        }
+
+        // Cleanup requests for host
+        if (hostPendingToRemove.length > 0) {
+          batch.update(hostRef, { pendingRequests: arrayRemove(...hostPendingToRemove) });
+        }
+        if (hostSentToRemove.length > 0) {
+          batch.update(hostRef, { sentFriendRequests: arrayRemove(...hostSentToRemove) });
+        }
+
+        // Cleanup requests for applicant
+        if (applicantPendingToRemove.length > 0) {
+          batch.update(applicantRef, { pendingRequests: arrayRemove(...applicantPendingToRemove) });
+        }
+        if (applicantSentToRemove.length > 0) {
+          batch.update(applicantRef, { sentFriendRequests: arrayRemove(...applicantSentToRemove) });
+        }
+
+        await batch.commit();
+        console.log("Auto-friended and cleaned up requests (Atomic)");
       }
     } catch (error) {
       console.error("Error auto-friending users:", error);

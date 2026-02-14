@@ -1456,25 +1456,31 @@ select.riot-id-input {
 }
 
 .error-message {
-  background: var(--error-light);
-  color: var(--error);
+  background: rgba(255, 82, 82, 0.1);
+  color: #ff8a80;
   padding: var(--space-lg);
   border-radius: var(--radius-lg);
   margin: var(--space-md) 0;
   font-size: var(--font-size-sm);
-  border-left: 4px solid var(--error);
+  border-left: 4px solid #ff5252;
   font-weight: var(--font-weight-semibold);
+  box-shadow: 0 0 20px rgba(255, 82, 82, 0.05);
+  display: flex;
+  align-items: center;
 }
 
 .success-message {
-  background: var(--success-light);
-  color: var(--success);
+  background: rgba(0, 230, 118, 0.1);
+  color: #00ff9d;
   padding: var(--space-lg);
   border-radius: var(--radius-lg);
   margin: var(--space-md) 0;
   font-size: var(--font-size-sm);
-  border-left: 4px solid var(--success);
+  border-left: 4px solid #00e676;
   font-weight: var(--font-weight-semibold);
+  box-shadow: 0 0 20px rgba(0, 230, 118, 0.05);
+  display: flex;
+  align-items: center;
 }
 
 @media (max-width: 768px) {

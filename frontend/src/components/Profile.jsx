@@ -114,7 +114,8 @@ function Profile() {
     rankedUpdateLoading: false,
     lastUpdateTime: null,
     posts: [],
-    loadingPosts: false
+    loadingPosts: false,
+    backendError: false
   });
 
   const contextMenuRef = useRef(null);
@@ -168,12 +169,19 @@ function Profile() {
       }
     } catch (error) {
       console.error("Error fetching ranked data:", error);
-      setState(prev => ({ ...prev, rankedUpdateLoading: false }));
+      const isConnectionError = error.message.includes('Failed to fetch') || error.name === 'TypeError';
+
+      setState(prev => ({
+        ...prev,
+        rankedUpdateLoading: false,
+        backendError: isConnectionError
+      }));
 
       if (isManualUpdate) {
-        alert("Failed to update ranked data. Please try again.");
+        alert(isConnectionError
+          ? "Failed to update ranked data. Please check if the backend server is running."
+          : "Failed to update ranked data. Please try again.");
       }
-      throw error;
     }
   };
 
@@ -972,12 +980,33 @@ function Profile() {
                   )}
                 </div>
 
-                {state.rankedData && (
+                {state.backendError && (
+                  <div className="backend-error-notice" style={{
+                    background: 'rgba(255, 0, 0, 0.1)',
+                    borderLeft: '4px solid #ff4444',
+                    padding: '8px 12px',
+                    marginBottom: '16px',
+                    borderRadius: '4px',
+                    fontSize: '0.85rem',
+                    color: '#ffbbbb'
+                  }}>
+                    Backend server is currently offline. Ranked data updates are disabled.
+                  </div>
+                )}
+
+                {state.rankedData ? (
                   <div className="ranked-section">
                     <h5>Ranked Information</h5>
                     <RankedInfo rankedData={state.rankedData} />
                   </div>
-                )}
+                ) : state.backendError ? (
+                  <div className="ranked-section">
+                    <h5>Ranked Information</h5>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                      Connect your Riot account and start the backend to see ranked info.
+                    </p>
+                  </div>
+                ) : null}
 
                 {state.isOwnProfile && (
                   <button onClick={unlinkRiotAccount} className="unlink-account-btn">
