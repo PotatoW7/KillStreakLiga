@@ -15,7 +15,7 @@ function QueueSystem() {
   const [filteredListings, setFilteredListings] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [userFriends, setUserFriends] = useState([]);
-  const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
@@ -447,7 +447,7 @@ function QueueSystem() {
           createdAt: doc.data().createdAt?.toDate() || new Date()
         }));
         setGameListings(listings);
-        setLoading(false);
+
       });
 
       return unsubscribe;
@@ -468,7 +468,7 @@ function QueueSystem() {
           .sort((a, b) => b.createdAt - a.createdAt);
 
         setGameListings(activeListings);
-        setLoading(false);
+
       });
 
       return unsubscribe;
@@ -536,11 +536,9 @@ function QueueSystem() {
       const hostFriends = hostData.friends || [];
       const applicantFriends = applicantData.friends || [];
 
-      // Check each side independently to fix non-reciprocal states
       const hostHasApplicant = hostFriends.some(friend => friend.id === applicantUserId);
       const applicantHasHost = applicantFriends.some(friend => friend.id === hostUserId);
 
-      // Clear any stale friend requests between them
       const hostPendingToRemove = (hostData.pendingRequests || []).filter(req => req.from === applicantUserId);
       const hostSentToRemove = (hostData.sentFriendRequests || []).filter(req => req.to === applicantUserId);
       const applicantPendingToRemove = (applicantData.pendingRequests || []).filter(req => req.from === hostUserId);
@@ -568,14 +566,14 @@ function QueueSystem() {
           batch.update(applicantRef, {
             friends: arrayUnion({
               id: hostUserId,
-              username: hostData.username || 'Anonymous', // Simplified from previous complex fallback
+              username: hostData.username || 'Anonymous',
               profileImage: hostData.profileImage || null,
               addedAt: new Date()
             })
           });
         }
 
-        // Cleanup requests for host
+
         if (hostPendingToRemove.length > 0) {
           batch.update(hostRef, { pendingRequests: arrayRemove(...hostPendingToRemove) });
         }
@@ -583,7 +581,7 @@ function QueueSystem() {
           batch.update(hostRef, { sentFriendRequests: arrayRemove(...hostSentToRemove) });
         }
 
-        // Cleanup requests for applicant
+
         if (applicantPendingToRemove.length > 0) {
           batch.update(applicantRef, { pendingRequests: arrayRemove(...applicantPendingToRemove) });
         }
@@ -1029,7 +1027,6 @@ function QueueSystem() {
       const targetUserDoc = await getDoc(targetUserRef);
       const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
 
-      // Prevent duplicates
       const isAlreadyFriend = (currentUserData.friends || []).some(f => f.id === userId);
       if (isAlreadyFriend) {
         alert("You are already friends with this user.");
@@ -1167,16 +1164,7 @@ function QueueSystem() {
     return getDisplayRegion(game.userRiotAccountObject.region);
   };
 
-  if (loading) {
-    return (
-      <div className="queue-container">
-        <div className="queue-loading">
-          <div className="spinner">Loading...</div>
-          <p>Loading game listings...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   if (!auth.currentUser) {
     return (
