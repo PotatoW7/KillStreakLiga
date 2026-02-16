@@ -23,15 +23,6 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
-/* Mini Tabs for Friends List */
-.friends-mini-tabs {
-  display: flex;
-  gap: 4px;
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
 .friends-mini-tab {
   padding: 6px 12px;
   font-size: var(--font-size-xs);
@@ -257,14 +248,15 @@
   flex-direction: row !important;
   justify-content: space-between;
   align-items: center !important;
-  gap: 12px;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 8px 10px;
   margin: 10px 0;
   transition: all 0.2s ease;
   min-width: 0;
+  width: 100%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -277,7 +269,7 @@
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
@@ -299,7 +291,8 @@
 .request-avatar {
   width: 32px !important;
   height: 32px !important;
-  border-radius: 50%;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50% !important;
   overflow: hidden;
   border: 2px solid var(--border-accent);
   background: var(--bg-tertiary);
@@ -321,19 +314,21 @@
   font-weight: 700;
   color: var(--text-primary);
   font-size: 14px;
-  white-space: normal;
-  word-break: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   flex: 1;
+  min-width: 50px;
+  /* Minimum width to ensure it doesn't vanish */
   line-height: 1.4;
-  display: flex;
-  align-items: center;
-  /* Ensure internal vertical alignment if line height varies */
+  margin-right: 4px;
 }
 
 .request-actions {
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .request-actions button {
@@ -706,4 +701,78 @@
 .embedded-notification-content .notification-item:hover {
   border-color: var(--accent-primary);
   transform: translateX(3px);
+}
+
+/* Aggressive Layout Fixes for both Sent and Received Requests to solve regressions */
+.request-item,
+.sent-request-item {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure User Info Layout doesn't overlap Actions */
+.request-item .request-user-info,
+.sent-request-item .request-user-info {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Force Avatar Size strictly */
+.request-item .request-avatar,
+.sent-request-item .request-avatar {
+  min-width: 32px !important;
+  max-width: 32px !important;
+  width: 32px !important;
+  height: 32px !important;
+  aspect-ratio: 1/1 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  /* Reset any other potential overrides */
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.request-item .request-avatar img,
+.request-item .request-avatar .avatar-img,
+.sent-request-item .request-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  position: static !important;
+  /* Prevent absolute positioning issues */
+}
+
+/* Ensure Username Truncates */
+.request-item .username,
+.sent-request-item .username {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
+  max-width: 100% !important;
+  margin-right: 4px !important;
+  position: static !important;
+  /* Prevent absolute positioning issues */
+}
+
+/* Ensure Actions Don't Shrink */
+.request-item .request-actions,
+.sent-request-item .request-actions {
+  display: flex !important;
+  flex-shrink: 0 !important;
+  gap: 8px !important;
+  align-items: center !important;
+  margin-left: auto !important;
 }

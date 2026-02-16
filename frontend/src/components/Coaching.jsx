@@ -12,6 +12,7 @@ function Coaching() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('coaches');
     const [showCreateForm, setShowCreateForm] = useState(false);
+    const [expandedSessions, setExpandedSessions] = useState(new Set());
     const [filters, setFilters] = useState({
         specialty: '',
         minPrice: '',
@@ -21,7 +22,8 @@ function Coaching() {
         title: '',
         description: '',
         price: '',
-        duration: '60',
+        durationHours: '1',
+        durationMinutes: '0',
         specialty: ''
     });
     const [submitting, setSubmitting] = useState(false);
@@ -30,7 +32,8 @@ function Coaching() {
         title: '',
         description: '',
         price: '',
-        duration: '60',
+        durationHours: '1',
+        durationMinutes: '0',
         specialty: ''
     });
 
@@ -90,6 +93,20 @@ function Coaching() {
             const userDoc = await getDoc(doc(db, "users", user.uid));
             const userData = userDoc.data();
 
+            const totalMinutes = (parseInt(newSession.durationHours) || 0) * 60 + (parseInt(newSession.durationMinutes) || 0);
+
+            if (totalMinutes > 720) {
+                alert('Duration cannot exceed 12 hours (720 minutes)');
+                setSubmitting(false);
+                return;
+            }
+
+            if (totalMinutes <= 0) {
+                alert('Duration must be greater than 0');
+                setSubmitting(false);
+                return;
+            }
+
             await addDoc(collection(db, "coachingSessions"), {
                 coachId: user.uid,
                 coachName: userData.username || user.displayName,
@@ -98,7 +115,7 @@ function Coaching() {
                 title: newSession.title,
                 description: newSession.description,
                 price: parseFloat(newSession.price),
-                duration: parseInt(newSession.duration),
+                duration: totalMinutes,
                 specialty: newSession.specialty,
                 createdAt: serverTimestamp(),
                 active: true
@@ -108,7 +125,8 @@ function Coaching() {
                 title: '',
                 description: '',
                 price: '',
-                duration: '60',
+                durationHours: '1',
+                durationMinutes: '0',
                 specialty: ''
             });
             setShowCreateForm(false);
@@ -131,12 +149,17 @@ function Coaching() {
     };
 
     const handleEditSession = (session) => {
+        const totalMin = parseInt(session.duration) || 0;
+        const h = Math.floor(totalMin / 60);
+        const m = totalMin % 60;
+
         setEditingSession(session.id);
         setEditFormData({
             title: session.title,
             description: session.description,
             price: session.price.toString(),
-            duration: session.duration.toString(),
+            durationHours: h.toString(),
+            durationMinutes: m.toString(),
             specialty: session.specialty
         });
     };
@@ -147,7 +170,8 @@ function Coaching() {
             title: '',
             description: '',
             price: '',
-            duration: '60',
+            durationHours: '1',
+            durationMinutes: '0',
             specialty: ''
         });
     };
@@ -155,11 +179,25 @@ function Coaching() {
     const handleUpdateSession = async (sessionId) => {
         setSubmitting(true);
         try {
+            const totalMinutes = (parseInt(editFormData.durationHours) || 0) * 60 + (parseInt(editFormData.durationMinutes) || 0);
+
+            if (totalMinutes > 720) {
+                alert('Duration cannot exceed 12 hours (720 minutes)');
+                setSubmitting(false);
+                return;
+            }
+
+            if (totalMinutes <= 0) {
+                alert('Duration must be greater than 0');
+                setSubmitting(false);
+                return;
+            }
+
             await updateDoc(doc(db, "coachingSessions", sessionId), {
                 title: editFormData.title,
                 description: editFormData.description,
                 price: parseFloat(editFormData.price),
-                duration: parseInt(editFormData.duration),
+                duration: totalMinutes,
                 specialty: editFormData.specialty
             });
             setEditingSession(null);
@@ -167,7 +205,8 @@ function Coaching() {
                 title: '',
                 description: '',
                 price: '',
-                duration: '60',
+                durationHours: '1',
+                durationMinutes: '0',
                 specialty: ''
             });
             fetchData();
@@ -212,6 +251,15 @@ function Coaching() {
         if (filters.maxPrice && session.price > parseFloat(filters.maxPrice)) return false;
         return true;
     });
+
+    const toggleExpand = (sessionId) => {
+        setExpandedSessions(prev => {
+            const next = new Set(prev);
+            if (next.has(sessionId)) next.delete(sessionId);
+            else next.add(sessionId);
+            return next;
+        });
+    };
 
     if (loading) return <div className="loading">Loading coaching data...</div>;
 
@@ -268,8 +316,10 @@ function Coaching() {
                                         value={newSession.title}
                                         onChange={(e) => setNewSession({ ...newSession, title: e.target.value })}
                                         placeholder="e.g., Diamond Jungle Coaching"
+                                        maxLength={30}
                                         required
                                     />
+                                    <span className="char-count">{newSession.title.length}/30</span>
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="specialty">Specialty *</label>
@@ -295,8 +345,10 @@ function Coaching() {
                                     onChange={(e) => setNewSession({ ...newSession, description: e.target.value })}
                                     placeholder="Describe what students will learn in this session..."
                                     rows={3}
+                                    maxLength={1000}
                                     required
                                 />
+                                <span className="char-count">{newSession.description.length}/1000</span>
                             </div>
 
                             <div className="form-row">
@@ -309,23 +361,42 @@ function Coaching() {
                                         onChange={(e) => setNewSession({ ...newSession, price: e.target.value })}
                                         placeholder="25"
                                         min="1"
+                                        max="5000"
                                         step="0.01"
                                         required
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label htmlFor="duration">Duration (minutes) *</label>
-                                    <select
-                                        id="duration"
-                                        value={newSession.duration}
-                                        onChange={(e) => setNewSession({ ...newSession, duration: e.target.value })}
-                                        required
-                                    >
-                                        <option value="30">30 minutes</option>
-                                        <option value="60">60 minutes</option>
-                                        <option value="90">90 minutes</option>
-                                        <option value="120">2 hours</option>
-                                    </select>
+                                    <label htmlFor="duration">Duration (Hours / Minutes) *</label>
+                                    <div className="duration-inputs">
+                                        <div className="duration-input-group">
+                                            <input
+                                                type="number"
+                                                id="durationHours"
+                                                value={newSession.durationHours}
+                                                onChange={(e) => setNewSession({ ...newSession, durationHours: e.target.value })}
+                                                placeholder="Hours"
+                                                min="0"
+                                                max="12"
+                                                required
+                                            />
+                                            <span>hrs</span>
+                                        </div>
+                                        <div className="duration-input-group">
+                                            <input
+                                                type="number"
+                                                id="durationMinutes"
+                                                value={newSession.durationMinutes}
+                                                onChange={(e) => setNewSession({ ...newSession, durationMinutes: e.target.value })}
+                                                placeholder="Mins"
+                                                min="0"
+                                                max="59"
+                                                required
+                                            />
+                                            <span>mins</span>
+                                        </div>
+                                    </div>
+                                    <span className="duration-limit-hint">Maximum 12 hours total</span>
                                 </div>
                             </div>
 
@@ -436,7 +507,9 @@ function Coaching() {
                                                             type="text"
                                                             value={editFormData.title}
                                                             onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                                                            maxLength={30}
                                                         />
+                                                        <span className="char-count">{editFormData.title.length}/30</span>
                                                     </div>
                                                     <div className="form-group">
                                                         <label>Description</label>
@@ -444,7 +517,9 @@ function Coaching() {
                                                             value={editFormData.description}
                                                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                                                             rows={2}
+                                                            maxLength={1000}
                                                         />
+                                                        <span className="char-count">{editFormData.description.length}/1000</span>
                                                     </div>
                                                     <div className="form-row">
                                                         <div className="form-group">
@@ -454,19 +529,31 @@ function Coaching() {
                                                                 value={editFormData.price}
                                                                 onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
                                                                 min="1"
+                                                                max="5000"
                                                             />
                                                         </div>
                                                         <div className="form-group">
-                                                            <label>Duration</label>
-                                                            <select
-                                                                value={editFormData.duration}
-                                                                onChange={(e) => setEditFormData({ ...editFormData, duration: e.target.value })}
-                                                            >
-                                                                <option value="30">30 min</option>
-                                                                <option value="60">60 min</option>
-                                                                <option value="90">90 min</option>
-                                                                <option value="120">2 hours</option>
-                                                            </select>
+                                                            <label>Duration (h/m)</label>
+                                                            <div className="duration-inputs-mini">
+                                                                <input
+                                                                    type="number"
+                                                                    value={editFormData.durationHours}
+                                                                    onChange={(e) => setEditFormData({ ...editFormData, durationHours: e.target.value })}
+                                                                    min="0"
+                                                                    max="12"
+                                                                    placeholder="H"
+                                                                />
+                                                                <span>h</span>
+                                                                <input
+                                                                    type="number"
+                                                                    value={editFormData.durationMinutes}
+                                                                    onChange={(e) => setEditFormData({ ...editFormData, durationMinutes: e.target.value })}
+                                                                    min="0"
+                                                                    max="59"
+                                                                    placeholder="M"
+                                                                />
+                                                                <span>m</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <div className="form-group">
@@ -499,10 +586,22 @@ function Coaching() {
                                             ) : (
                                                 <>
                                                     <h4 className="session-title">{session.title}</h4>
-                                                    <p className="session-description">{session.description}</p>
+                                                    <div className={`session-description-wrapper ${expandedSessions.has(session.id) ? 'expanded' : ''}`}>
+                                                        <p className="session-description">{session.description}</p>
+                                                        {session.description.length > 100 && (
+                                                            <button
+                                                                className="view-more-btn"
+                                                                onClick={() => toggleExpand(session.id)}
+                                                            >
+                                                                {expandedSessions.has(session.id) ? 'View Less' : 'View More'}
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                     <div className="session-meta">
                                                         <span className="session-specialty">{session.specialty}</span>
-                                                        <span className="session-duration">Duration: {session.duration} min</span>
+                                                        <span className="session-duration">
+                                                            Duration: {Math.floor(session.duration / 60) > 0 ? `${Math.floor(session.duration / 60)}h ` : ''}{session.duration % 60} min
+                                                        </span>
                                                     </div>
 
                                                     <div className="session-actions">

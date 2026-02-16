@@ -25,6 +25,10 @@ function Register() {
       return setError("Passwords don't match");
     if (form.password.length < 6)
       return setError("Password must be at least 6 characters");
+    if (form.username.length > 15)
+      return setError("Username cannot exceed 15 characters");
+    if (form.username.length < 3)
+      return setError("Username must be at least 3 characters");
 
     setLoading(true);
     setError("");
@@ -101,6 +105,7 @@ function Register() {
             value={form.username}
             onChange={(e) => setForm({ ...form, username: e.target.value })}
             className="auth-input"
+            maxLength={15}
             required
           />
           <input
