@@ -54,7 +54,13 @@ function Home() {
     { value: 'oc1', label: 'OCE' },
     { value: 'ru', label: 'RU' },
     { value: 'tr1', label: 'TR' },
-    { value: 'jp1', label: 'JP' }
+    { value: 'jp1', label: 'JP' },
+    { value: 'ph2', label: 'PH' },
+    { value: 'sg2', label: 'SG' },
+    { value: 'th2', label: 'TH' },
+    { value: 'tw2', label: 'TW' },
+    { value: 'vn2', label: 'VN' },
+    { value: 'me1', label: 'ME' }
   ];
 
   return (

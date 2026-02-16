@@ -4,7 +4,7 @@ import { auth, db } from '../firebase';
 import {
   collection, query, where, onSnapshot, addDoc,
   serverTimestamp, doc, getDoc, orderBy, deleteDoc,
-  updateDoc, arrayUnion, arrayRemove, getDocs
+  updateDoc, arrayUnion, arrayRemove, getDocs, writeBatch
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,6 +15,8 @@ function QueueSystem() {
   const [filteredListings, setFilteredListings] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [userFriends, setUserFriends] = useState([]);
+  const [sentFriendRequests, setSentFriendRequests] = useState([]);
+  const [processingRequests, setProcessingRequests] = useState(new Set());
 
   const navigate = useNavigate();
 
@@ -103,7 +105,8 @@ function QueueSystem() {
     { id: 'sg2', name: 'Singapore' },
     { id: 'th2', name: 'Thailand' },
     { id: 'tw2', name: 'Taiwan' },
-    { id: 'vn2', name: 'Vietnam' }
+    { id: 'vn2', name: 'Vietnam' },
+    { id: 'me1', name: 'Middle East' }
   ];
 
   const rankIconsMap = {
@@ -139,7 +142,8 @@ function QueueSystem() {
       'sg2': 'sg2',
       'th2': 'th2',
       'tw2': 'tw2',
-      'vn2': 'vn2'
+      'vn2': 'vn2',
+      'me1': 'me1'
     };
 
     return regionMap[regionFromDB.toLowerCase()] || regionFromDB.toLowerCase();
@@ -164,7 +168,8 @@ function QueueSystem() {
       'sg2': 'Singapore',
       'th2': 'Thailand',
       'tw2': 'Taiwan',
-      'vn2': 'Vietnam'
+      'vn2': 'Vietnam',
+      'me1': 'Middle East'
     };
 
     return displayMap[regionFromDB.toLowerCase()] || regionFromDB.toUpperCase();
@@ -204,13 +209,15 @@ function QueueSystem() {
 
     updateUserRankedData();
     fetchUserProfile();
-    fetchUserFriends();
     fetchGameListings();
     fetchMyGameRequests();
 
+    const friendsUnsubscribe = fetchUserFriends();
+
     return () => {
-      const unsubscribe = fetchGameListings();
-      if (unsubscribe) unsubscribe();
+      const listingUnsubscribe = fetchGameListings();
+      if (listingUnsubscribe) listingUnsubscribe();
+      if (friendsUnsubscribe) friendsUnsubscribe();
     };
   }, []);
 
@@ -418,17 +425,21 @@ function QueueSystem() {
     }
   };
 
-  const fetchUserFriends = async () => {
+  const fetchUserFriends = () => {
+    if (!auth.currentUser) return;
+
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
-      const userDoc = await getDoc(userRef);
-
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        setUserFriends(data.friends || []);
-      }
+      const unsubscribe = onSnapshot(userRef, (userDoc) => {
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setUserFriends(data.friends || []);
+          setSentFriendRequests(data.sentFriendRequests || []);
+        }
+      });
+      return unsubscribe;
     } catch (error) {
-      console.error('Error fetching user friends:', error);
+      console.error('Error fetching user friends/requests:', error);
     }
   };
 
@@ -551,43 +562,35 @@ function QueueSystem() {
       if (needsFriendUpdate || needsRequestCleanup) {
         const batch = writeBatch(db);
 
+        // Host updates
+        const hostUpdates = {};
         if (!hostHasApplicant) {
-          batch.update(hostRef, {
-            friends: arrayUnion({
-              id: applicantUserId,
-              username: applicantName || applicantData.username || 'Anonymous',
-              profileImage: applicantData.profileImage || null,
-              addedAt: new Date()
-            })
+          hostUpdates.friends = arrayUnion({
+            id: applicantUserId,
+            username: applicantName || applicantData.username || 'Anonymous',
+            profileImage: applicantData.profileImage || null,
+            addedAt: new Date()
           });
         }
+        if (hostPendingToRemove.length > 0) hostUpdates.pendingRequests = arrayRemove(...hostPendingToRemove);
+        if (hostSentToRemove.length > 0) hostUpdates.sentFriendRequests = arrayRemove(...hostSentToRemove);
 
+        if (Object.keys(hostUpdates).length > 0) batch.update(hostRef, hostUpdates);
+
+        // Applicant updates
+        const applicantUpdates = {};
         if (!applicantHasHost) {
-          batch.update(applicantRef, {
-            friends: arrayUnion({
-              id: hostUserId,
-              username: hostData.username || 'Anonymous',
-              profileImage: hostData.profileImage || null,
-              addedAt: new Date()
-            })
+          applicantUpdates.friends = arrayUnion({
+            id: hostUserId,
+            username: hostData.username || 'Anonymous',
+            profileImage: hostData.profileImage || null,
+            addedAt: new Date()
           });
         }
+        if (applicantPendingToRemove.length > 0) applicantUpdates.pendingRequests = arrayRemove(...applicantPendingToRemove);
+        if (applicantSentToRemove.length > 0) applicantUpdates.sentFriendRequests = arrayRemove(...applicantSentToRemove);
 
-
-        if (hostPendingToRemove.length > 0) {
-          batch.update(hostRef, { pendingRequests: arrayRemove(...hostPendingToRemove) });
-        }
-        if (hostSentToRemove.length > 0) {
-          batch.update(hostRef, { sentFriendRequests: arrayRemove(...hostSentToRemove) });
-        }
-
-
-        if (applicantPendingToRemove.length > 0) {
-          batch.update(applicantRef, { pendingRequests: arrayRemove(...applicantPendingToRemove) });
-        }
-        if (applicantSentToRemove.length > 0) {
-          batch.update(applicantRef, { sentFriendRequests: arrayRemove(...applicantSentToRemove) });
-        }
+        if (Object.keys(applicantUpdates).length > 0) batch.update(applicantRef, applicantUpdates);
 
         await batch.commit();
         console.log("Auto-friended and cleaned up requests (Atomic)");
@@ -905,6 +908,15 @@ function QueueSystem() {
   };
 
   const handleAcceptRequest = async (gameId, applicantUserId, applicantName) => {
+    const requestId = `${gameId}_${applicantUserId}`;
+    if (processingRequests.has(requestId)) return;
+
+    setProcessingRequests(prev => {
+      const next = new Set(prev);
+      next.add(requestId);
+      return next;
+    });
+
     try {
       const gameRef = doc(db, 'gameListings', gameId);
       const gameDoc = await getDoc(gameRef);
@@ -943,7 +955,12 @@ function QueueSystem() {
 
       await addFriendOnAccept(gameData.userId, applicantUserId, applicantName);
 
-      alert(`Request accepted! ${applicantName} has been added as a friend.`);
+      const alreadyFriend = isAlreadyFriend(applicantUserId);
+      const successMessage = alreadyFriend
+        ? `Request accepted! You are already friends with ${applicantName}.`
+        : `Request accepted! ${applicantName} has been added as a friend.`;
+
+      alert(successMessage);
 
       setMyGameRequests(prev => prev.filter(req =>
         !(req.gameId === gameId && req.userId === applicantUserId)
@@ -951,10 +968,25 @@ function QueueSystem() {
     } catch (error) {
       console.error('Error accepting request:', error);
       alert('Error accepting request. Please try again.');
+    } finally {
+      setProcessingRequests(prev => {
+        const next = new Set(prev);
+        next.delete(requestId);
+        return next;
+      });
     }
   };
 
   const handleDeclineRequest = async (gameId, applicantUserId, applicantName) => {
+    const requestId = `${gameId}_${applicantUserId}`;
+    if (processingRequests.has(requestId)) return;
+
+    setProcessingRequests(prev => {
+      const next = new Set(prev);
+      next.add(requestId);
+      return next;
+    });
+
     try {
       const gameRef = doc(db, 'gameListings', gameId);
       const gameDoc = await getDoc(gameRef);
@@ -984,6 +1016,12 @@ function QueueSystem() {
     } catch (error) {
       console.error('Error declining request:', error);
       alert('Error declining request. Please try again.');
+    } finally {
+      setProcessingRequests(prev => {
+        const next = new Set(prev);
+        next.delete(requestId);
+        return next;
+      });
     }
   };
 
@@ -1085,6 +1123,10 @@ function QueueSystem() {
 
   const isAlreadyFriend = (userId) => {
     return userFriends.some(friend => friend.id === userId);
+  };
+
+  const hasRequestSent = (userId) => {
+    return sentFriendRequests.some(req => req.to === userId);
   };
 
   const handleCancelEdit = () => {
@@ -1555,6 +1597,7 @@ function QueueSystem() {
             {filteredListings.map(game => {
               const isOwnGame = game.userId === auth.currentUser?.uid;
               const isFriend = isAlreadyFriend(game.userId);
+              const requestSent = hasRequestSent(game.userId);
 
               const rankedData = game.userRankedData || [];
               const soloQueue = getQueueData(rankedData, 'RANKED_SOLO_5x5');
@@ -1764,9 +1807,9 @@ function QueueSystem() {
                             <button
                               className="friend-btn-compact"
                               onClick={() => handleAddFriend(game.userId)}
-                              disabled={isFriend}
+                              disabled={isFriend || requestSent}
                             >
-                              {isFriend ? 'Already Friends' : 'Add Friend'}
+                              {isFriend ? 'Already Friends' : requestSent ? 'Request Sent' : 'Add Friend'}
                             </button>
                           </div>
                         </div>
@@ -1897,6 +1940,9 @@ function QueueSystem() {
                             <div className="request-user-info-main">
                               <div className="name-status-row">
                                 <span className="request-name-text">{request.displayName}</span>
+                                {isAlreadyFriend(request.userId) && (
+                                  <span className="friends-badge">Friends</span>
+                                )}
                                 <span className="request-badge">Pending</span>
                               </div>
                               <div className="request-riot-id">
@@ -1935,24 +1981,34 @@ function QueueSystem() {
                           </div>
 
                           <div className="request-actions-section">
-                            <button
-                              className="btn-view-profile"
-                              onClick={() => handleViewProfile(request.userId)}
-                            >
-                              View Profile
-                            </button>
-                            <button
-                              className="btn-decline"
-                              onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                            >
-                              Decline
-                            </button>
-                            <button
-                              className="btn-accept"
-                              onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                            >
-                              Accept
-                            </button>
+                            {(() => {
+                              const isProcessing = processingRequests.has(`${request.gameId}_${request.userId}`);
+                              return (
+                                <>
+                                  <button
+                                    className="btn-view-profile"
+                                    onClick={() => handleViewProfile(request.userId)}
+                                    disabled={isProcessing}
+                                  >
+                                    View Profile
+                                  </button>
+                                  <button
+                                    className="btn-decline"
+                                    onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                                    disabled={isProcessing}
+                                  >
+                                    Decline
+                                  </button>
+                                  <button
+                                    className="btn-accept"
+                                    onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                                    disabled={isProcessing || isAlreadyFriend(request.userId)}
+                                  >
+                                    {isAlreadyFriend(request.userId) ? 'Already Friends' : 'Accept & Friend'}
+                                  </button>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
 

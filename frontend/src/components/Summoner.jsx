@@ -269,6 +269,18 @@ function Summoner() {
           <option value="na1">NA</option>
           <option value="kr">KR</option>
           <option value="jp1">JP</option>
+          <option value="br1">BR</option>
+          <option value="la1">LAN</option>
+          <option value="la2">LAS</option>
+          <option value="oc1">OCE</option>
+          <option value="ru">RU</option>
+          <option value="tr1">TR</option>
+          <option value="ph2">PH</option>
+          <option value="sg2">SG</option>
+          <option value="th2">TH</option>
+          <option value="tw2">TW</option>
+          <option value="vn2">VN</option>
+          <option value="me1">ME</option>
         </select>
         <select value={mode} onChange={(e) => setMode(e.target.value)}>
           <option value="all">All</option>

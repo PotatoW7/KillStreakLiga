@@ -166,12 +166,12 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const targetUserRef = doc(db, 'users', targetUserId);
 
-      // Get current user's profile image
+
       const currentUserDoc = await getDoc(currentUserRef);
       const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
       const currentUserProfileImage = currentUserData.profileImage || null;
 
-      // Get target user's profile image
+
       const targetUserDoc = await getDoc(targetUserRef);
       const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
       const targetProfileImage = targetUserData.profileImage || null;
@@ -215,58 +215,55 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const friendRef = doc(db, 'users', request.from);
 
-      const friendDoc = await getDoc(friendRef);
-      const friendData = friendDoc.exists() ? friendDoc.data() : {};
+      const [friendDoc, currentUserDoc] = await Promise.all([
+        getDoc(friendRef),
+        getDoc(userRef)
+      ]);
 
-      const currentUserDoc = await getDoc(userRef);
+      const friendData = friendDoc.exists() ? friendDoc.data() : {};
       const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
 
-      // Robustity: Collect all versions of the request to remove
       const pendingToRemove = (currentUserData.pendingRequests || []).filter(
         req => req.from === request.from
       );
 
-      // Robustity: Prevent duplicates if already friends
-      const isAlreadyFriend = (currentUserData.friends || []).some(f => f.id === request.from);
-
-      if (!isAlreadyFriend) {
-        batch.update(userRef, {
-          friends: arrayUnion({
-            id: request.from,
-            username: friendData.username || request.fromUsername || 'Anonymous',
-            profileImage: friendData.profileImage || null
-          })
-        });
-      }
-
-      batch.update(userRef, {
+      const userUpdates = {
         pendingRequests: pendingToRemove.length > 0 ? arrayRemove(...pendingToRemove) : currentUserData.pendingRequests || []
-      });
+      };
 
-      // Robustity: Prevent duplicates for the other user too
-      const friendIsAlreadyFriend = (friendData.friends || []).some(f => f.id === auth.currentUser.uid);
-
-      if (!friendIsAlreadyFriend) {
-        batch.update(friendRef, {
-          friends: arrayUnion({
-            id: auth.currentUser.uid,
-            username: auth.currentUser.displayName || 'Anonymous',
-            profileImage: currentUserData.profileImage || null
-          })
+      if (!(currentUserData.friends || []).some(f => f.id === request.from)) {
+        userUpdates.friends = arrayUnion({
+          id: request.from,
+          username: friendData.username || request.fromUsername || 'Anonymous',
+          profileImage: friendData.profileImage || null
         });
       }
+
+      batch.update(userRef, userUpdates);
 
       const sentRequestToRemove = (friendData.sentFriendRequests || []).filter(
         req => req.to === auth.currentUser.uid
       );
+
+      const friendUpdates = {};
+
       if (sentRequestToRemove.length > 0) {
-        batch.update(friendRef, {
-          sentFriendRequests: arrayRemove(...sentRequestToRemove)
+        friendUpdates.sentFriendRequests = arrayRemove(...sentRequestToRemove);
+      }
+
+      if (!(friendData.friends || []).some(f => f.id === auth.currentUser.uid)) {
+        friendUpdates.friends = arrayUnion({
+          id: auth.currentUser.uid,
+          username: auth.currentUser.displayName || 'Anonymous',
+          profileImage: currentUserData.profileImage || null
         });
       }
 
-      await batch.commit();
+      if (Object.keys(friendUpdates).length > 0) {
+        batch.update(friendRef, friendUpdates);
+      }
 
+      await batch.commit();
     } catch (error) {
       console.error('Error accepting friend request:', error);
       alert('Error accepting friend request: ' + error.message);
@@ -279,7 +276,11 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const senderRef = doc(db, 'users', request.from);
 
-      const userDoc = await getDoc(userRef);
+      const [userDoc, senderDoc] = await Promise.all([
+        getDoc(userRef),
+        getDoc(senderRef)
+      ]);
+
       const userData = userDoc.exists() ? userDoc.data() : {};
       const pendingToRemove = (userData.pendingRequests || []).filter(
         req => req.from === request.from
@@ -289,20 +290,13 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         pendingRequests: pendingToRemove.length > 0 ? arrayRemove(...pendingToRemove) : userData.pendingRequests || []
       });
 
-      const senderDoc = await getDoc(senderRef);
       if (senderDoc.exists()) {
         const senderData = senderDoc.data();
         const sentRequestToRemove = (senderData.sentFriendRequests || []).filter(
           req => req.to === auth.currentUser.uid
         );
 
-        if (sentRequestToRemove.length > 0) {
-          batch.update(senderRef, {
-            sentFriendRequests: arrayRemove(...sentRequestToRemove)
-          });
-        }
-
-        batch.update(senderRef, {
+        const senderUpdates = {
           friendNotifications: arrayUnion({
             type: 'rejection',
             from: auth.currentUser.uid,
@@ -310,11 +304,16 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
             timestamp: new Date(),
             read: false
           })
-        });
+        };
+
+        if (sentRequestToRemove.length > 0) {
+          senderUpdates.sentFriendRequests = arrayRemove(...sentRequestToRemove);
+        }
+
+        batch.update(senderRef, senderUpdates);
       }
 
       await batch.commit();
-
     } catch (error) {
       console.error('Error rejecting friend request:', error);
       alert('Error rejecting friend request: ' + error.message);
@@ -458,7 +457,6 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         </div>
       )}
 
-      {/* Mini Tabs for Friends/Pending */}
       <div className="friends-mini-tabs">
         <button
           className={`friends-mini-tab ${friendsTabView === 'all' ? 'active' : ''}`}
@@ -477,10 +475,8 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         </button>
       </div>
 
-      {/* Show content based on selected mini tab */}
       {friendsTabView === 'pending' ? (
         <div className="pending-requests" style={{ borderBottom: 'none' }}>
-          {/* Received Requests Section */}
           {pendingRequests.length > 0 && (
             <>
               <div className="pending-section-header">Received Requests</div>
@@ -512,7 +508,6 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
             </>
           )}
 
-          {/* Sent Requests Section */}
           {sentFriendRequests.length > 0 && (
             <>
               <div className="pending-section-header">Sent Requests</div>
@@ -549,7 +544,6 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
             </>
           )}
 
-          {/* Empty state */}
           {pendingRequests.length === 0 && sentFriendRequests.length === 0 && (
             <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 'var(--space-lg)' }}>
               No pending friend requests

@@ -14,7 +14,8 @@ const regionDomains = {
   sg2: 'sg2.api.riotgames.com',
   th2: 'th2.api.riotgames.com',
   tw2: 'tw2.api.riotgames.com',
-  vn2: 'vn2.api.riotgames.com'
+  vn2: 'vn2.api.riotgames.com',
+  me1: 'me1.api.riotgames.com'
 };
 
 const accountRouting = {
@@ -33,7 +34,8 @@ const accountRouting = {
   sg2: 'sea',
   th2: 'sea',
   tw2: 'sea',
-  vn2: 'sea'
+  vn2: 'sea',
+  me1: 'europe'
 };
 
 module.exports = { regionDomains, accountRouting };
