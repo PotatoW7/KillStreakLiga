@@ -386,13 +386,28 @@
     aspect-ratio: 16/9;
 }
 
+.tt-embed-wrapper {
+    width: 100%;
+    max-width: 340px;
+    /* Standard mobile width */
+    margin: 10px auto;
+    /* Center the video */
+    height: 600px;
+    /* specific height for tiktok */
+    border-radius: 12px;
+    background: transparent;
+    /* Remove black background to avoid mismatched corners */
+}
+
 .tt-embed-wrapper iframe {
-    height: 700px !important;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
 }
 
 @media (max-width: 600px) {
-    .tt-embed-wrapper iframe {
-        height: 500px !important;
+    .tt-embed-wrapper {
+        height: 550px;
     }
 }
 
@@ -672,4 +687,13 @@
 .hint-text .highlight {
     color: var(--accent-primary, #dc143c);
     font-weight: 700;
+}
+
+.post-success-message {
+    color: #4caf50;
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 10px;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
 }

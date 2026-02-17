@@ -249,11 +249,15 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                 newPostContent: "",
                 newPostImages: [],
                 creatingPost: false,
-                postVisibility: "public"
+                postVisibility: "public",
+                postSuccess: true
             }));
 
-            alert("Post created successfully!");
             if (onPostCreated) onPostCreated();
+
+            setTimeout(() => {
+                setState(prev => ({ ...prev, postSuccess: false }));
+            }, 3000);
         } catch (error) {
             console.error("Error creating post:", error);
             alert("Failed to create post: " + (error.message || "Unknown error"));
@@ -266,7 +270,6 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
 
         try {
             await deleteDoc(doc(db, "posts", postId));
-            alert("Post deleted successfully!");
         } catch (error) {
             console.error("Error deleting post:", error);
             alert("Failed to delete post.");
@@ -682,6 +685,11 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                 </button>
                             </div>
                         </div>
+                        {state.postSuccess && (
+                            <div className="post-success-message">
+                                Post was created
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -789,7 +797,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                 <div className="tt-embed-wrapper">
                                                     <iframe
                                                         src={`https://www.tiktok.com/embed/v2/${post.socialPreview.id}`}
-                                                        style={{ width: '100%', height: '700px', border: 'none' }}
+                                                        style={{ width: '100%', height: '100%', border: 'none' }}
+                                                        scrolling="no"
                                                         allowFullScreen
                                                         title="TikTok player"
                                                     ></iframe>

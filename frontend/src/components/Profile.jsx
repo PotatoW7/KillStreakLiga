@@ -115,8 +115,22 @@ function Profile() {
     lastUpdateTime: null,
     posts: [],
     loadingPosts: false,
-    backendError: false
+    backendError: false,
+    notification: { message: "", type: "", visible: false }
   });
+
+  const showNotification = (message, type = "success") => {
+    setState(prev => ({
+      ...prev,
+      notification: { message, type, visible: true }
+    }));
+    setTimeout(() => {
+      setState(prev => ({
+        ...prev,
+        notification: { ...prev.notification, visible: false }
+      }));
+    }, 3000);
+  };
 
   const contextMenuRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -159,7 +173,7 @@ function Profile() {
         }));
 
         if (isManualUpdate) {
-          alert("Ranked data updated successfully!");
+          showNotification("Ranked data updated successfully!", "success");
         }
 
         return rankedData;
@@ -178,9 +192,9 @@ function Profile() {
       }));
 
       if (isManualUpdate) {
-        alert(isConnectionError
+        showNotification(isConnectionError
           ? "Failed to update ranked data. Please check if the backend server is running."
-          : "Failed to update ranked data. Please try again.");
+          : "Failed to update ranked data. Please try again.", "error");
       }
     }
   };
@@ -415,18 +429,18 @@ function Profile() {
     if (!file) return;
 
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-    if (!validTypes.includes(file.type)) return alert("Invalid file type (JPEG, PNG, GIF, WebP)");
-    if (file.size > 1 * 1024 * 1024) return alert("Max 1MB allowed");
+    if (!validTypes.includes(file.type)) return showNotification("Invalid file type (JPEG, PNG, GIF, WebP)", "error");
+    if (file.size > 1 * 1024 * 1024) return showNotification("Max 1MB allowed", "error");
 
     setState(prev => ({ ...prev, uploading: true, contextMenuPosition: null }));
 
     try {
       const base64 = await fileToBase64(file);
       await updateProfileImage(base64);
-      alert("Profile image updated successfully!");
+      showNotification("Profile image updated successfully!", "success");
     } catch (err) {
       console.error(err);
-      alert("Error updating profile image");
+      showNotification("Error updating profile image", "error");
     } finally {
       setState(prev => ({ ...prev, uploading: false }));
     }
@@ -545,10 +559,11 @@ function Profile() {
       await updateDoc(userRef, { emailVerificationSent: true, lastVerificationSent: new Date() });
 
       setState(prev => ({ ...prev, emailVerificationSent: true, verificationLoading: false }));
-      alert("Verification email sent! Please check your inbox and spam folder.");
+      setState(prev => ({ ...prev, emailVerificationSent: true, verificationLoading: false }));
+      showNotification("Verification email sent! Please check your inbox.", "success");
     } catch (error) {
       console.error("Error sending verification:", error);
-      alert(error.code === 'auth/too-many-requests' ? "Too many verification requests. Please wait a few minutes." : "Error sending verification email. Please try again.");
+      showNotification(error.code === 'auth/too-many-requests' ? "Too many requests. Please wait." : "Error sending email.", "error");
       setState(prev => ({ ...prev, verificationLoading: false }));
     }
   };
@@ -576,14 +591,12 @@ function Profile() {
     try {
       const userId = state.user.uid;
 
-      // 1. Leave queue system (separate API call)
       try {
         await fetch(`${import.meta.env.VITE_API_URL}/api/queue/leave`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
         });
       } catch (error) { console.log("Could not remove from queue system, continuing..."); }
 
-      // 2. Cleanup friendships and requests across ALL users in batches
       const allUsersQuery = query(collection(db, "users"));
       const allUsersSnapshot = await getDocs(allUsersQuery);
 
@@ -609,11 +622,7 @@ function Profile() {
             batch.update(doc(db, "users", otherUserDoc.id), updates);
             operationCount++;
 
-
-            // Firestore batches are limited to 500 operations
             if (operationCount >= 400) {
-              // Note: This is simplified for the example; in reality, you'd need to chain these.
-              // But for this app's scale, 400 at once is likely fine and rarely exceeded.
               batch.commit();
               batch = writeBatch(db);
               operationCount = 0;
@@ -626,7 +635,6 @@ function Profile() {
         await batch.commit();
       }
 
-      // 3. Delete user's own content (chats, posts)
       try {
         const chatsQuery = query(collection(db, "chats"), where("participants", "array-contains", userId));
         const chatsSnapshot = await getDocs(chatsQuery);
@@ -641,17 +649,15 @@ function Profile() {
         await deleteDoc(doc(db, "posts", postDoc.id));
       }
 
-      // 4. Delete the user document and auth account
       await deleteDoc(doc(db, "users", userId));
       await deleteUser(state.user);
 
-      alert("Account terminated successfully! Your profile has been deleted. Goodbye!");
       window.location.href = "/";
     } catch (error) {
       console.error("Error during account deletion:", error);
-      alert(error.code === 'permission-denied' ? "Permission denied. Your profile was still deleted." :
-        error.code === 'unavailable' ? "Network error. Please check your connection." :
-          "Error terminating account. Please try again.");
+      showNotification(error.code === 'permission-denied' ? "Permission denied." :
+        error.code === 'unavailable' ? "Network error." :
+          "Error terminating account.", "error");
       setState(prev => ({ ...prev, deletingAccount: false, showDeleteConfirm: false }));
     }
   };
@@ -667,10 +673,11 @@ function Profile() {
       });
 
       setState(prev => ({ ...prev, aboutMe: state.tempAbout, isEditingAbout: false }));
-      alert("About me updated successfully!");
+      setState(prev => ({ ...prev, aboutMe: state.tempAbout, isEditingAbout: false }));
+      showNotification("About me updated successfully!", "success");
     } catch (error) {
       console.error("Error updating about me:", error);
-      alert("Error updating about me. Please try again.");
+      showNotification("Error updating about me.", "error");
     }
   };
 
@@ -743,7 +750,14 @@ function Profile() {
           )}
         </div>
 
+
+
         <div className="profile-card">
+          {state.notification.visible && (
+            <div className={`profile-notification ${state.notification.type}`}>
+              {state.notification.message}
+            </div>
+          )}
           {state.isOwnProfile && (
             <div className="profile-actions-menu">
               <button
@@ -847,7 +861,7 @@ function Profile() {
                       onClick={() => {
                         updateProfileImage(null);
                         setState(prev => ({ ...prev, contextMenuPosition: null }));
-                        alert("Profile image removed!");
+                        showNotification("Profile image removed!", "success");
                       }}
                       className="context-menu-btn delete-btn"
                     >
@@ -1055,7 +1069,6 @@ function Profile() {
           posts={state.posts}
           isOwnProfile={state.isOwnProfile}
           onPostCreated={() => {
-            // Optional: add any logic here if needed
           }}
         />
 
@@ -1158,7 +1171,7 @@ function Profile() {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }
 

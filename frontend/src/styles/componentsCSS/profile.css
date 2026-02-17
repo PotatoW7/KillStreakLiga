@@ -117,6 +117,45 @@
   pointer-events: none;
 }
 
+.profile-notification {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 2000;
+  animation: slideDownFade 0.4s ease-out;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.profile-notification.success {
+  background: rgba(0, 201, 141, 0.15);
+  border: 1px solid rgba(0, 201, 141, 0.4);
+  color: #4caf50;
+}
+
+.profile-notification.error {
+  background: rgba(220, 20, 60, 0.15);
+  border: 1px solid rgba(220, 20, 60, 0.4);
+  color: #ff4444;
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 .profile-header {
   display: flex;
   flex-direction: column;
