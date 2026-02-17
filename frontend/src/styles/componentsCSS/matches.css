@@ -552,3 +552,153 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: var(--bg-primary);
 }
+
+/* Arena Specific Styles */
+.match-details .arena-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl);
+  padding: var(--space-lg);
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.arena-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.arena-team-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+}
+
+.arena-team-header {
+  padding: var(--space-xs) var(--space-md);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.arena-team-header .placement-text {
+  font-weight: 700;
+}
+
+/* Placement Colors */
+.arena-team-card.place-1st {
+  border-color: var(--accent-gold);
+}
+
+.arena-team-card.place-1st .arena-team-header {
+  background: rgba(200, 155, 60, 0.15);
+  color: var(--accent-gold);
+  border-bottom: 1px solid rgba(200, 155, 60, 0.3);
+}
+
+.arena-team-card.place-2nd {
+  border-color: #c0c0c0;
+  /* Silver */
+}
+
+.arena-team-card.place-2nd .arena-team-header {
+  background: rgba(192, 192, 192, 0.15);
+  color: #e0e0e0;
+  border-bottom: 1px solid rgba(192, 192, 192, 0.3);
+}
+
+.arena-team-card.place-3rd {
+  border-color: #cd7f32;
+  /* Bronze */
+}
+
+.arena-team-card.place-3rd .arena-team-header {
+  background: rgba(205, 127, 50, 0.15);
+  color: #cd7f32;
+  border-bottom: 1px solid rgba(205, 127, 50, 0.3);
+}
+
+.arena-team-card.place-4th {
+  border-color: #0bc6e3;
+  /* Cyan */
+}
+
+.arena-team-card.place-4th .arena-team-header {
+  background: rgba(11, 198, 227, 0.1);
+  color: #0bc6e3;
+  border-bottom: 1px solid rgba(11, 198, 227, 0.3);
+}
+
+/* Arena Player Rows override */
+.arena-team-card .player-row {
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  padding: var(--space-sm) var(--space-md);
+}
+
+
+.arena-team-card .player-row:last-child {
+  border-bottom: none;
+}
+
+/* Augment Icons */
+.augment-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Compact overrides for Arena Grid */
+.arena-team-card .player-row {
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.arena-team-card .champion-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.arena-team-card .augment-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.arena-team-card .item-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.arena-team-card .player-info .champion-name {
+  font-size: 11px;
+}
+
+.arena-team-card .player-info .player-name {
+  font-size: 10px;
+}
+
+.arena-team-card .player-kda {
+  font-size: 11px;
+}
+
+/* Hide some elements if too small or irrelevant in list view */
+.arena-team-card .kda-numbers {
+  font-size: 12px;
+}
+
+.arena-team-card .kda-ratio-compact {
+  display: none;
+  /* Hide KDA ratio to save space */
+}

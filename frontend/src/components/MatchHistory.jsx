@@ -13,12 +13,16 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [runesData, setRunesData] = useState(null);
+  const [augmentsData, setAugmentsData] = useState(null);
+  const [spellIdToData, setSpellIdToData] = useState(null);
 
   useEffect(() => {
     fetchDDragon()
       .then((data) => {
         if (!version) setLatestVersion(data.latestVersion);
         setRunesData(data.runesData);
+        setAugmentsData(data.augmentsData);
+        setSpellIdToData(data.spellIdToData);
       })
       .catch((error) => console.error("Failed to fetch DDragon data:", error));
   }, [version]);
@@ -75,10 +79,14 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
       1: "Cleanse", 3: "Exhaust", 4: "Flash", 6: "Ghost",
       7: "Heal", 11: "Smite", 12: "Teleport", 13: "Clarity",
       14: "Ignite", 21: "Barrier", 32: "Mark", 39: "Mark",
+      2201: "Flee", 2202: "Flash", // Arena specific IDs often fluctuate or use these
+      // fallback for snowball if needed:
     };
     const spellName = spellMap[spellId];
     if (!spellName) {
-      console.log(`Unknown summoner spell ID: ${spellId}`);
+      // console.log(`Unknown summoner spell ID: ${spellId}`);
+      // return '/summoner-spells/unknown.png'; 
+      // Better to return a path we can catch with onError or just unknown
       return '/summoner-spells/unknown.png';
     }
     return `/summoner-spells/${spellName}.png`;
@@ -144,6 +152,43 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
       5013: 'stat-modifiers/StatModsTenacityIcon',
     };
     return runeMap[perkId] ? `/runes/${runeMap[perkId]}.png` : '/runes/unknown.png';
+  };
+
+
+  const getAugmentIconPath = (iconPath) => {
+    if (!iconPath) return "/runes/unknown.png";
+    return `https://raw.communitydragon.org/latest/game/${iconPath.toLowerCase()}`;
+  };
+
+  const renderPlayerAugments = (player) => {
+    // Arena augments seem to be in playerAugment1-4. 
+    // Sometimes 0 is used for empty slots.
+    const augments = [player.playerAugment1, player.playerAugment2, player.playerAugment3, player.playerAugment4].filter(id => id && id > 0);
+    return (
+      <div className="runes-container">
+        <div className="augments-list" style={{ display: 'flex', gap: '4px' }}>
+          {augments.map((augId, i) => {
+            const augment = augmentsData?.[augId];
+            return (
+              <img
+                key={i}
+                src={augment ? getAugmentIconPath(augment.icon) : "/runes/unknown.png"}
+                className="rune-icon augment-icon"
+                onMouseEnter={(e) => {
+                  if (augment) {
+                    setHoveredItem(augment);
+                    setTooltipPos({ x: e.clientX, y: e.clientY });
+                  }
+                }}
+                onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+                onMouseLeave={handleItemLeave}
+                onError={(e) => (e.target.src = "/runes/unknown.png")}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
 
@@ -261,7 +306,7 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     setHoveredItem(null);
   };
 
-  const renderPlayerRow = (p, isCurrent) => {
+  const renderPlayerRow = (p, isCurrent, queueId) => {
     const key = `${p.puuid}-${p.championName}`;
 
 
@@ -278,10 +323,36 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
           onError={(e) => (e.target.src = "/placeholder-champ.png")}
         />
         <div className="summoner-spells">
-          <img src={getSummonerSpellPath(p.summoner1Id)} className="summoner-spell" />
-          <img src={getSummonerSpellPath(p.summoner2Id)} className="summoner-spell" />
+          <img
+            src={getSummonerSpellPath(p.summoner1Id)}
+            className="summoner-spell"
+            onMouseEnter={(e) => {
+              if (spellIdToData && spellIdToData[p.summoner1Id]) {
+                setHoveredItem(spellIdToData[p.summoner1Id]);
+                setTooltipPos({ x: e.clientX, y: e.clientY });
+              }
+            }}
+            onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+            onMouseLeave={handleItemLeave}
+            onError={(e) => (e.target.src = "/summoner-spells/unknown.png")}
+          />
+          <img
+            src={getSummonerSpellPath(p.summoner2Id)}
+            className="summoner-spell"
+            onMouseEnter={(e) => {
+              if (spellIdToData && spellIdToData[p.summoner2Id]) {
+                setHoveredItem(spellIdToData[p.summoner2Id]);
+                setTooltipPos({ x: e.clientX, y: e.clientY });
+              }
+            }}
+            onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+            onMouseLeave={handleItemLeave}
+            onError={(e) => (e.target.src = "/summoner-spells/unknown.png")}
+          />
         </div>
-        <div className="runes-section">{renderPlayerRunes(p, key)}</div>
+        <div className="runes-section">
+          {queueId === 1700 ? renderPlayerAugments(p) : renderPlayerRunes(p, key)}
+        </div>
         <div className="player-info">
           <div className="champion-name">{formatChampionName(p.championName)}</div>
           <div className={`player-name ${!isCurrent ? "clickable-player" : ""}`} onClick={!isCurrent ? (e) => handlePlayerClick(p.riotId, e) : undefined}>{p.riotId}</div>
@@ -321,6 +392,85 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     return modes[queueId] || "Normal";
   };
 
+  const renderArenaMatchDetails = (match) => {
+    // Group players by placement
+    const teamsByPlacement = {};
+    match.players.forEach((p) => {
+      const placement = p.placement || p.subteamPlacement || 0;
+      if (!teamsByPlacement[placement]) {
+        teamsByPlacement[placement] = [];
+      }
+      teamsByPlacement[placement].push(p);
+    });
+
+    // Sort placements 1..8
+    const sortedPlacements = Object.keys(teamsByPlacement).sort((a, b) => Number(a) - Number(b));
+
+    const leftColumn = [];
+    const rightColumn = [];
+
+    sortedPlacements.forEach((placement, index) => {
+      // 1st (index 0) -> Left
+      // 2nd (index 1) -> Right
+      // 3rd (index 2) -> Left ...
+      if (index % 2 === 0) {
+        leftColumn.push({ placement, players: teamsByPlacement[placement] });
+      } else {
+        rightColumn.push({ placement, players: teamsByPlacement[placement] });
+      }
+    });
+
+    const getPlacementSuffix = (n) => {
+      const num = Number(n);
+      if (num === 1) return "st";
+      if (num === 2) return "nd";
+      if (num === 3) return "rd";
+      return "th";
+    };
+
+    const getPlacementColorClass = (n) => {
+      const num = Number(n);
+      if (num === 1) return "place-1st";
+      if (num === 2) return "place-2nd";
+      if (num === 3) return "place-3rd";
+      if (num === 4) return "place-4th";
+      return "place-other";
+    };
+
+    const renderArenaTeamCard = (group) => {
+      const placement = group.placement;
+      const players = group.players;
+      // You can add logic here to map placement/teamId to names like "Team Sentinel" if data exists
+      // For now using generic "Team" or just placement
+      const teamName = `Team ${placement}`;
+
+      return (
+        <div key={placement} className={`arena-team-card ${getPlacementColorClass(placement)}`}>
+          <div className="arena-team-header">
+            <span className="placement-text">{placement}{getPlacementSuffix(placement)} place</span>
+            {/* - <span className="team-name-text">{teamName}</span> */}
+          </div>
+          <div className="arena-players">
+            {players.map((p) => renderPlayerRow(p, p.puuid === puuid, 1700))}
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="match-details arena-details">
+        <div className="arena-details-grid">
+          <div className="arena-column">
+            {leftColumn.map(group => renderArenaTeamCard(group))}
+          </div>
+          <div className="arena-column">
+            {rightColumn.map(group => renderArenaTeamCard(group))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderMatch = (match, i) => {
     const player = match.players.find((p) => p.puuid === puuid);
     if (!player) return null;
@@ -330,6 +480,14 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     const playerItems = [player.item0, player.item1, player.item2, player.item3, player.item4, player.item5].filter(id => id > 0);
     const kdaRatio = calculateKDA(player.kills, player.deaths, player.assists);
     const timeAgo = getTimeAgo(match.gameEndTimestamp || match.gameStartTimestamp);
+
+    // For Arena, use placement instead of generic Victory/Defeat text if preferred, 
+    // but usually "Victory" means top 1 (or top 2/4 depending on definition). 
+    // We'll stick to what the backend provides for player.win, or customize:
+    const isArena = match.queueId === 1700;
+    const resultText = isArena ? `${player.placement || "?"}${['st', 'nd', 'rd', 'th'][Math.min(3, (player.placement || 0) - 1)] || 'th'} Place` : (player.win ? "VICTORY" : "DEFEAT");
+    const resultClass = isArena ? (player.placement === 1 ? "victory" : "defeat") : (player.win ? "victory" : "defeat");
+    // Actually Arena "Win" is typically top 2 or 4. Let's trust player.win for the card border color for now.
 
     return (
       <div key={i} className={`match-card ${player.win ? "victory" : "defeat"}`}>
@@ -343,7 +501,7 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
               />
               <div className="champion-info">
                 <div className="champion-name">{formatChampionName(player.championName)}</div>
-                <span className="result-text">{player.win ? "VICTORY" : "DEFEAT"}</span>
+                <span className="result-text">{resultText}</span>
                 <div className="match-time">{timeAgo}</div>
               </div>
             </div>
@@ -387,28 +545,30 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
           </div>
         </div>
         {expanded && (
-          <div className="match-details">
-            <div className="objectives-section">
-              <div className="team-objectives blue-team">
-                <h5>Blue Team Objectives</h5>
-                {renderObjectives(match.teams?.[100])}
+          isArena ? renderArenaMatchDetails(match) : (
+            <div className="match-details">
+              <div className="objectives-section">
+                <div className="team-objectives blue-team">
+                  <h5>Blue Team Objectives</h5>
+                  {renderObjectives(match.teams?.[100])}
+                </div>
+                <div className="team-objectives red-team">
+                  <h5>Red Team Objectives</h5>
+                  {renderObjectives(match.teams?.[200])}
+                </div>
               </div>
-              <div className="team-objectives red-team">
-                <h5>Red Team Objectives</h5>
-                {renderObjectives(match.teams?.[200])}
+              <div className="team-container">
+                <div className="team blue-team">
+                  <h4>Blue Team</h4>
+                  {blue.map((p) => renderPlayerRow(p, p.puuid === puuid, match.queueId))}
+                </div>
+                <div className="team red-team">
+                  <h4>Red Team</h4>
+                  {red.map((p) => renderPlayerRow(p, p.puuid === puuid, match.queueId))}
+                </div>
               </div>
             </div>
-            <div className="team-container">
-              <div className="team blue-team">
-                <h4>Blue Team</h4>
-                {blue.map((p) => renderPlayerRow(p, p.puuid === puuid))}
-              </div>
-              <div className="team red-team">
-                <h4>Red Team</h4>
-                {red.map((p) => renderPlayerRow(p, p.puuid === puuid))}
-              </div>
-            </div>
-          </div>
+          )
         )}
       </div>
     );
