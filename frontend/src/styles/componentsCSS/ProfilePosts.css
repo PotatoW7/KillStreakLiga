@@ -697,3 +697,13 @@
     text-align: center;
     animation: fadeIn 0.3s ease;
 }
+
+.post-link {
+    color: #3b82f6;
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.post-link:hover {
+    color: #2563eb;
+}

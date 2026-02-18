@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
+import IconRenderer, { LoLSuggestions } from './IconRenderer';
+
 
 function Chat({ selectedFriend, onBack }) {
   const [messages, setMessages] = useState([]);
@@ -16,11 +20,19 @@ function Chat({ selectedFriend, onBack }) {
   const [editText, setEditText] = useState('');
   const [contextMenu, setContextMenu] = useState(null);
   const [deletingMessageId, setDeletingMessageId] = useState(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionQuery, setSuggestionQuery] = useState('');
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [suggestionCoords, setSuggestionCoords] = useState({ top: 0, left: 0 });
+  const [activeVideo, setActiveVideo] = useState(null);
+
   const messagesEndRef = useRef(null);
-  const chatMessagesRef = useRef(null); 
+
+  const chatMessagesRef = useRef(null);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
+
 
   if (!selectedFriend) {
     return (
@@ -56,7 +68,7 @@ function Chat({ selectedFriend, onBack }) {
     };
 
     chatMessages.addEventListener('wheel', handleWheel, { passive: false });
-    
+
     return () => {
       chatMessages.removeEventListener('wheel', handleWheel);
     };
@@ -151,6 +163,8 @@ function Chat({ selectedFriend, onBack }) {
   const handleSend = async () => {
     if (!newMessage.trim()) return;
 
+    const socialPreview = getSocialPreview(newMessage);
+
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     await addDoc(messagesRef, {
       text: newMessage,
@@ -159,18 +173,172 @@ function Chat({ selectedFriend, onBack }) {
       timestamp: serverTimestamp(),
       read: false,
       type: 'text',
+      socialPreview: socialPreview || null,
     });
 
     setNewMessage('');
     scrollToBottom();
   };
 
+  const getSocialPreview = (content) => {
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/(?:v\/|e(?:mbed)\/|shorts\/|watch\?v=)|youtu\.be\/|youtube-nocookie\.com\/(?:v|e(?:mbed)\/))([a-zA-Z0-9_-]{11})/;
+    const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[\w.-]+\/video\/(\d+)|vt\.tiktok\.com\/(\w+))/;
+    const instagramRegex = /(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/(?:p|reels|reel)\/([\w-]+))/;
+    const xRegex = /(?:https?:\/\/)?(?:www\.)?(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)/;
+
+    const ytMatch = content.match(youtubeRegex);
+    if (ytMatch) {
+      return { type: 'youtube', id: ytMatch[1], thumbnail: `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg` };
+    }
+
+    const ttMatch = content.match(tiktokRegex);
+    if (ttMatch) {
+      const videoId = ttMatch[1] || ttMatch[2];
+      return {
+        type: 'tiktok',
+        id: videoId,
+        thumbnail: 'https://cdn-icons-png.flaticon.com/512/3046/3046121.png',
+        isIcon: true
+      };
+    }
+
+
+
+    const igMatch = content.match(instagramRegex);
+    if (igMatch) {
+      return {
+        type: 'instagram',
+        id: igMatch[1],
+        thumbnail: 'https://cdn-icons-png.flaticon.com/512/174/174855.png',
+        isIcon: true
+      };
+    }
+
+
+
+    const xMatch = content.match(xRegex);
+    if (xMatch) {
+      return { type: 'x', id: xMatch[1], thumbnail: 'https://cdn-icons-png.flaticon.com/512/5968/5968830.png' };
+    }
+
+    return null;
+  };
+
+
+  const getCaretCoordinates = (textarea) => {
+    const { clientWidth } = textarea;
+    const styles = window.getComputedStyle(textarea);
+
+    const div = document.createElement('div');
+    div.style.position = 'absolute';
+    div.style.visibility = 'hidden';
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.wordBreak = 'break-word';
+    div.style.width = clientWidth + 'px';
+    div.style.font = styles.font;
+    div.style.padding = styles.padding;
+    div.style.border = styles.border;
+    div.style.lineHeight = styles.lineHeight;
+
+    const content = textarea.value.substring(0, textarea.selectionStart);
+    div.textContent = content;
+
+    const span = document.createElement('span');
+    span.textContent = textarea.value.substring(textarea.selectionStart) || '.';
+    div.appendChild(span);
+
+    document.body.appendChild(div);
+    const { offsetLeft: spanLeft, offsetTop: spanTop } = span;
+    const { scrollTop } = textarea;
+    document.body.removeChild(div);
+
+    return {
+      top: spanTop - scrollTop - 5, // Adjusted for positioning above input
+      left: Math.min(spanLeft, clientWidth - 200)
+    };
+  };
+
+  const handleTextareaChange = (value) => {
+    setNewMessage(value);
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    const cursorPosition = textarea.selectionStart;
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const match = textBeforeCursor.match(/:([a-z0-9_']*)$/i);
+
+    if (match) {
+      const query = match[1];
+      const coords = getCaretCoordinates(textarea);
+      setShowSuggestions(true);
+      setSuggestionQuery(query);
+      setSuggestionIndex(0);
+      setSuggestionCoords(coords);
+    } else {
+      setShowSuggestions(false);
+      setSuggestionQuery('');
+    }
+  };
+
+  const insertSuggestion = (icon) => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    const cursorPosition = textarea.selectionStart;
+    const textBeforeCursor = newMessage.substring(0, cursorPosition);
+    const textAfterCursor = newMessage.substring(cursorPosition);
+    const lastColonIndex = textBeforeCursor.lastIndexOf(':');
+
+    const newValue = textBeforeCursor.substring(0, lastColonIndex) + `:${icon.name.toLowerCase().replace(/\s+/g, '_').replace(/['.]/g, '')}: ` + textAfterCursor;
+
+    setNewMessage(newValue);
+    setShowSuggestions(false);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = lastColonIndex + icon.name.length + 3;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
+
   const handleKeyDown = (e) => {
+    if (showSuggestions) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSuggestionIndex(prev => Math.min(prev + 1, 4));
+        return;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSuggestionIndex(prev => Math.max(prev - 1, 0));
+        return;
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const activeItem = document.querySelector('.suggestion-item.active');
+        if (activeItem) {
+          activeItem.click();
+        }
+        return;
+      } else if (e.key === 'Escape') {
+        setShowSuggestions(false);
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
+
+  const handleOpenVideo = (preview) => {
+    setActiveVideo(preview);
+  };
+
+  const handleCloseVideo = () => {
+    setActiveVideo(null);
+  };
+
+
 
   const handleRightClick = (e, message) => {
     e.preventDefault();
@@ -330,7 +498,7 @@ function Chat({ selectedFriend, onBack }) {
             alt={friendProfile?.username}
             className="chat-friend-avatar"
           />
-          <h3 
+          <h3
             className="friend-username-clickable"
             onClick={() => navigate(`/profile/${selectedFriend.id}`)}
             style={{ cursor: 'pointer' }}
@@ -341,14 +509,14 @@ function Chat({ selectedFriend, onBack }) {
         </div>
       </div>
 
-      <div 
+      <div
         ref={chatMessagesRef}
         className="chat-messages"
         onWheel={(e) => {
           const element = e.currentTarget;
           const isAtTop = element.scrollTop === 0;
           const isAtBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 1;
-          
+
           if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
             e.stopPropagation();
           }
@@ -361,9 +529,8 @@ function Chat({ selectedFriend, onBack }) {
           return (
             <div
               key={msg.id}
-              className={`chat-message ${isOwnMessage ? 'sent' : 'received'} ${
-                editingMessageId === msg.id ? 'editing' : ''
-              } ${isDeleting ? 'deleting' : ''}`}
+              className={`chat-message ${isOwnMessage ? 'sent' : 'received'} ${editingMessageId === msg.id ? 'editing' : ''
+                } ${isDeleting ? 'deleting' : ''}`}
               onContextMenu={(e) => handleRightClick(e, msg)}
             >
               <div className="message-user-info">
@@ -433,17 +600,39 @@ function Chat({ selectedFriend, onBack }) {
                 ) : (
                   <div className="message-bubble-wrapper">
                     <div
-                      className={`message-text ${
-                        isOwnMessage ? 'sent-text' : 'received-text'
-                      }`}
+                      className={`message-text ${isOwnMessage ? 'sent-text' : 'received-text'
+                        }`}
                     >
-                      {msg.text.split('\n').map((line, index) => (
-                        <React.Fragment key={index}>
-                          {line}
-                          {index < msg.text.split('\n').length - 1 && <br />}
-                        </React.Fragment>
-                      ))}
+                      <IconRenderer text={msg.text} />
+                      {msg.socialPreview && (
+                        <div
+                          className={`yt-preview-container ${msg.socialPreview.isIcon ? 'icon-preview' : ''}`}
+                          onClick={() => handleOpenVideo(msg.socialPreview)}
+                          title="Watch Video"
+                        >
+                          <img
+                            src={msg.socialPreview.thumbnail}
+                            alt="Social Preview"
+                            className={`yt-thumbnail ${msg.socialPreview.isIcon ? 'social-icon' : ''}`}
+                          />
+                          <div className="yt-play-overlay">
+                            <span className="watch-hint">Click to Watch</span>
+                            <img
+                              src="/project-icons/Profile icons/play.png"
+                              alt="Play"
+                              className="play-icon"
+                              onError={(e) => {
+                                e.target.src = 'https://cdn-icons-png.flaticon.com/512/0/375.png';
+                              }}
+                            />
+                          </div>
+                        </div>
+
+
+                      )}
+
                     </div>
+
                     {contextMenu === msg.id && isOwnMessage && !isDeleting && (
                       <div className="message-context-menu">
                         <button
@@ -497,16 +686,36 @@ function Chat({ selectedFriend, onBack }) {
           {uploading ? '📤' : '📎'}
         </button>
 
-        <textarea
-          ref={inputRef}
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={uploading}
-          placeholder="Type a message..."
-          rows={1}
-          className="chat-input-textarea"
-        />
+        <div className="chat-input-wrapper" style={{ flex: 1, position: 'relative' }}>
+          {showSuggestions && (
+            <div
+              className="chat-suggestions-wrapper"
+              style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: suggestionCoords.left,
+                zIndex: 5001
+              }}
+            >
+              <LoLSuggestions
+                query={suggestionQuery}
+                activeIndex={suggestionIndex}
+                onSelect={insertSuggestion}
+              />
+            </div>
+          )}
+          <textarea
+            ref={inputRef}
+            value={newMessage}
+            onChange={(e) => handleTextareaChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={uploading}
+            placeholder="Type a message..."
+            rows={1}
+            className="chat-input-textarea"
+          />
+        </div>
+
 
         <button
           onClick={handleSend}
@@ -516,7 +725,56 @@ function Chat({ selectedFriend, onBack }) {
           Send
         </button>
       </div>
+
+      {activeVideo && createPortal(
+        <div className="video-lightbox-overlay" onClick={handleCloseVideo}>
+          <div
+            className={`video-lightbox-content ${activeVideo.type === 'youtube' ? 'landscape' : 'portrait'}`}
+            data-platform={activeVideo.type}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className="video-lightbox-close" onClick={handleCloseVideo}>×</button>
+            <div className="video-cropper">
+              {activeVideo.type === 'youtube' && (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${activeVideo.id}?autoplay=1`}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              )}
+              {activeVideo.type === 'tiktok' && (
+                <iframe
+                  src={`https://www.tiktok.com/embed/v2/${activeVideo.id}`}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  allowFullScreen
+                ></iframe>
+              )}
+              {activeVideo.type === 'instagram' && (
+                <iframe
+                  src={`https://www.instagram.com/p/${activeVideo.id}/embed`}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  allowFullScreen
+                ></iframe>
+              )}
+
+              {activeVideo.type === 'x' && (
+                <div style={{ width: '100%', height: '100%', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                  <p>Twitter/X embeds require external script. <a href={`https://x.com/i/status/${activeVideo.id}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>Open in new tab</a></p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+
     </div>
+
   );
 }
 
