@@ -30,6 +30,24 @@ function Register() {
     if (form.username.length < 3)
       return setError("Username must be at least 3 characters");
 
+    const DISPOSABLE_DOMAINS = [
+      "tempmail.com", "10minutemail.com", "guerrillamail.com", "mailinator.com",
+      "dispostable.com", "getairmail.com", "throwawaymail.com", "maildrop.cc",
+      "yopmail.com", "sendoutapp.com", "sharklasers.com", "guerrillamailblock.com",
+      "guerrillamail.net", "guerrillamail.org", "guerrillamail.biz", "spam4.me",
+      "grr.la", "pokemail.net", "vmani.com", "dropmail.me", "anonymbox.com"
+    ];
+
+    const emailParts = form.email.split("@");
+    const emailPrefix = emailParts[0] || "";
+    const emailDomain = emailParts[1] || "";
+
+    if (emailPrefix.length < 6 || emailPrefix.length > 30)
+      return setError("Email prefix must be between 6 and 30 characters");
+
+    if (DISPOSABLE_DOMAINS.includes(emailDomain.toLowerCase()))
+      return setError("Temporary or disposable email addresses are not allowed.");
+
     setLoading(true);
     setError("");
 
