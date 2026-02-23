@@ -111,7 +111,7 @@ function Register() {
   return (
     <div className="register-page">
       <div className="auth-container">
-        <h2>Join Killstreak</h2>
+        <h2>Join RiftHub</h2>
         <p>Create your account</p>
 
         {error && <div className="auth-error">{error}</div>}

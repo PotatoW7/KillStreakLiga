@@ -59,7 +59,7 @@ function Login() {
     <div className="auth-page">
       <div className="auth-container">
         <h2>Login</h2>
-        <p>Welcome to Killstreak</p>
+        <p>Welcome to RiftHub</p>
 
         {error && <div className="auth-error">{error}</div>}
 
