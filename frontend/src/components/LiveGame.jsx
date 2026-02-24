@@ -288,18 +288,18 @@ function LiveGame() {
         const keystoneId = perks.perkIds[0];
         const secondaryStyle = perks.perkSubStyle;
         return (
-            <div className="flex flex-col gap-1.5 ">
+            <div className="lg-runes">
                 <img
                     src={getRuneIconPath(keystoneId)}
                     alt="Keystone"
-                    className="w-6 h-6 object-contain drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]"
+                    className="lg-rune-icon"
                     onError={(e) => (e.target.src = "/runes/unknown.png")}
                 />
                 {secondaryStyle && (
                     <img
                         src={getRuneIconPath(secondaryStyle)}
                         alt="Secondary"
-                        className="w-4 h-4 object-contain opacity-50 mx-auto"
+                        className="lg-rune-icon secondary"
                         onError={(e) => (e.target.src = "/runes/unknown.png")}
                     />
                 )}
@@ -307,68 +307,76 @@ function LiveGame() {
         );
     };
 
-    const renderPlayerCard = (player, idx) => {
+    const renderPlayerCard = (player, idx, teamColor) => {
         const champName = champIdToName[player.championId] || 'Unknown';
         const streamer = !player.puuid || player.puuid === '' || player.bot === true;
         const displayName = getPlayerDisplayName(player);
-        const splashUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champName}_0.jpg`;
+        const isCurrent = player.puuid === puuid;
 
         return (
             <div
                 key={player.puuid || idx}
                 onClick={() => handlePlayerClick(player)}
-                className={`group relative overflow-hidden rounded-2xl border border-white/5 bg-black/40 transition-all duration-700 hover:border-primary/30 hover:shadow-[0_0_30px_rgba(234,179,8,0.1)] ${streamer ? 'cursor-default' : 'cursor-pointer'}`}
+                className={`lg-player glass-panel ${isCurrent ? 'current' : ''} ${streamer ? 'streamer' : ''}`}
             >
-                <div
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
-                    style={{ backgroundImage: `url(${splashUrl})` }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                <div className="relative h-48 flex flex-col justify-end p-4">
-                    <div className="flex justify-between items-end gap-2">
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary italic mb-1 drop-shadow-lg">{champName}</p>
-                            <h4 className="text-xs font-black uppercase tracking-widest text-white truncate drop-shadow-lg">
-                                {streamer ? <span className="text-muted-foreground/50">{displayName}</span> : displayName}
-                            </h4>
-                        </div>
-
-                        <div className="flex items-center gap-2 pb-1">
-                            {!isRolelessMode() && player.detectedRole && (
-                                <img src={getRoleIconPath(player.detectedRole)} className="w-4 h-4 object-contain opacity-60" alt={player.detectedRole} />
-                            )}
-                            <div className="flex flex-col gap-1">
-                                <img src={getSummonerSpellPath(player.spell1Id)} className="w-4 h-4 rounded-md border border-white/10" alt="Spell1" />
-                                <img src={getSummonerSpellPath(player.spell2Id)} className="w-4 h-4 rounded-md border border-white/10" alt="Spell2" />
-                            </div>
-                            {renderPlayerRunes(player)}
-                        </div>
-                    </div>
+                <div className="lg-champ-wrapper">
+                    <div className={`lg-champ-glow ${teamColor}`} />
+                    <img
+                        src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
+                        className={`lg-champ-icon ${teamColor}`}
+                        alt={champName}
+                        onError={(e) => (e.target.src = "/placeholder-champ.png")}
+                    />
                 </div>
 
-                {!streamer && <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(234,179,8,0.6)]" />}
+                <div className="lg-spells">
+                    <img src={getSummonerSpellPath(player.spell1Id)} className="lg-spell-icon" alt="Spell1" />
+                    <img src={getSummonerSpellPath(player.spell2Id)} className="lg-spell-icon" alt="Spell2" />
+                </div>
+
+                <div className="lg-player-info">
+                    <h4 className="lg-player-name">{displayName}</h4>
+                    <p className="lg-player-champ-text">{champName}</p>
+                </div>
+
+                <div className="lg-player-rank">
+                    <img src="/rank-icons/Rank=Unranked.png" alt="Rank" className="lg-rank-icon" />
+                    <span className="lg-rank-text">Lvl {player.summonerLevel || '??'}</span>
+                </div>
+
+                {!isRolelessMode() && player.detectedRole && (
+                    <div className="lg-role-tag">
+                        <img src={getRoleIconPath(player.detectedRole)} className="lg-role-icon" alt={player.detectedRole} />
+                        <span className="lg-role-text">{player.detectedRole}</span>
+                    </div>
+                )}
+
+                {renderPlayerRunes(player)}
             </div>
         );
     };
 
     if (loading) return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6">
-            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary animate-pulse">Loading Live Game...</p>
+        <div className="lg-loading">
+            <div className="lg-spinner" />
+            <p className="lg-loading-text">Synchronizing Live Data...</p>
         </div>
     );
 
     if (error) return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6">
-            <div className="glass-panel p-8 rounded-3xl border-red-500/20 max-w-md">
-                <p className="text-sm font-black uppercase tracking-widest text-red-400 mb-6 italic">{error}</p>
-                <button
-                    onClick={() => navigate(-1)}
-                    className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
-                >
-                    Go Back
-                </button>
+        <div className="lg-not-in-game">
+            <div className="lg-not-in-game-icon-box">
+                <div className="lg-not-in-game-icon">!</div>
             </div>
+            <h2 className="lg-not-in-game-title">{error.includes('Not in Game') ? 'No Active Match Detected' : 'Signal Lost'}</h2>
+            <p className="lg-not-in-game-desc">{error}</p>
+            <button
+                onClick={() => navigate(-1)}
+                className="lg-back-btn"
+                style={{ width: 'auto', padding: '0 2rem', marginTop: '1rem' }}
+            >
+                Return to Base
+            </button>
         </div>
     );
 
@@ -376,96 +384,59 @@ function LiveGame() {
     const redBans = liveData.bannedChampions?.filter(b => b.teamId === 200) || [];
 
     return (
-        <div className="min-h-screen pt-24 pb-16 px-4">
-            <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-
-                <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-4">
-                        <div className="w-1.5 h-10 bg-primary rounded-full shadow-[0_0_15px_rgba(234,179,8,0.4)]" />
-                        <div>
-                            <h1 className="font-display text-3xl font-black uppercase tracking-[0.2em] italic text-white leading-none">Live Game</h1>
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/50 mt-2">Mode: {getGameModeName(liveData.gameMode, liveData.gameQueueConfigId)}</p>
-                        </div>
-                    </div>
-
-                    <div className="glass-panel px-12 py-4 rounded-2xl border-primary/20 text-center relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary/40 mb-1">Duration</p>
-                        <p className="font-display text-3xl font-black text-white italic tracking-widest">{formatTime(elapsedTime)}</p>
-                    </div>
-
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="px-6 py-3 rounded-xl bg-white/2 border border-white/5 text-[9px] font-black uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all group shrink-0"
-                    >
-                        <span className="opacity-40 group-hover:opacity-100 transition-opacity mr-2">←</span> Exit Match
+        <div className="live-game-page">
+            <header className="lg-header">
+                <div className="lg-header-info">
+                    <button onClick={() => navigate(-1)} className="lg-back-btn">
+                        ←
                     </button>
+                    <div>
+                        <div className="lg-live-badge">
+                            <div className="lg-live-dot" />
+                            <span className="lg-live-text">Live Match</span>
+                        </div>
+                        <h1 className="lg-title">In-Game Analysis</h1>
+                    </div>
                 </div>
 
-
-                <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-8 items-start">
-
-
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between px-2">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400 italic">Blue Team</h3>
-                            <div className="h-0.5 flex-1 mx-4 bg-gradient-to-r from-blue-400/20 to-transparent" />
-                        </div>
-                        <div className="grid gap-3">
-                            {sortParticipantsByRole(liveData.participants, 100).map((p, i) => renderPlayerCard(p, i))}
-                        </div>
+                <div className="lg-header-right">
+                    <div className="lg-mode-badge">
+                        <p className="lg-mode-label">Mode</p>
+                        <p className="lg-mode-name">{getGameModeName(liveData.gameMode, liveData.gameQueueConfigId)}</p>
                     </div>
 
-
-                    <div className="flex flex-col items-center gap-8 py-12">
-                        <div className="flex flex-col gap-4">
-                            {!isRolelessMode() && blueBans.map((ban, i) => {
-                                const name = champIdToName[ban.championId];
-                                return (
-                                    <div key={i} className="w-10 h-10 rounded-xl border border-red-500/20 bg-black grayscale opacity-40 hover:opacity-100 transition-all group overflow-hidden relative">
-                                        {name && ban.championId !== -1 ? (
-                                            <img src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${name}.png`} alt="Ban" className="w-full h-full object-cover" />
-                                        ) : <div className="w-full h-full bg-white/2" />}
-                                        <div className="absolute inset-0 bg-red-500/20 group-hover:opacity-0 transition-opacity" />
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        <div className="font-display text-2xl font-black italic text-white/10 tracking-[0.5em] [writing-mode:vertical-lr] select-none">BANNED CHAMPIONS</div>
-
-                        <div className="flex flex-col gap-4">
-                            {!isRolelessMode() && redBans.map((ban, i) => {
-                                const name = champIdToName[ban.championId];
-                                return (
-                                    <div key={i} className="w-10 h-10 rounded-xl border border-red-500/20 bg-black grayscale opacity-40 hover:opacity-100 transition-all group overflow-hidden relative">
-                                        {name && ban.championId !== -1 ? (
-                                            <img src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${name}.png`} alt="Ban" className="w-full h-full object-cover" />
-                                        ) : <div className="w-full h-full bg-white/2" />}
-                                        <div className="absolute inset-0 bg-red-500/20 group-hover:opacity-0 transition-opacity" />
-                                    </div>
-                                );
-                            })}
-                        </div>
+                    <div className="lg-timer-box">
+                        <p className="lg-timer-label">Elasped</p>
+                        <p className="lg-timer-value">{formatTime(elapsedTime)}</p>
                     </div>
+                </div>
+            </header>
 
-
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between px-2">
-                            <div className="h-0.5 flex-1 mx-4 bg-gradient-to-l from-red-400/20 to-transparent" />
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-red-400 italic">Red Team</h3>
+            <div className="lg-teams">
+                <div className="lg-team-card glass-panel">
+                    <div className="lg-team-header blue">
+                        <div className="lg-team-title-row">
+                            <div className="lg-team-dot blue" />
+                            <h3 className="lg-team-name blue">Blue Team</h3>
                         </div>
-                        <div className="grid gap-3">
-                            {sortParticipantsByRole(liveData.participants, 200).map((p, i) => renderPlayerCard(p, i))}
-                        </div>
+                        <span className="lg-team-count blue">5 Synchronized</span>
                     </div>
-
+                    <div className="lg-players">
+                        {sortParticipantsByRole(liveData.participants, 100).map((p, i) => renderPlayerCard(p, i, 'blue'))}
+                    </div>
                 </div>
 
-
-                <div className="text-center opacity-10 pt-12">
-                    <p className="text-[8px] font-black uppercase tracking-[0.8em] hidden">End of Live Game Data</p>
+                <div className="lg-team-card glass-panel">
+                    <div className="lg-team-header red">
+                        <div className="lg-team-title-row">
+                            <div className="lg-team-dot red" />
+                            <h3 className="lg-team-name red">Red Team</h3>
+                        </div>
+                        <span className="lg-team-count red">5 Synchronized</span>
+                    </div>
+                    <div className="lg-players">
+                        {sortParticipantsByRole(liveData.participants, 200).map((p, i) => renderPlayerCard(p, i, 'red'))}
+                    </div>
                 </div>
             </div>
         </div>

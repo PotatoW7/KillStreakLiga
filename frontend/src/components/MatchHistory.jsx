@@ -37,7 +37,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   };
 
   const formatChampionName = (championName) => {
-
     return championName
       .split('')
       .map((letter, index) => {
@@ -49,25 +48,17 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
       .join('');
   };
 
-
   const getTimeAgo = (timestamp) => {
     if (!timestamp) return "Recently";
-
     const now = Date.now();
     const diff = now - timestamp;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor(diff / (1000 * 60));
-
-    if (days > 0) {
-      return days === 1 ? "1 day ago" : `${days} days ago`;
-    } else if (hours > 0) {
-      return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
-    } else if (minutes > 0) {
-      return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
-    } else {
-      return "Just now";
-    }
+    if (days > 0) return days === 1 ? "1 day ago" : `${days} days ago`;
+    if (hours > 0) return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+    if (minutes > 0) return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
+    return "Just now";
   };
 
   const calculateKDA = (kills, deaths, assists) => {
@@ -80,16 +71,10 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
       1: "Cleanse", 3: "Exhaust", 4: "Flash", 6: "Ghost",
       7: "Heal", 11: "Smite", 12: "Teleport", 13: "Clarity",
       14: "Ignite", 21: "Barrier", 32: "Mark", 39: "Mark",
-      2201: "Flee", 2202: "Flash", // Arena specific IDs often fluctuate or use these
-      // fallback for snowball if needed:
+      2201: "Flee", 2202: "Flash",
     };
     const spellName = spellMap[spellId];
-    if (!spellName) {
-      // console.log(`Unknown summoner spell ID: ${spellId}`);
-      // return '/summoner-spells/unknown.png'; 
-      // Better to return a path we can catch with onError or just unknown
-      return '/summoner-spells/unknown.png';
-    }
+    if (!spellName) return '/summoner-spells/unknown.png';
     return `/summoner-spells/${spellName}.png`;
   };
 
@@ -111,7 +96,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
 
   const getRuneIconPath = (perkId) => {
     const runeMap = {
-
       8100: 'Domination/7200_Domination', 8112: 'Domination/Electrocute',
       8128: 'Domination/DarkHarvest', 9923: 'Domination/HailOfBlades',
       8126: 'Domination/CheapShot', 8139: 'Domination/GreenTerror_TasteOfBlood',
@@ -119,26 +103,22 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
       8140: 'Domination/GrislyMementos', 8141: 'Domination/DeepWard',
       8135: 'Domination/TreasureHunter', 8105: 'Domination/RelentlessHunter',
       8106: 'Domination/UltimateHunter',
-
       8000: 'Precision/7201_Precision', 8005: 'Precision/PressTheAttack',
       8008: 'Precision/LethalTempoTemp', 8021: 'Precision/FleetFootwork',
       8010: 'Precision/Conqueror', 9101: 'Precision/AbsorbLife', 9111: 'Precision/Triumph',
       8009: 'Precision/PresenceOfMind', 9104: 'Precision/LegendAlacrity',
       9105: 'Precision/LegendHaste', 9103: 'Precision/LegendBloodline',
       8014: 'Precision/CoupDeGrace', 8017: 'Precision/CutDown', 8299: 'Precision/LastStand',
-
       8200: 'Sorcery/7202_Sorcery', 8214: 'Sorcery/SummonAery', 8229: 'Sorcery/ArcaneComet',
       8230: 'Sorcery/PhaseRush', 8224: 'Sorcery/Axiom_Arcanist', 8226: 'Sorcery/ManaflowBand',
       8275: 'Sorcery/NimbusCloak', 8210: 'Sorcery/Transcendence', 8234: 'Sorcery/CelerityTemp',
       8233: 'Sorcery/AbsoluteFocus', 8237: 'Sorcery/Scorch', 8232: 'Sorcery/Waterwalking',
       8236: 'Sorcery/GatheringStorm',
-
       8400: 'Resolve/7204_Resolve', 8437: 'Resolve/GraspOfTheUndying',
       8439: 'Resolve/VeteranAftershock', 8465: 'Resolve/Guardian',
       8446: 'Resolve/Demolish', 8463: 'Resolve/FontOfLife', 8401: 'Resolve/BonePlating',
       8429: 'Resolve/Conditioning', 8444: 'Resolve/SecondWind', 8473: 'Resolve/BonePlating',
       8451: 'Resolve/Overgrowth', 8453: 'Resolve/Revitalize', 8242: 'Resolve/Unflinching',
-
       8300: 'Inspiration/7203_Whimsy', 8351: 'Inspiration/GlacialAugment',
       8360: 'Inspiration/UnsealedSpellbook', 8369: 'Inspiration/FirstStrike',
       8306: 'Inspiration/HextechFlashtraption', 8304: 'Inspiration/MagicalFootwear',
@@ -146,7 +126,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
       8352: 'Inspiration/TimeWarpTonic', 8345: 'Inspiration/BiscuitDelivery',
       8347: 'Inspiration/CosmicInsight', 8410: 'Inspiration/ApproachVelocity',
       8316: 'Inspiration/JackofAllTrades2',
-
       5001: 'stat-modifiers/StatModsHealthScalingIcon', 5005: 'stat-modifiers/StatModsAttackSpeedIcon',
       5007: 'stat-modifiers/StatModsCDRScalingIcon', 5008: 'stat-modifiers/StatModsAdaptiveForceIcon',
       5010: 'stat-modifiers/StatModsMovementSpeedIcon', 5011: 'stat-modifiers/StatModsHealthPlusIcon',
@@ -155,15 +134,12 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     return runeMap[perkId] ? `/runes/${runeMap[perkId]}.png` : '/runes/unknown.png';
   };
 
-
   const getAugmentIconPath = (iconPath) => {
     if (!iconPath) return "/runes/unknown.png";
     return `https://raw.communitydragon.org/latest/game/${iconPath.toLowerCase()}`;
   };
 
   const renderPlayerAugments = (player) => {
-    // Arena augments seem to be in playerAugment1-4. 
-    // Sometimes 0 is used for empty slots.
     const augments = [player.playerAugment1, player.playerAugment2, player.playerAugment3, player.playerAugment4].filter(id => id && id > 0);
     return (
       <div className="runes-container">
@@ -191,7 +167,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
       </div>
     );
   };
-
 
   const renderPlayerRunes = (player, key) => {
     if (!player.perks || !player.perks.styles) return null;
@@ -277,12 +252,12 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   const renderObjectives = (teamObjectives) => {
     if (!teamObjectives) return null;
     return (
-      <div className="flex flex-wrap gap-3">
+      <div className="mh-objectives">
         {Object.entries(teamObjectives).map(([key, val]) =>
           val > 0 && (
-            <div key={key} className="flex items-center gap-2 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
-              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{key}:</span>
-              <span className="text-[10px] font-black text-foreground">{val}</span>
+            <div key={key} className="mh-objective">
+              <span className="mh-objective-label">{key}:</span>
+              <span className="mh-objective-value">{val}</span>
             </div>
           )
         )}
@@ -314,45 +289,48 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     const itemsOrdered = [...normalItems, ...Array(6 - normalItems.length).fill(0)];
 
     return (
-      <div className={`flex items-center gap-3 p-2 rounded-xl border border-white/5 transition-colors ${isCurrent ? "bg-primary/10 border-primary/20" : "hover:bg-white/5"}`} key={p.puuid}>
-        <div className="relative flex-shrink-0">
+      <div className={`mh-player-row ${isCurrent ? "current" : ""}`} key={p.puuid}>
+        <div className="mh-player-champ-wrapper">
           <img
             src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[p.championId] || p.championName}.png`}
-            className="w-10 h-10 rounded-lg border border-white/10 shadow-lg"
+            className="mh-player-champ-icon"
             onError={(e) => (e.target.src = "/placeholder-champ.png")}
           />
-          <div className="absolute -bottom-1 -right-1 bg-black border border-white/20 text-[8px] font-black px-1 rounded-sm text-foreground/80">
+          <div className="mh-player-champ-level">
             {p.champLevel}
           </div>
         </div>
 
-        <div className="flex flex-col gap-0.5 min-w-[30px]">
-          <img src={getSummonerSpellPath(p.summoner1Id)} className="w-4 h-4 rounded-md brightness-110" onMouseEnter={(e) => handleItemEnter(p.summoner1Id, e)} onMouseLeave={handleItemLeave} />
-          <img src={getSummonerSpellPath(p.summoner2Id)} className="w-4 h-4 rounded-md brightness-110" onMouseEnter={(e) => handleItemEnter(p.summoner2Id, e)} onMouseLeave={handleItemLeave} />
+        <div className="mh-player-spells">
+          <img src={getSummonerSpellPath(p.summoner1Id)} className="mh-spell-icon" onMouseEnter={(e) => handleItemEnter(p.summoner1Id, e)} onMouseLeave={handleItemLeave} />
+          <img src={getSummonerSpellPath(p.summoner2Id)} className="mh-spell-icon" onMouseEnter={(e) => handleItemEnter(p.summoner2Id, e)} onMouseLeave={handleItemLeave} />
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className={`text-[11px] font-black truncate tracking-tight transition-colors ${!isCurrent ? "text-muted-foreground group-hover/row:text-foreground cursor-pointer" : "text-primary"}`} onClick={!isCurrent ? (e) => handlePlayerClick(p.riotId, e) : undefined}>
+        <div className="mh-player-info">
+          <div
+            className={`mh-player-name ${isCurrent ? "current" : "other"}`}
+            onClick={!isCurrent ? (e) => handlePlayerClick(p.riotId, e) : undefined}
+          >
             {p.riotId}
           </div>
-          <div className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">
+          <div className="mh-player-kda-text">
             {p.kills}/{p.deaths}/{p.assists}
           </div>
         </div>
 
-        <div className="flex gap-1">
+        <div className="mh-player-items">
           {itemsOrdered.map((id, i) => (
             id > 0 ? (
               <img
                 key={i}
                 src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${id}.png`}
-                className="w-6 h-6 rounded-md border border-white/5"
+                className="mh-player-item-icon"
                 onMouseEnter={(e) => handleItemEnter(id, e)}
                 onMouseMove={handleItemMove}
                 onMouseLeave={handleItemLeave}
               />
             ) : (
-              <div key={i} className="w-6 h-6 bg-white/5 rounded-md border border-white/5" />
+              <div key={i} className="mh-player-item-empty" />
             )
           ))}
         </div>
@@ -381,13 +359,13 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
       const suffix = num === 1 ? "st" : num === 2 ? "nd" : num === 3 ? "rd" : "th";
 
       return (
-        <div key={placement} className={`glass-panel p-4 rounded-2xl border transition-all ${isTopPlace ? "border-primary/30 bg-primary/5" : "border-white/5 bg-white/5"}`}>
-          <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
-            <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isTopPlace ? "text-primary" : "text-muted-foreground"}`}>
+        <div key={placement} className={`mh-arena-card glass-panel ${isTopPlace ? "top" : ""}`}>
+          <div className="mh-arena-header">
+            <span className={`mh-arena-place ${isTopPlace ? "top" : ""}`}>
               {num}{suffix} PLACE
             </span>
           </div>
-          <div className="space-y-2">
+          <div className="mh-players">
             {players.map((p) => renderPlayerRow(p, p.puuid === puuid, 1700))}
           </div>
         </div>
@@ -395,7 +373,7 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     };
 
     return (
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="mh-arena-grid">
         {sortedPlacements.map(placement => renderArenaTeamCard(placement, teamsByPlacement[placement]))}
       </div>
     );
@@ -414,94 +392,92 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     const isWin = player.win;
 
     return (
-      <div key={i} className={`group/match relative overflow-hidden rounded-3xl transition-all duration-500 border hover:shadow-2xl mb-4 ${isWin ? "border-green-500/30 bg-green-500/5 shadow-green-500/5 hover:border-green-500/50" : "border-red-500/30 bg-red-500/5 shadow-red-500/5 hover:border-red-500/50"}`}>
-        <div className="match-header p-5 cursor-pointer select-none" onClick={() => toggleMatch(i)}>
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            {/* Visual Indicator */}
-            <div className={`absolute left-0 top-0 bottom-0 w-1 ${isWin ? "bg-green-500" : "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]"}`} />
-
-            {/* Left: Champion & Result */}
-            <div className="flex items-center gap-4 min-w-[180px]">
-              <div className="relative">
+      <div key={i} className={`mh-card ${isWin ? "win" : "loss"}`}>
+        <div className={`mh-indicator ${isWin ? "win" : "loss"}`} />
+        <div className="mh-header" onClick={() => toggleMatch(i)}>
+          <div className="mh-header-content">
+            {/* Champion & Result */}
+            <div className="mh-champ-section">
+              <div className="mh-champ-wrapper">
                 <img
                   src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[player.championId] || player.championName}.png`}
-                  className={`w-16 h-16 rounded-2xl border-2 shadow-lg group-hover/match:scale-105 transition-transform duration-500 ${isWin ? "border-green-500/50" : "border-red-500/50"}`}
+                  className={`mh-champ-icon ${isWin ? "win" : "loss"}`}
                   onError={(e) => (e.target.src = "/placeholder-champ.png")}
                 />
-                <div className="absolute -bottom-2 -right-2 bg-background border border-border px-2 py-0.5 rounded-lg text-[9px] font-black italic tracking-widest text-foreground shadow-xl">
+                <div className="mh-champ-level">
                   {player.champLevel}
                 </div>
               </div>
               <div>
-                <div className={`text-xs font-black uppercase tracking-[0.2em] mb-0.5 ${isWin ? "text-green-400" : "text-red-400"}`}>
+                <div className={`mh-result-text ${isWin ? "win" : "loss"}`}>
                   {isArena ? `POS ${player.placement}` : (isWin ? "Victory" : "Defeat")}
                 </div>
-                <div className="font-display text-lg font-black text-foreground leading-none">{formatChampionName(player.championName)}</div>
-                <div className="text-[10px] text-muted-foreground/60 font-bold mt-1 uppercase tracking-widest leading-none">{timeAgo}</div>
+                <div className="mh-champ-name">{formatChampionName(player.championName)}</div>
+                <div className="mh-time-ago">{timeAgo}</div>
               </div>
             </div>
 
-            {/* Middle: Stats */}
-            <div className="flex flex-1 items-center justify-around gap-4">
-              <div className="text-center">
-                <div className="font-display text-2xl font-black text-foreground tracking-tight leading-none mb-1">
-                  {player.kills} <span className="opacity-20 text-sm">/</span> <span className="text-red-400">{player.deaths}</span> <span className="opacity-20 text-sm">/</span> {player.assists}
+            {/* Stats */}
+            <div className="mh-stats">
+              <div className="mh-kda">
+                <div className="mh-kda-numbers">
+                  {player.kills} <span className="separator">/</span> <span className="deaths">{player.deaths}</span> <span className="separator">/</span> {player.assists}
                 </div>
-                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{kdaRatio} KDA</div>
+                <div className="mh-kda-ratio">{kdaRatio} KDA</div>
               </div>
 
-              <div className="hidden lg:flex flex-col items-center gap-1">
-                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{getGameMode(match.queueId)}</div>
-                <div className="text-sm font-bold opacity-60 italic tabular-nums">
+              <div className="mh-game-info">
+                <div className="mh-queue-mode">{getGameMode(match.queueId)}</div>
+                <div className="mh-duration">
                   {Math.floor(match.gameDuration / 60)}:{(match.gameDuration % 60).toString().padStart(2, "0")}
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1 max-w-[160px] justify-center">
+              <div className="mh-items">
                 {[0, 1, 2, 3, 4, 5, 6].map((idx) => {
                   const itemId = player[`item${idx}`];
                   return itemId > 0 ? (
                     <img
                       key={idx}
                       src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${itemId}.png`}
-                      className="w-8 h-8 rounded-lg border border-white/5 hover:scale-110 transition-transform cursor-help"
+                      className="mh-item-icon"
                       onMouseEnter={(e) => handleItemEnter(itemId, e)}
                       onMouseMove={handleItemMove}
                       onMouseLeave={handleItemLeave}
                     />
                   ) : (
-                    <div key={idx} className="w-8 h-8 rounded-lg bg-black/20 border border-white/5" />
+                    <div key={idx} className="mh-item-empty" />
                   );
                 })}
               </div>
             </div>
 
-            {/* Right: Toggle Button */}
-            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${isWin ? "bg-green-500/20 border-green-500/20 text-green-400" : "bg-red-500/20 border-red-500/20 text-red-400"}`}>
-              <span className={`text-lg font-black transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}>▼</span>
+            {/* Toggle */}
+            <div className={`mh-toggle ${isWin ? "win" : "loss"}`}>
+              <span className={`mh-toggle-arrow ${expanded ? "expanded" : ""}`}>▼</span>
             </div>
           </div>
         </div>
 
         {expanded && (
-          <div className="px-5 pb-5 border-t border-white/5 pt-5 animate-in slide-in-from-top-4 duration-300">
+          <div className="mh-details">
             {isArena ? renderArenaMatchDetails(match) : (
-              <div className="grid lg:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 px-2 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-cyan-400" />
-                    <h5 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Blue Team</h5>
+              <div className="mh-teams-grid">
+                <div className="mh-team">
+                  <div className="mh-team-header">
+                    <div className="mh-team-dot blue" />
+                    <h5 className="mh-team-name blue">Blue Team</h5>
                   </div>
-                  <div className="space-y-2">
+                  <div className="mh-players">
                     {blue.map((p) => renderPlayerRow(p, p.puuid === puuid, match.queueId))}
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 px-2 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-red-400" />
-                    <h5 className="text-[10px] font-black text-red-400 uppercase tracking-widest">Red Team</h5>
+                <div className="mh-team">
+                  <div className="mh-team-header">
+                    <div className="mh-team-dot red" />
+                    <h5 className="mh-team-name red">Red Team</h5>
                   </div>
-                  <div className="space-y-2">
+                  <div className="mh-players">
                     {red.map((p) => renderPlayerRow(p, p.puuid === puuid, match.queueId))}
                   </div>
                 </div>
@@ -521,22 +497,20 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   const filteredMatches = matches.filter(match => {
     const player = match.players.find(p => p.puuid === puuid);
     if (!player) return false;
-
     const champMatch = filterChampion === "all" || player.championName === filterChampion;
     const queueMatch = filterQueue === "all" || match.queueId.toString() === filterQueue;
-
     return champMatch && queueMatch;
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-6 bg-secondary/30 p-5 rounded-2xl border border-white/10 mb-8 backdrop-blur-md">
-        <div className="flex flex-col gap-2 min-w-[200px]">
-          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Champion</label>
-          <div className="relative group/select">
+    <div className="match-history">
+      <div className="mh-filters">
+        <div className="mh-filter-group">
+          <label className="mh-filter-label">Champion</label>
+          <div className="mh-select-wrapper">
             <input
               type="text"
-              className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold text-foreground placeholder:text-muted-foreground/30 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
+              className="mh-filter-input"
               placeholder="Search champion..."
               value={isDropdownOpen ? searchQuery : (filterChampion === "all" ? "All Champions" : formatChampionName(filterChampion))}
               onChange={(e) => {
@@ -551,9 +525,9 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
               onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
             />
             {isDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-secondary border border-white/10 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+              <div className="mh-dropdown custom-scrollbar">
                 <div
-                  className="px-4 py-3 hover:bg-white/5 cursor-pointer text-sm font-bold border-b border-white/5"
+                  className="mh-dropdown-item"
                   onClick={() => {
                     setFilterChampion("all");
                     setIsDropdownOpen(false);
@@ -567,7 +541,7 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
                   .map(champ => (
                     <div
                       key={champ}
-                      className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 border-b border-white/5 last:border-0"
+                      className="mh-dropdown-item"
                       onClick={() => {
                         setFilterChampion(champ);
                         setIsDropdownOpen(false);
@@ -577,10 +551,9 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
                       <img
                         src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[champNameToId?.[champ]] || champ}.png`}
                         alt={champ}
-                        className="w-6 h-6 rounded-md"
                         onError={(e) => (e.target.src = "/placeholder-champ.png")}
                       />
-                      <span className="text-sm font-bold">{formatChampionName(champ)}</span>
+                      <span>{formatChampionName(champ)}</span>
                     </div>
                   ))}
               </div>
@@ -588,26 +561,26 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 min-w-[180px]">
-          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Queue</label>
-          <div className="relative group/select">
+        <div className="mh-filter-group" style={{ minWidth: '11.25rem' }}>
+          <label className="mh-filter-label">Queue</label>
+          <div className="mh-select-wrapper">
             <select
               value={filterQueue}
               onChange={(e) => setFilterQueue(e.target.value)}
-              className="w-full bg-background/50 border border-white/10 rounded-xl pl-4 pr-10 py-2.5 text-sm font-bold text-foreground focus:border-primary/50 outline-none appearance-none cursor-pointer transition-all"
+              className="mh-filter-select"
             >
-              <option value="all" className="bg-neutral-900">All Queues</option>
-              <option value="420" className="bg-neutral-900">Solo/Duo</option>
-              <option value="440" className="bg-neutral-900">Flex</option>
-              <option value="450" className="bg-neutral-900">ARAM</option>
-              <option value="2400" className="bg-neutral-900">Aram Mayhem</option>
-              <option value="900" className="bg-neutral-900">URF</option>
-              <option value="480" className="bg-neutral-900">Swiftplay</option>
-              <option value="400" className="bg-neutral-900">Draft</option>
-              <option value="1700" className="bg-neutral-900">Arena</option>
+              <option value="all">All Queues</option>
+              <option value="420">Solo/Duo</option>
+              <option value="440">Flex</option>
+              <option value="450">ARAM</option>
+              <option value="2400">Aram Mayhem</option>
+              <option value="900">URF</option>
+              <option value="480">Swiftplay</option>
+              <option value="400">Draft</option>
+              <option value="1700">Arena</option>
             </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground/30 group-hover/select:text-primary transition-colors">
-              <ChevronDown className="w-4 h-4" />
+            <div className="mh-select-chevron">
+              <ChevronDown />
             </div>
           </div>
         </div>
@@ -617,11 +590,11 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
         filteredMatches.length > 0 ? (
           filteredMatches.map((m, i) => renderMatch(m, i))
         ) : (
-          <p className="text-center unranked">No matches found matching filters</p>
+          <p className="mh-empty">No matches found matching filters</p>
         )
       }
 
       {hoveredItem && <ItemTooltip item={hoveredItem} position={tooltipPos} version={currentVersion} />}
-    </div >
+    </div>
   );
 }

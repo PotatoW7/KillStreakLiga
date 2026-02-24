@@ -1,0 +1,602 @@
+/* ===== NAVIGATION & APP LAYOUT ===== */
+
+/* ===== APP ROOT ===== */
+.app-root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    position: relative;
+}
+
+/* ===== HEADER / NAVBAR ===== */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    border-bottom: 1px solid hsl(var(--border) / 0.4);
+    background: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    transition: all 0.3s ease;
+}
+
+@supports (backdrop-filter: blur(1px)) {
+    .app-header {
+        background: hsl(var(--background) / 0.6);
+    }
+}
+
+.header-inner {
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    height: 5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+/* ===== LOGO ===== */
+.logo-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all var(--transition-base);
+}
+
+.logo-icon-box {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: hsl(var(--primary) / 0.1);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid hsl(var(--primary) / 0.2);
+    transition: all 0.3s ease;
+}
+
+.logo-link:hover .logo-icon-box {
+    border-color: hsl(var(--primary) / 0.5);
+    transform: scale(1.1);
+}
+
+.logo-diamond {
+    width: 1.25rem;
+    height: 1.25rem;
+    background: var(--color-primary);
+    border-radius: 0.125rem;
+    transform: rotate(45deg);
+    transition: transform 0.5s ease;
+}
+
+.logo-link:hover .logo-diamond {
+    transform: rotate(90deg);
+}
+
+.logo-text {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.5rem;
+    letter-spacing: -0.05em;
+    color: var(--color-foreground);
+    transition: color var(--transition-base);
+}
+
+.logo-link:hover .logo-text {
+    color: var(--color-primary);
+}
+
+/* ===== NAV ACTIONS AREA ===== */
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .nav-actions {
+        gap: 2rem;
+    }
+}
+
+/* ===== DESKTOP NAVIGATION ===== */
+.desktop-nav {
+    display: none;
+    align-items: center;
+    gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+    .desktop-nav {
+        display: flex;
+    }
+}
+
+/* ===== NAV LINK ===== */
+.nav-link {
+    font-size: 0.875rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    transition: all var(--transition-base);
+    color: var(--color-muted-foreground);
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--color-primary);
+}
+
+/* ===== LOGIN BUTTON (DESKTOP) ===== */
+.login-btn-desktop {
+    padding: 0.625rem 1.5rem;
+    border-radius: 9999px;
+    background: var(--color-secondary);
+    color: var(--color-foreground);
+    font-weight: 700;
+    font-size: 0.875rem;
+    transition: all var(--transition-base);
+}
+
+.login-btn-desktop:hover {
+    background: var(--color-primary);
+    color: black;
+}
+
+/* ===== ADMIN/OWNER BADGE ===== */
+.admin-badge {
+    padding: 0.375rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--primary) / 0.3);
+    background: hsl(var(--primary) / 0.05);
+    color: var(--color-primary);
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all var(--transition-base);
+}
+
+.admin-badge:hover {
+    background: var(--color-primary);
+    color: black;
+}
+
+/* ===== USER ACTIONS (bell + profile) ===== */
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 1rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (min-width: 640px) {
+    .user-actions {
+        gap: 0.75rem;
+        padding-left: 1.5rem;
+    }
+}
+
+/* ===== NOTIFICATION BELL ===== */
+.notification-btn {
+    position: relative;
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    transition: all var(--transition-base);
+}
+
+.notification-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.notification-btn img {
+    width: 1.25rem;
+    height: 1.25rem;
+    object-fit: contain;
+    transition: all var(--transition-base);
+}
+
+.notification-btn:hover img {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(234, 179, 8, 0.4));
+}
+
+.notification-dot-wrapper {
+    position: absolute;
+    top: 0.375rem;
+    right: 0.375rem;
+    display: flex;
+    height: 0.5rem;
+    width: 0.5rem;
+}
+
+.notification-ping {
+    position: absolute;
+    display: inline-flex;
+    height: 100%;
+    width: 100%;
+    border-radius: 9999px;
+    background: var(--color-primary);
+    opacity: 0.75;
+    animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.notification-dot {
+    position: relative;
+    display: inline-flex;
+    border-radius: 9999px;
+    height: 0.5rem;
+    width: 0.5rem;
+    background: var(--color-primary);
+    box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
+}
+
+/* ===== DIVIDER ===== */
+.header-divider {
+    width: 1px;
+    height: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* ===== PROFILE DROPDOWN ===== */
+.profile-btn-wrapper {
+    position: relative;
+}
+
+.profile-btn {
+    position: relative;
+    padding: 0.125rem;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.profile-btn:hover {
+    border-color: hsl(var(--primary) / 0.5);
+}
+
+.profile-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    object-fit: cover;
+}
+
+@media (min-width: 640px) {
+    .profile-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+}
+
+.online-indicator {
+    position: absolute;
+    bottom: -0.125rem;
+    right: -0.125rem;
+    width: 0.625rem;
+    height: 0.625rem;
+    background: #22c55e;
+    border: 2px solid var(--color-background);
+    border-radius: 9999px;
+}
+
+.profile-dropdown {
+    position: absolute;
+    right: 0;
+    margin-top: 1rem;
+    width: 14rem;
+    border-radius: 1rem;
+    padding: 0.75rem 0;
+    z-index: 70;
+    animation: zoomIn95 0.2s ease-out forwards;
+}
+
+.profile-dropdown-item {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1.25rem;
+    font-weight: 700;
+    transition: all var(--transition-base);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.profile-dropdown-item:hover {
+    background: var(--color-primary);
+    color: black;
+}
+
+.profile-dropdown-item.danger:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.dropdown-item-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 9999px;
+    background: var(--color-primary);
+}
+
+.dropdown-item-dot.danger {
+    background: #ef4444;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+    margin: 0.25rem 0.75rem;
+}
+
+/* ===== MOBILE LOGIN BUTTON ===== */
+.mobile-login-btn {
+    display: flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: hsl(var(--primary) / 0.1);
+    border: 1px solid hsl(var(--primary) / 0.2);
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+}
+
+.mobile-login-btn:hover {
+    background: var(--color-primary);
+    color: black;
+}
+
+.mobile-login-btn:active {
+    transform: scale(0.95);
+}
+
+.mobile-login-btn span {
+    font-size: 0.875rem;
+    font-weight: 900;
+    font-style: italic;
+}
+
+@media (min-width: 1024px) {
+    .mobile-login-btn {
+        display: none;
+    }
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.page-content {
+    flex-grow: 1;
+}
+
+/* ===== FLOATING CHAT BUTTON ===== */
+.social-chat-trigger {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 3rem;
+    z-index: 60;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-2xl);
+    overflow: hidden;
+    animation: slideInFromRight 0.7s ease-out forwards;
+    background: var(--color-primary);
+    color: black;
+}
+
+.social-chat-trigger:hover {
+    background: white;
+    box-shadow: 0 0 30px rgba(234, 179, 8, 0.2);
+}
+
+.social-chat-trigger.active {
+    background: white;
+    color: black;
+}
+
+.social-chat-trigger .btn-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.social-chat-trigger:hover .btn-overlay {
+    opacity: 1;
+}
+
+.social-chat-trigger img {
+    width: 1.5rem;
+    height: 1.5rem;
+    object-fit: contain;
+    transition: all 0.5s ease;
+}
+
+.social-chat-trigger:hover img {
+    transform: scale(1.1);
+}
+
+.unread-badge {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    background: #ef4444;
+    color: white;
+    font-size: 0.5625rem;
+    font-weight: 900;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    border: 2px solid var(--color-primary);
+    animation: bounce 1s infinite;
+}
+
+/* ===== SOCIAL PANEL (SLIDE-IN) ===== */
+.social-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 55;
+    width: 100%;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 768px) {
+    .social-panel {
+        width: 24rem;
+    }
+}
+
+.social-panel.open {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* ===== SOCIAL PANEL HEADER ===== */
+.social-panel-header {
+    padding: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.social-panel-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.social-panel-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.25rem;
+    letter-spacing: -0.025em;
+    text-transform: uppercase;
+    font-style: italic;
+    color: white;
+}
+
+.social-panel-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.social-panel-status-bar {
+    width: 0.25rem;
+    height: 0.75rem;
+    background: hsl(var(--primary) / 0.4);
+    border-radius: 9999px;
+}
+
+.social-panel-status-text {
+    font-size: 0.5625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: hsl(var(--primary) / 0.4);
+}
+
+/* ===== SOCIAL PANEL CLOSE BUTTON ===== */
+.social-panel-close {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    transition: all var(--transition-base);
+}
+
+.social-panel-close:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.social-panel-close:active {
+    transform: scale(0.9);
+}
+
+.close-icon {
+    width: 1rem;
+    height: 1rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-icon-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: var(--color-muted-foreground);
+    opacity: 0.5;
+    transition: color var(--transition-base);
+}
+
+.close-icon-line:first-child {
+    transform: rotate(45deg);
+}
+
+.close-icon-line:last-child {
+    transform: rotate(-45deg);
+}
+
+.social-panel-close:hover .close-icon-line {
+    background: var(--color-primary);
+}
+
+/* ===== SOCIAL PANEL BODY ===== */
+.social-panel-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.social-panel-body-glow {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 16rem;
+    height: 16rem;
+    background: hsl(var(--primary) / 0.05);
+    border-radius: 9999px;
+    filter: blur(48px);
+    margin-right: -8rem;
+    margin-top: -8rem;
+    opacity: 0.3;
+    pointer-events: none;
+}

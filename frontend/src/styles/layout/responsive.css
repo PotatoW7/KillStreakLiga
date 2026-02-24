@@ -1,0 +1,28 @@
+/* ===== RESPONSIVE / LAYOUT OVERRIDES ===== */
+/* Shared responsive utilities that apply across multiple components */
+
+/* Hidden below breakpoint */
+@media (max-width: 1023px) {
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+@media (max-width: 767px) {
+    .tablet-only {
+        display: none !important;
+    }
+}
+
+/* Hidden above breakpoint */
+@media (min-width: 1024px) {
+    .mobile-only {
+        display: none !important;
+    }
+}
+
+@media (min-width: 768px) {
+    .phone-only {
+        display: none !important;
+    }
+}

@@ -1,0 +1,130 @@
+/* ===== RANKED INFO STYLES ===== */
+
+.ranked-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+/* Unranked Card */
+.ranked-card-empty {
+    background: hsl(var(--secondary) / 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1.25rem;
+    border-radius: 1rem;
+}
+
+.ranked-queue-label {
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: var(--color-muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.25rem;
+}
+
+.ranked-unranked {
+    font-size: 0.875rem;
+    font-weight: 700;
+    opacity: 0.2;
+    font-style: italic;
+}
+
+/* Ranked Card */
+.ranked-card {
+    background: hsl(var(--secondary) / 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.25rem;
+    border-radius: 1rem;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.ranked-card:hover {
+    border-color: hsl(var(--primary) / 0.3);
+}
+
+.ranked-card-glow {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8rem;
+    height: 8rem;
+    background: hsl(var(--primary) / 0.05);
+    border-radius: 9999px;
+    filter: blur(48px);
+    margin-right: -4rem;
+    margin-top: -4rem;
+    transition: background var(--transition-base);
+}
+
+.ranked-card:hover .ranked-card-glow {
+    background: hsl(var(--primary) / 0.1);
+}
+
+.ranked-card-content {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    position: relative;
+    z-index: 10;
+}
+
+.ranked-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    transition: transform 0.5s ease;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.ranked-card:hover .ranked-icon {
+    transform: scale(1.1);
+}
+
+.ranked-info {
+    flex: 1;
+}
+
+.ranked-queue-label-sm {
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: hsl(var(--muted-foreground) / 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.25rem;
+}
+
+.ranked-tier {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--color-primary);
+    line-height: 1.1;
+}
+
+.ranked-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: hsl(var(--foreground) / 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.ranked-stats-dot {
+    width: 0.25rem;
+    height: 0.25rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.winrate-positive {
+    color: #4ade80;
+}
+
+.winrate-negative {
+    color: #f87171;
+}

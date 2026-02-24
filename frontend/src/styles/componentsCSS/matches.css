@@ -1,0 +1,728 @@
+/* ===== MATCH HISTORY STYLES ===== */
+
+/* Container */
+.match-history {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Filter Bar */
+.mh-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+    background: hsl(var(--secondary) / 0.3);
+    padding: 1.25rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 2rem;
+    backdrop-filter: blur(12px);
+}
+
+.mh-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 12.5rem;
+}
+
+.mh-filter-label {
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: var(--color-muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-left: 0.25rem;
+}
+
+.mh-filter-input {
+    width: 100%;
+    background: hsl(var(--background) / 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-foreground);
+    outline: none;
+    transition: all var(--transition-base);
+}
+
+.mh-filter-input::placeholder {
+    color: hsl(var(--muted-foreground) / 0.3);
+}
+
+.mh-filter-input:focus {
+    border-color: hsl(var(--primary) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+}
+
+.mh-select-wrapper {
+    position: relative;
+}
+
+.mh-filter-select {
+    width: 100%;
+    background: hsl(var(--background) / 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.625rem 2.5rem 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-foreground);
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.mh-filter-select:focus {
+    border-color: hsl(var(--primary) / 0.5);
+}
+
+.mh-filter-select option {
+    background: #171717;
+}
+
+.mh-select-chevron {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: hsl(var(--muted-foreground) / 0.3);
+    transition: color var(--transition-base);
+}
+
+.mh-select-wrapper:hover .mh-select-chevron {
+    color: var(--color-primary);
+}
+
+.mh-select-chevron svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Dropdown */
+.mh-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.5rem;
+    background: var(--color-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-2xl);
+    z-index: 50;
+    max-height: 15rem;
+    overflow-y: auto;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.mh-dropdown-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background var(--transition-base);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.mh-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.mh-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mh-dropdown-item img {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.375rem;
+}
+
+/* Match Card */
+.mh-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.5rem;
+    transition: all 0.5s;
+    border: 1px solid;
+    margin-bottom: 1rem;
+}
+
+.mh-card:hover {
+    box-shadow: var(--shadow-2xl);
+}
+
+.mh-card.win {
+    border-color: rgba(34, 197, 94, 0.3);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.mh-card.win:hover {
+    border-color: rgba(34, 197, 94, 0.5);
+}
+
+.mh-card.loss {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.mh-card.loss:hover {
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Side Indicator */
+.mh-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0.25rem;
+}
+
+.mh-indicator.win {
+    background: #22c55e;
+}
+
+.mh-indicator.loss {
+    background: #ef4444;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+/* Match Header */
+.mh-header {
+    padding: 1.25rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.mh-header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .mh-header-content {
+        flex-direction: row;
+    }
+}
+
+/* Champion Section */
+.mh-champ-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 11.25rem;
+}
+
+.mh-champ-wrapper {
+    position: relative;
+}
+
+.mh-champ-icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1rem;
+    border: 2px solid;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.5s;
+}
+
+.mh-card:hover .mh-champ-icon {
+    transform: scale(1.05);
+}
+
+.mh-champ-icon.win {
+    border-color: rgba(34, 197, 94, 0.5);
+}
+
+.mh-champ-icon.loss {
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.mh-champ-level {
+    position: absolute;
+    bottom: -0.5rem;
+    right: -0.5rem;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.5625rem;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 0.1em;
+    color: hsl(var(--foreground) / 0.8);
+    box-shadow: var(--shadow-xl);
+}
+
+.mh-result-text {
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.125rem;
+}
+
+.mh-result-text.win {
+    color: #4ade80;
+}
+
+.mh-result-text.loss {
+    color: #f87171;
+}
+
+.mh-champ-name {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 900;
+    color: var(--color-foreground);
+    line-height: 1;
+}
+
+.mh-time-ago {
+    font-size: 0.625rem;
+    color: hsl(var(--muted-foreground) / 0.6);
+    font-weight: 700;
+    margin-top: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    line-height: 1;
+}
+
+/* Stats */
+.mh-stats {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: space-around;
+    gap: 1rem;
+}
+
+.mh-kda {
+    text-align: center;
+}
+
+.mh-kda-numbers {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--color-foreground);
+    letter-spacing: -0.025em;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.mh-kda-numbers .separator {
+    opacity: 0.2;
+    font-size: 0.875rem;
+}
+
+.mh-kda-numbers .deaths {
+    color: #f87171;
+}
+
+.mh-kda-ratio {
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: var(--color-muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+}
+
+/* Game Info */
+.mh-game-info {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+@media (min-width: 1024px) {
+    .mh-game-info {
+        display: flex;
+    }
+}
+
+.mh-queue-mode {
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: var(--color-muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.25rem;
+}
+
+.mh-duration {
+    font-size: 0.875rem;
+    font-weight: 700;
+    opacity: 0.6;
+    font-style: italic;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Items */
+.mh-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    max-width: 10rem;
+    justify-content: center;
+}
+
+.mh-item-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform var(--transition-base);
+    cursor: help;
+}
+
+.mh-item-icon:hover {
+    transform: scale(1.1);
+}
+
+.mh-item-empty {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Toggle Button */
+.mh-toggle {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+}
+
+.mh-toggle.win {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.mh-toggle.loss {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.mh-toggle-arrow {
+    font-size: 1.125rem;
+    font-weight: 900;
+    transition: transform 0.3s;
+}
+
+.mh-toggle-arrow.expanded {
+    transform: rotate(180deg);
+}
+
+/* Expanded Details */
+.mh-details {
+    padding: 0 1.25rem 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 1.25rem;
+    animation: slideInFromTop 0.3s ease-out;
+}
+
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-1rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mh-teams-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .mh-teams-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.mh-team {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mh-team-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.mh-team-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+}
+
+.mh-team-dot.blue {
+    background: #22d3ee;
+}
+
+.mh-team-dot.red {
+    background: #f87171;
+}
+
+.mh-team-name {
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.mh-team-name.blue {
+    color: #22d3ee;
+}
+
+.mh-team-name.red {
+    color: #f87171;
+}
+
+.mh-players {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Player Row */
+.mh-player-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background var(--transition-base);
+}
+
+.mh-player-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mh-player-row.current {
+    background: hsl(var(--primary) / 0.1);
+    border-color: hsl(var(--primary) / 0.2);
+}
+
+.mh-player-champ-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.mh-player-champ-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-lg);
+}
+
+.mh-player-champ-level {
+    position: absolute;
+    bottom: -0.25rem;
+    right: -0.25rem;
+    background: black;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 0.5rem;
+    font-weight: 900;
+    padding: 0 0.25rem;
+    border-radius: 0.125rem;
+    color: hsl(var(--foreground) / 0.8);
+}
+
+/* Spells */
+.mh-player-spells {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 1.875rem;
+}
+
+.mh-spell-icon {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 0.375rem;
+    filter: brightness(1.1);
+}
+
+/* Player Info */
+.mh-player-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.mh-player-name {
+    font-size: 0.6875rem;
+    font-weight: 900;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: -0.025em;
+    transition: color var(--transition-base);
+}
+
+.mh-player-name.current {
+    color: var(--color-primary);
+}
+
+.mh-player-name.other {
+    color: var(--color-muted-foreground);
+    cursor: pointer;
+}
+
+.mh-player-name.other:hover {
+    color: var(--color-foreground);
+}
+
+.mh-player-kda-text {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: hsl(var(--muted-foreground) / 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    line-height: 1;
+}
+
+/* Player Items */
+.mh-player-items {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.mh-player-item-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mh-player-item-empty {
+    width: 1.5rem;
+    height: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.375rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Arena */
+.mh-arena-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .mh-arena-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.mh-arena-card {
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px solid;
+    transition: all var(--transition-base);
+}
+
+.mh-arena-card.top {
+    border-color: hsl(var(--primary) / 0.3);
+    background: hsl(var(--primary) / 0.05);
+}
+
+.mh-arena-card:not(.top) {
+    border-color: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mh-arena-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 0.5rem;
+}
+
+.mh-arena-place {
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+}
+
+.mh-arena-place.top {
+    color: var(--color-primary);
+}
+
+.mh-arena-place:not(.top) {
+    color: var(--color-muted-foreground);
+}
+
+/* Objectives */
+.mh-objectives {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.mh-objective {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mh-objective-label {
+    font-size: 0.5625rem;
+    font-weight: 900;
+    color: var(--color-muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.mh-objective-value {
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: var(--color-foreground);
+}
+
+/* Empty */
+.mh-empty {
+    text-align: center;
+    color: var(--color-muted-foreground);
+    padding: 2rem 0;
+}

@@ -1,0 +1,658 @@
+/* ===== CHAMPIONS MANAGEMENT STYLES ===== */
+
+.champions-page {
+    min-height: 100vh;
+    padding: 6rem 1rem 4rem;
+    background: transparent;
+}
+
+.champions-container {
+    max-width: 80rem;
+    /* 1280px */
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Header Section */
+.champions-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .champions-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+}
+
+.header-content h1 {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: white;
+    text-transform: uppercase;
+    font-style: italic;
+    letter-spacing: -0.025em;
+    background: linear-gradient(to right, white, rgba(255, 255, 255, 0.4));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header-content p {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 0.25rem;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 0.375rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.role-badge.owner {
+    background: rgba(234, 179, 8, 0.1);
+    color: var(--color-primary);
+    border: 1px solid rgba(234, 179, 8, 0.2);
+}
+
+.role-badge.admin {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.role-badge.coach {
+    background: rgba(168, 85, 247, 0.1);
+    color: #a855f7;
+    border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+/* Status Messages */
+.status-msg {
+    padding: 1rem 1.5rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    animation: slideIn 0.3s ease-out;
+}
+
+.status-msg.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.status-msg.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Priority Legend */
+.priority-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1.25rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.legend-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+}
+
+.legend-item.main span:nth-child(2) {
+    color: var(--color-primary);
+}
+
+.legend-item.main .legend-dot {
+    background: var(--color-primary);
+    box-shadow: 0 0 8px rgba(234, 179, 8, 0.4);
+}
+
+.legend-item.secondary span:nth-child(2) {
+    color: #3b82f6;
+}
+
+.legend-item.secondary .legend-dot {
+    background: #3b82f6;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.legend-item.offmeta span:nth-child(2) {
+    color: #a855f7;
+}
+
+.legend-item.offmeta .legend-dot {
+    background: #a855f7;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+}
+
+.legend-priority {
+    font-size: 0.625rem;
+    color: rgba(255, 255, 255, 0.2);
+    margin-left: -0.25rem;
+}
+
+/* Layout Grid */
+.champions-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+    .champions-layout {
+        grid-template-columns: 1fr 24rem;
+    }
+}
+
+/* List Panel */
+.champions-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+    .champions-toolbar {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+.champion-search {
+    flex: 1;
+    max-width: 24rem;
+    height: 3.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 0 1.25rem;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 700;
+    outline: none;
+    transition: all var(--transition-base);
+}
+
+.champion-search:focus {
+    border-color: hsl(var(--primary) / 0.5);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.role-filters {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.375rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.filter-btn {
+    height: 2.75rem;
+    min-width: 2.75rem;
+    padding: 0 0.75rem;
+    border-radius: 0.75rem;
+    font-weight: 900;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    transition: all var(--transition-base);
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.filter-btn.active {
+    background: var(--color-primary);
+    color: black;
+}
+
+.filter-role-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    filter: brightness(0) saturate(100%) invert(0%);
+}
+
+.filter-btn:not(.active) .filter-role-icon {
+    filter: brightness(0) saturate(100%) invert(100%) opacity(40%);
+}
+
+.filter-btn:hover:not(.active) .filter-role-icon {
+    filter: brightness(0) saturate(100%) invert(100%) opacity(100%);
+}
+
+.unset-filter.active {
+    background: #ef4444;
+    color: white;
+}
+
+/* Champions Grid */
+.champions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    gap: 1rem;
+}
+
+.champion-card {
+    aspect-ratio: 1/1.1;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1.5rem;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.champion-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-0.25rem);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.champion-card.selected {
+    background: hsl(var(--primary) / 0.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.1);
+}
+
+.champion-icon {
+    width: 100%;
+    aspect-ratio: 1/1;
+    border-radius: 1rem;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: border var(--transition-base);
+}
+
+.champion-card.selected .champion-icon {
+    border-color: var(--color-primary);
+}
+
+.champion-name {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+}
+
+.champion-card.selected .champion-name {
+    color: white;
+}
+
+.status-indicator {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+}
+
+.status-indicator.configured {
+    background: var(--color-primary);
+    box-shadow: 0 0 8px var(--color-primary);
+}
+
+.status-indicator.partial {
+    background: #3b82f6;
+    box-shadow: 0 0 8px #3b82f6;
+}
+
+.status-indicator.unset {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.secondary-indicator {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    width: 1rem;
+    height: 1rem;
+    background: #3b82f6;
+    color: white;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.5rem;
+    font-weight: 900;
+}
+
+.champions-count {
+    margin-top: 2rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    text-align: center;
+}
+
+/* Assignment Panel */
+.role-assignment-panel {
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    position: sticky;
+    top: 6.5rem;
+    height: fit-content;
+    opacity: 0.5;
+}
+
+.role-assignment-panel.active {
+    opacity: 1;
+}
+
+.assignment-header {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.assignment-champ-icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1rem;
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 0 15px hsl(var(--primary) / 0.2);
+}
+
+.assignment-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: white;
+    text-transform: uppercase;
+    font-style: italic;
+    letter-spacing: -0.025em;
+}
+
+.champ-id {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.2);
+}
+
+/* Role Tiers */
+.role-tiers {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.role-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 1rem;
+}
+
+.role-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.role-icon-small {
+    width: 1.25rem;
+    height: 1.25rem;
+    filter: brightness(0) saturate(100%) invert(100%);
+}
+
+.role-label span {
+    font-size: 0.8125rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: white;
+    font-style: italic;
+}
+
+.tier-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.tier-btn {
+    height: 2.25rem;
+    border-radius: 0.75rem;
+    font-size: 0.5625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.2);
+    border: 1px solid transparent;
+}
+
+.tier-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.tier-btn.active {
+    color: black;
+}
+
+.tier-btn.active.main {
+    background: var(--color-primary);
+    box-shadow: 0 0 12px hsl(var(--primary) / 0.2);
+}
+
+.tier-btn.active.secondary {
+    background: #3b82f6;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+.tier-btn.active.offmeta {
+    background: #a855f7;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.2);
+}
+
+/* Assignment Summary */
+.assignment-summary {
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.assignment-summary h4 {
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: rgba(255, 255, 255, 0.2);
+    margin-bottom: 1.25rem;
+}
+
+.summary-roles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.summary-tier {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tier-label {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    min-width: 4rem;
+}
+
+.summary-tier.main .tier-label {
+    color: var(--color-primary);
+}
+
+.summary-tier.secondary .tier-label {
+    color: #3b82f6;
+}
+
+.summary-tier.offmeta .tier-label {
+    color: #a855f7;
+}
+
+.role-tag {
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.5rem;
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.role-tag.main {
+    color: var(--color-primary);
+}
+
+.role-tag.secondary {
+    color: #3b82f6;
+}
+
+.role-tag.offmeta {
+    color: #a855f7;
+}
+
+.no-roles-msg {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.1);
+    text-transform: uppercase;
+    font-style: italic;
+}
+
+.save-roles-btn {
+    height: 3.5rem;
+    background: var(--color-primary);
+    color: black;
+    border-radius: 1rem;
+    font-weight: 900;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    box-shadow: 0 10px 30px -10px hsl(var(--primary) / 0.5);
+    font-style: italic;
+}
+
+.save-roles-btn:hover {
+    background: white;
+    transform: translateY(-0.125rem);
+}
+
+.save-roles-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Empty Area */
+.no-selection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.no-selection-icon {
+    width: 4rem;
+    height: 4rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 1.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.no-selection-icon::after {
+    content: '?';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.1);
+}
+
+.no-selection p {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 900;
+    color: white;
+    text-transform: uppercase;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+}
+
+.no-selection span {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+}

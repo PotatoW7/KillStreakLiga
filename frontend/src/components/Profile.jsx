@@ -14,6 +14,7 @@ import {
 import { fetchDDragon } from "../utils/fetchDDragon";
 import ProfilePosts from "./ProfilePosts";
 import { ChevronDown } from "lucide-react";
+import "../styles/componentsCSS/profile.css";
 
 const REGIONS = [
   { value: "na1", label: "NA" },
@@ -35,17 +36,15 @@ const REGIONS = [
 ];
 
 const RankedInfo = ({ rankedData }) => {
-  const getRankIcon = (tier) => tier ? `/rank-icons/Rank=${tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()}.png` : null;
-
   const getQueueData = (queueType) => {
     return rankedData?.find(queue => queue.queueType === queueType);
   };
 
   const renderRankCard = (queue, queueName) => {
     if (!queue) return (
-      <div className="bg-secondary/20 backdrop-blur-md rounded-2xl p-4 border border-white/5 flex flex-col justify-center min-w-[200px]">
-        <div className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-widest mb-1">{queueName}</div>
-        <div className="text-xs font-bold text-muted-foreground/30 italic">Unranked</div>
+      <div className="rank-card unranked-state">
+        <div className="rank-queue-name">{queueName}</div>
+        <div className="unranked-text">Unranked</div>
       </div>
     );
     const totalGames = queue.wins + queue.losses;
@@ -53,34 +52,34 @@ const RankedInfo = ({ rankedData }) => {
     const tierName = queue.tier.charAt(0) + queue.tier.slice(1).toLowerCase();
 
     return (
-      <div className="bg-secondary/40 backdrop-blur-md rounded-2xl p-6 border border-white/5 min-w-[280px] hover:border-primary/20 transition-all group/rank relative overflow-hidden">
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">{queueName}</div>
-          <div className={`text-[10px] font-black ${winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+      <div className="rank-card">
+        <div className="rank-card-header">
+          <div className="rank-queue-name">{queueName}</div>
+          <div className={`rank-wr ${winRate >= 50 ? 'positive' : 'negative'}`}>
             {winRate}% WR
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="rank-card-body">
           <img
             src={`/rank-icons/Rank=${tierName}.png`}
             alt={queue.tier}
-            className="w-16 h-16 group-hover/rank:scale-110 transition-transform duration-500"
+            className="rank-icon-large"
             onError={(e) => (e.target.src = "/rank-icons/Rank=Unranked.png")}
           />
           <div>
-            <div className="font-display text-2xl font-black text-primary leading-none mb-1">{queue.tier} {queue.rank}</div>
-            <div className="font-bold text-lg text-foreground">{queue.leaguePoints} LP</div>
+            <div className="rank-tier-text">{queue.tier} {queue.rank}</div>
+            <div className="rank-lp-text">{queue.leaguePoints} LP</div>
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+        <div className="rank-stats-row">
           <span>{queue.wins} Wins</span>
           <span>{queue.losses} Losses</span>
         </div>
-        <div className="mt-2 h-1 bg-white/5 rounded-full overflow-hidden" title={`${winRate}% Win Rate`}>
+        <div className="rank-progress-bg" title={`${winRate}% Win Rate`}>
           <div
-            className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000"
+            className="rank-progress-fill"
             style={{ width: `${winRate}%` }}
           />
         </div>
@@ -92,7 +91,7 @@ const RankedInfo = ({ rankedData }) => {
   const rankedFlex = getQueueData('RANKED_FLEX_SR');
 
   return (
-    <div className="flex flex-wrap gap-4 mt-6">
+    <div className="ranked-cards-row">
       {renderRankCard(rankedSolo, "Ranked Solo")}
       {renderRankCard(rankedFlex, "Ranked Flex")}
     </div>
@@ -257,8 +256,6 @@ function Profile() {
     }
   };
 
-
-
   const fetchUserPosts = (targetUserId, viewerId, isFriend) => {
     if (!targetUserId) return;
 
@@ -279,22 +276,13 @@ function Profile() {
         ...doc.data()
       }));
 
-
       const isOwn = viewerId === targetUserId;
 
       fetchedPosts = fetchedPosts.filter(post => {
-
         if (isOwn) return true;
-
-
         if (!post.visibility) return true;
-
-
         if (post.visibility === "public" || post.visibility === "profile-only") return true;
-
-
         if (post.visibility === "private" && isFriend) return true;
-
         return false;
       });
 
@@ -313,11 +301,6 @@ function Profile() {
       console.error("Error fetching posts:", error);
       setState(prev => ({ ...prev, loadingPosts: false }));
     });
-  };
-  const createFirestoreIndex = async () => {
-    console.log("To fix the posts query, create a Firestore composite index with:");
-    console.log("Collection: posts");
-    console.log("Fields: userId (Ascending), createdAt (Descending)");
   };
 
   useEffect(() => {
@@ -466,7 +449,6 @@ function Profile() {
     }
   };
 
-
   const validateRiotId = async (riotId, region) => {
     const parts = riotId.split('#');
     if (parts.length !== 2) throw new Error('Invalid Riot ID format. Use: name#tag');
@@ -578,7 +560,6 @@ function Profile() {
       const userRef = doc(db, "users", state.user.uid);
       await updateDoc(userRef, { emailVerificationSent: true, lastVerificationSent: new Date() });
 
-      setState(prev => ({ ...prev, emailVerificationSent: true, verificationLoading: false }));
       setState(prev => ({ ...prev, emailVerificationSent: true, verificationLoading: false }));
       showNotification("Verification email sent! Please check your inbox.", "success");
     } catch (error) {
@@ -693,7 +674,6 @@ function Profile() {
       });
 
       setState(prev => ({ ...prev, aboutMe: state.tempAbout, isEditingAbout: false }));
-      setState(prev => ({ ...prev, aboutMe: state.tempAbout, isEditingAbout: false }));
       showNotification("About me updated successfully!", "success");
     } catch (error) {
       console.error("Error updating about me:", error);
@@ -720,23 +700,8 @@ function Profile() {
     return date.toLocaleDateString();
   };
 
-  const formatPostTime = (timestamp) => {
-    if (!timestamp) return "Recently";
-
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    return date.toLocaleDateString();
-  };
-
   if (!state.profileData) return <div className="loading">Loading profile...</div>;
 
-  const displayUser = state.isOwnProfile ? state.user : { displayName: state.profileData?.username || "Anonymous User" };
   const displayEmail = state.isOwnProfile ? state.user?.email : null;
   const joinedDate = state.profileData?.createdAt ? new Date(state.profileData.createdAt.seconds * 1000) : new Date();
   const accountAgeDays = Math.floor((Date.now() - joinedDate) / 86400000);
@@ -745,76 +710,70 @@ function Profile() {
   const coachAppStatus = state.profileData?.coachApplication?.status;
 
   return (
-    <div className="min-h-screen py-12 px-4 animate-in fade-in duration-500">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-2">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <h2 className="font-display text-4xl font-black tracking-tight uppercase italic flex items-center gap-4">
-              <div className="w-2 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+    <div className="profile-page">
+      <div className="profile-max-width">
+        <div className="profile-header-row">
+          <div className="profile-header-left">
+            <h2 className="profile-title">
+              <div className="profile-title-bar" />
               {state.isOwnProfile ? "Profile Dashboard" : `${state.profileData.username || "Member"}`}
             </h2>
             {userRole !== "user" && (
-              <span className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl ${userRole === 'owner' ? 'bg-primary text-black' :
-                userRole === 'admin' ? 'bg-red-500 text-white' :
-                  'bg-blue-500 text-white'
-                }`}>
+              <span className={`role-tag-large ${userRole}`}>
                 {userRole.toUpperCase()}
               </span>
             )}
             {coachAppStatus === "pending" && state.isOwnProfile && (
-              <span className="px-4 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-black uppercase tracking-widest">Coach App Pending</span>
+              <span className="coach-pending-badge">Coach App Pending</span>
             )}
           </div>
 
           {!state.isOwnProfile && state.user && (
-            <button className="px-8 py-3 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-white transition-all active:scale-95 flex items-center gap-3">
-              <img src="/project-icons/Profile icons/follow icon.png" alt="" className="w-4 h-4 brightness-0" />
+            <button className="profile-follow-btn">
+              <img src="/project-icons/Profile icons/follow icon.png" alt="" />
               Follow
             </button>
           )}
         </div>
 
-
-
-        <div className="glass-panel p-8 rounded-3xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px]" />
+        <div className="profile-main-panel glass-panel">
+          <div className="profile-panel-glow" />
 
           {state.notification.visible && (
-            <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[70] px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-top duration-300 shadow-2xl ${state.notification.type === 'success' ? 'bg-green-500 text-black' : 'bg-red-500 text-white'
-              }`}>
+            <div className={`profile-notification ${state.notification.type}`}>
               {state.notification.message}
             </div>
           )}
 
           {state.isOwnProfile && (
-            <div className="absolute top-8 right-8 z-20">
+            <div className="profile-menu-container">
               <button
                 ref={hamburgerRef}
-                className="w-10 h-10 rounded-xl bg-secondary/50 border border-white/5 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-all group/ham"
+                className={`profile-hamburger ${state.menuOpen ? 'open' : ''}`}
                 onClick={() => setState(prev => ({ ...prev, menuOpen: !prev.menuOpen }))}
               >
-                <span className={`w-5 h-0.5 bg-muted-foreground transition-all ${state.menuOpen ? 'rotate-45 translate-y-1.5' : ''}`}></span>
-                <span className={`w-5 h-0.5 bg-muted-foreground transition-all ${state.menuOpen ? 'opacity-0' : ''}`}></span>
-                <span className={`w-5 h-0.5 bg-muted-foreground transition-all ${state.menuOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
+                <span />
+                <span />
+                <span />
               </button>
 
               {state.menuOpen && (
-                <div ref={menuRef} className="absolute right-0 mt-4 w-56 glass-panel rounded-2xl py-3 animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
+                <div ref={menuRef} className="profile-dropdown-menu">
                   <button
-                    className="w-full text-left px-5 py-3 hover:bg-primary hover:text-black font-bold transition-all text-sm flex items-center gap-3"
+                    className="menu-item"
                     onClick={() => setState(prev => ({ ...prev, menuOpen: false, accountInfoOpen: true }))}
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                    <div className="menu-item-dot" />
                     Account Info
                   </button>
                   {userRole !== 'admin' && userRole !== 'owner' &&
                     state.profileData?.adminApplication?.status !== 'pending' && (
                       <Link
                         to="/apply-admin"
-                        className="w-full text-left px-5 py-3 hover:bg-primary hover:text-black font-bold transition-all text-sm flex items-center gap-3"
+                        className="menu-item"
                         onClick={() => setState(prev => ({ ...prev, menuOpen: false }))}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                        <div className="menu-item-dot" />
                         Apply for Admin
                       </Link>
                     )}
@@ -826,9 +785,9 @@ function Profile() {
                         showDeleteConfirm: true
                       }));
                     }}
-                    className="w-full text-left px-5 py-3 hover:bg-red-500 hover:text-white font-bold transition-all text-sm flex items-center gap-3"
+                    className="menu-item danger"
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                    <div className="menu-item-dot" />
                     Delete Account
                   </button>
                 </div>
@@ -836,13 +795,13 @@ function Profile() {
             </div>
           )}
 
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-10">
-            <div className="relative group" ref={profileIconRef}>
-              <div className="absolute -inset-2 bg-primary/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+          <div className="profile-info-grid">
+            <div className="profile-avatar-container" ref={profileIconRef}>
+              <div className="avatar-hover-glow" />
               <img
                 src={currentProfileImage}
                 alt="Profile"
-                className="w-40 h-40 rounded-2xl border-4 border-secondary/50 shadow-2xl relative z-10 object-cover"
+                className="profile-main-avatar"
                 onContextMenu={state.isOwnProfile ? (e) => {
                   e.preventDefault();
                   const x = 160 + 10;
@@ -855,7 +814,7 @@ function Profile() {
               {state.isOwnProfile && state.contextMenuPosition && (
                 <div
                   ref={contextMenuRef}
-                  className="absolute left-[170px] top-0 z-[100] w-48 glass-panel rounded-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-left-4 duration-200 shadow-2xl"
+                  className="image-context-menu"
                 >
                   <button
                     onClick={() => {
@@ -863,7 +822,7 @@ function Profile() {
                       setState(prev => ({ ...prev, contextMenuPosition: null }));
                     }}
                     disabled={state.uploading}
-                    className="w-full text-left px-4 py-2.5 hover:bg-primary hover:text-black font-bold transition-all text-[10px] uppercase tracking-widest"
+                    className="image-menu-btn"
                   >
                     {state.uploading ? "Uploading..." : "Update Image"}
                   </button>
@@ -874,7 +833,7 @@ function Profile() {
                         setState(prev => ({ ...prev, contextMenuPosition: null }));
                         showNotification("Profile image removed!", "success");
                       }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-red-500 hover:text-white font-bold transition-all text-[10px] uppercase tracking-widest border-t border-white/5"
+                      className="image-menu-btn delete"
                     >
                       Delete Image
                     </button>
@@ -893,61 +852,59 @@ function Profile() {
               )}
             </div>
 
-            <div className="flex-1 text-center md:text-left pt-4">
-              <h3 className="font-display text-4xl font-black text-white tracking-widest mb-4 uppercase italic">
-                {displayUser?.displayName || "Member"}
+            <div className="profile-details-column">
+              <h3 className="profile-display-name">
+                {state.profileData?.username || "Member"}
               </h3>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-center md:justify-start gap-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary italic">Bio</h4>
+              <div className="bio-container">
+                <div className="bio-header">
+                  <h4 className="bio-label">Bio</h4>
                   {!state.isEditingAbout && state.isOwnProfile && (
-                    <button onClick={startEditingAbout} className="p-1 hover:text-primary transition-colors opacity-50 hover:opacity-100">
-                      <img src="/project-icons/Profile icons/edit.png" alt="" className="w-3 h-3 invert" />
+                    <button onClick={startEditingAbout} className="bio-edit-btn">
+                      <img src="/project-icons/Profile icons/edit.png" alt="" />
                     </button>
                   )}
                 </div>
 
                 {state.isEditingAbout ? (
-                  <div className="space-y-4 max-w-xl">
-                    <div className="relative group">
-                      <textarea
-                        value={state.tempAbout}
-                        onChange={(e) => {
-                          const text = e.target.value;
-                          if (text.length <= 200) {
-                            setState(prev => ({ ...prev, tempAbout: text }));
-                          }
-                        }}
-                        placeholder="Tell us about yourself..."
-                        className="w-full bg-secondary/30 border border-white/5 rounded-2xl p-4 text-xs font-medium min-h-[100px] outline-none focus:border-primary/30 transition-all resize-none"
-                        maxLength={200}
-                        autoFocus
-                      />
-                      <div className={`absolute bottom-3 right-4 text-[9px] font-black ${state.tempAbout.length >= 180 ? 'text-yellow-500' : 'text-muted-foreground/30'}`}>
-                        {state.tempAbout.length}/200
-                      </div>
+                  <div className="bio-textarea-wrapper">
+                    <textarea
+                      value={state.tempAbout}
+                      onChange={(e) => {
+                        const text = e.target.value;
+                        if (text.length <= 200) {
+                          setState(prev => ({ ...prev, tempAbout: text }));
+                        }
+                      }}
+                      placeholder="Tell us about yourself..."
+                      className="bio-textarea"
+                      maxLength={200}
+                      autoFocus
+                    />
+                    <div className={`bio-char-count ${state.tempAbout.length >= 180 ? 'warning' : ''}`}>
+                      {state.tempAbout.length}/200
                     </div>
-                    <div className="flex gap-2">
+                    <div className="bio-save-row">
                       <button
                         onClick={saveAboutMe}
-                        className="px-6 py-2 rounded-xl bg-primary text-black font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50"
+                        className="bio-save-btn"
                         disabled={state.tempAbout === state.aboutMe}
                       >
                         Save Changes
                       </button>
                       <button
                         onClick={() => setState(prev => ({ ...prev, isEditingAbout: false }))}
-                        className="px-6 py-2 rounded-xl bg-secondary border border-white/5 text-[10px] font-black uppercase tracking-widest transition-all"
+                        className="bio-cancel-btn"
                       >
                         Cancel
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="about-me-content">
-                    <p className="text-sm text-muted-foreground/70 leading-relaxed font-medium max-w-xl italic">
-                      {state.aboutMe || (state.isOwnProfile ? "No bio data recorded..." : "No bio data recorded...")}
+                  <div className="bio-text-display">
+                    <p className="bio-text">
+                      {state.aboutMe || "No bio data recorded..."}
                     </p>
                   </div>
                 )}
@@ -955,48 +912,48 @@ function Profile() {
             </div>
           </div>
 
-          <div className="mt-12 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-1.5 h-6 bg-primary rounded-full" />
-              <h4 className="font-display text-xl font-black uppercase tracking-tight">Riot Account Link</h4>
+          <div className="riot-link-section">
+            <div className="section-title-row">
+              <div className="section-title-bar" />
+              <h4 className="section-title-text">Riot Account Link</h4>
             </div>
 
             {state.linkedAccount ? (
-              <div className="space-y-8 animate-in zoom-in-95 duration-500">
-                <div className="glass-panel p-6 rounded-3xl border-primary/20 bg-primary/5 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden group">
-                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all" />
+              <div className="riot-account-active">
+                <div className="riot-account-banner">
+                  <div className="riot-banner-glow" />
 
-                  <div className="relative">
+                  <div className="riot-icon-wrapper">
                     <img
                       src={getProfileIconUrl(state.linkedAccount.profileIconId)}
                       alt="Summoner icon"
-                      className="w-20 h-20 rounded-2xl border-2 border-primary/30 shadow-xl object-cover"
+                      className="riot-banner-icon"
                       onError={(e) => {
                         e.target.src = `https://ddragon.leagueoflegends.com/cdn/25.22/img/profileicon/${state.linkedAccount.profileIconId}.png`;
                       }}
                     />
-                    <div className="absolute -bottom-2 -right-2 bg-background border-2 border-primary text-primary px-2 py-0.5 rounded-lg text-[10px] font-black shadow-lg">
+                    <div className="riot-banner-level">
                       Lvl {state.linkedAccount.summonerLevel}
                     </div>
                   </div>
 
-                  <div className="flex-1 text-center md:text-left">
-                    <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2">
-                      <span className="font-display text-2xl font-black text-white">
+                  <div className="riot-banner-info">
+                    <div className="riot-id-row">
+                      <span className="riot-id-text">
                         {state.linkedAccount.gameName}#{state.linkedAccount.tagLine}
                       </span>
-                      <span className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-500 text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-current animate-pulse" />
+                      <span className="riot-verified-badge">
+                        <div className="verified-dot" />
                         Verified
                       </span>
                     </div>
-                    <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                        <img src="/project-icons/Profile icons/globe icon.png" alt="" className="w-3 h-3 opacity-30 invert" />
+                    <div className="riot-meta-row">
+                      <span className="riot-meta-item">
+                        <img src="/project-icons/Profile icons/globe icon.png" alt="" />
                         Region: {REGIONS.find(r => r.value === state.linkedAccount.region)?.label || state.linkedAccount.region.toUpperCase()}
                       </span>
                       {state.isOwnProfile && (
-                        <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                        <span className="riot-meta-item">
                           Last synced: {formatTimeAgo(state.lastUpdateTime)}
                         </span>
                       )}
@@ -1004,18 +961,18 @@ function Profile() {
                   </div>
 
                   {state.isOwnProfile && (
-                    <div className="flex flex-col gap-2 w-full md:w-auto">
+                    <div className="riot-actions-column">
                       <button
                         onClick={handleManualRankedUpdate}
                         disabled={state.rankedUpdateLoading}
-                        className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black hover:border-primary transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
+                        className="riot-sync-btn"
                       >
-                        <img src="/project-icons/Profile icons/update icon.png" alt="" className="w-3 h-3 group-hover/btn:rotate-180 transition-transform" />
+                        <img src="/project-icons/Profile icons/update icon.png" alt="" />
                         {state.rankedUpdateLoading ? "Syncing..." : "Sync Data"}
                       </button>
                       <button
                         onClick={unlinkRiotAccount}
-                        className="px-6 py-2.5 rounded-xl text-red-400/50 hover:text-red-400 hover:bg-red-400/10 text-[10px] font-black uppercase tracking-widest transition-all"
+                        className="riot-unlink-btn"
                       >
                         Unlink Account
                       </button>
@@ -1024,80 +981,74 @@ function Profile() {
                 </div>
 
                 {state.backendError && (
-                  <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center gap-4 animate-in slide-in-from-left duration-500">
-                    <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-500 font-black">!</div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-red-400">
-                      Backend Offline - Sync Unavailable
-                    </p>
+                  <div className="backend-error-notice">
+                    <div className="error-icon">!</div>
+                    <p className="error-msg">Backend Offline - Sync Unavailable</p>
                   </div>
                 )}
 
                 {state.rankedData ? (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3 px-2">
-                      <div className="w-1 h-4 bg-muted-foreground/30 rounded-full" />
-                      <h5 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/70 italic">Ranked Data</h5>
+                  <div className="ranked-data-container">
+                    <div className="sub-section-header">
+                      <div className="header-dot" />
+                      <h5 className="sub-section-label">Ranked Data</h5>
                     </div>
                     <RankedInfo rankedData={state.rankedData} />
                   </div>
                 ) : state.backendError ? (
-                  <div className="glass-panel p-12 rounded-3xl flex flex-col items-center justify-center text-center">
-                    <p className="text-muted-foreground/40 font-black text-[10px] uppercase tracking-[0.3em]">
-                      Updating Account Data...
-                    </p>
+                  <div className="updating-data-state">
+                    <p className="updating-status">Updating Account Data...</p>
                   </div>
                 ) : null}
               </div>
             ) : state.isOwnProfile ? (
-              <div className="glass-panel p-8 rounded-3xl border-dashed border-white/10 flex flex-col items-center justify-center text-center space-y-6">
-                <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center border border-white/5 shadow-xl group-hover:scale-110 transition-transform duration-500">
-                  <img src="/project-icons/Profile icons/riot guest icon.png" alt="" className="w-8 h-8 opacity-20 invert" />
+              <div className="empty-riot-card">
+                <div className="riot-placeholder-icon">
+                  <img src="/project-icons/Profile icons/riot guest icon.png" alt="" />
                 </div>
-                <div>
-                  <h5 className="font-display text-lg font-black text-white uppercase italic tracking-wider mb-2">Link Riot Account</h5>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] max-w-xs mx-auto">
-                    Connect your Riot ID to sync your ranked standings.
-                  </p>
+                <div className="riot-empty-text">
+                  <h5>Link Riot Account</h5>
+                  <p>Connect your Riot ID to sync your ranked standings.</p>
                 </div>
 
-                <form onSubmit={handleRiotAccountLink} className="w-full max-w-sm space-y-4">
-                  <div className="space-y-1.5 text-left">
-                    <label htmlFor="riotId" className="text-[9px] font-black uppercase tracking-[0.3em] text-primary/50 ml-1 italic">Riot ID</label>
+                <form onSubmit={handleRiotAccountLink} className="riot-link-form">
+                  <div className="form-field">
+                    <label htmlFor="riotId" className="form-label">Riot ID</label>
                     <input
                       type="text"
                       id="riotId"
                       value={state.riotId}
                       onChange={(e) => setState(prev => ({ ...prev, riotId: e.target.value }))}
                       placeholder="Riot#TAG"
-                      className="w-full bg-secondary/50 border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-primary/30 transition-all placeholder:text-muted-foreground/20"
+                      className="form-input"
                       maxLength={25}
                     />
                   </div>
 
-                  <div className="space-y-1.5 text-left">
-                    <label htmlFor="region" className="text-[9px] font-black uppercase tracking-[0.3em] text-primary/50 ml-1 italic">Region</label>
-                    <div className="relative group/select">
+                  <div className="form-field">
+                    <label htmlFor="region" className="form-label">Region</label>
+                    <div className="select-wrapper">
                       <select
                         id="region"
                         value={state.region}
                         onChange={(e) => setState(prev => ({ ...prev, region: e.target.value }))}
-                        className="w-full bg-secondary/50 border border-white/5 rounded-2xl pl-5 pr-12 py-4 text-sm font-black uppercase tracking-widest outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                        className="form-select"
                       >
-                        {REGIONS.map(region => <option key={region.value} value={region.value} className="bg-secondary text-white">{region.label}</option>)}
+                        {REGIONS.map(region => <option key={region.value} value={region.value}>{region.label}</option>)}
                       </select>
-                      <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-white/20 group-hover/select:text-primary transition-colors">
-                        <ChevronDown className="w-5 h-5" />
+                      <div className="select-caret">
+                        <ChevronDown className="icon-md" />
                       </div>
                     </div>
                   </div>
 
                   {state.linkError && (
-                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[10px] font-black text-red-500 uppercase tracking-widest italic animate-shake">
+                    <div className="form-error-msg animate-shake">
                       {state.linkError}
                     </div>
                   )}
                   {state.linkSuccess && (
-                    <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-[10px] font-black text-green-500 uppercase tracking-widest animate-bounce">
+                    <div className="form-success-msg animate-bounce">
                       Riot Account Linked
                     </div>
                   )}
@@ -1105,17 +1056,15 @@ function Profile() {
                   <button
                     type="submit"
                     disabled={state.linkingAccount}
-                    className="w-full py-4 rounded-2xl bg-primary text-black font-black text-xs uppercase tracking-[0.3em] hover:bg-white transition-all shadow-xl shadow-primary/20 active:scale-[0.98] disabled:opacity-50"
+                    className="link-btn"
                   >
                     {state.linkingAccount ? "Syncing..." : "Link Account"}
                   </button>
                 </form>
               </div>
             ) : (
-              <div className="glass-panel p-12 rounded-3xl flex flex-col items-center justify-center text-center">
-                <p className="text-muted-foreground/30 font-black text-[10px] uppercase tracking-[0.3em]">
-                  No Riot Account Linked.
-                </p>
+              <div className="no-account-linked">
+                <p className="no-account-text">No Riot Account Linked.</p>
               </div>
             )}
           </div>
@@ -1126,37 +1075,34 @@ function Profile() {
           profileImage={state.profileImage}
           posts={state.posts}
           isOwnProfile={state.isOwnProfile}
-          onPostCreated={() => {
-          }}
+          onPostCreated={() => { }}
         />
 
         {state.accountInfoOpen && state.isOwnProfile && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setState(prev => ({ ...prev, accountInfoOpen: false }))} />
-            <div ref={accountInfoModalRef} className="glass-panel w-full max-w-lg rounded-3xl p-8 relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
-
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
-                <h3 className="font-display text-2xl font-black uppercase tracking-tight italic">Account Info</h3>
+          <div className="profile-modal-overlay">
+            <div className="profile-modal-backdrop" onClick={() => setState(prev => ({ ...prev, accountInfoOpen: false }))} />
+            <div ref={accountInfoModalRef} className="profile-modal-content">
+              <div className="profile-modal-title-row">
+                <div className="profile-modal-title-bar" />
+                <h3 className="profile-modal-title">Account Info</h3>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 group hover:border-white/10 transition-colors">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 italic">Email</span>
-                  <span className="text-sm font-bold text-white selection:bg-primary selection:text-black">{displayEmail || "No data"}</span>
+              <div className="modal-items-column">
+                <div className="modal-item-row">
+                  <span className="modal-item-label">Email</span>
+                  <span className="modal-item-value">{displayEmail || "No data"}</span>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 group hover:border-white/10 transition-colors">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 italic">Link Status</span>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${state.user?.emailVerified ? "text-green-500" : "text-red-500"}`}>
+                <div className="modal-item-row">
+                  <span className="modal-item-label">Link Status</span>
+                  <div className="link-status-group">
+                    <span className={`status-text ${state.user?.emailVerified ? "verified" : "unverified"}`}>
                       {state.user?.emailVerified ? "Verified" : "Unverified"}
                     </span>
                     {!state.user?.emailVerified && (
                       <button
                         onClick={verifyEmail}
-                        className="px-3 py-1 rounded-lg bg-red-500 text-white text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+                        className="resend-verify-btn"
                         disabled={state.verificationLoading || state.emailVerificationSent}
                       >
                         {state.verificationLoading ? "Sending..." : "Send Verification"}
@@ -1165,24 +1111,26 @@ function Profile() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 group hover:border-white/10 transition-colors">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 italic">Joined</span>
-                  <span className="text-sm font-bold text-white">
-                    {joinedDate.toLocaleDateString()} <span className="text-muted-foreground/30 ml-2 font-black italic">({accountAgeDays} days ago)</span>
+                <div className="modal-item-row">
+                  <span className="modal-item-label">Joined</span>
+                  <span className="modal-item-value">
+                    {joinedDate.toLocaleDateString()} <span className="joined-age">({accountAgeDays} days ago)</span>
                   </span>
                 </div>
 
                 {state.user?.metadata?.lastSignInTime && (
-                  <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 group hover:border-white/10 transition-colors">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 italic">Last Session</span>
-                    <span className="text-xs font-bold text-white/50">{new Date(state.user.metadata.lastSignInTime).toLocaleString()}</span>
+                  <div className="modal-item-row">
+                    <span className="modal-item-label">Last Session</span>
+                    <span className="modal-item-value secondary">
+                      {new Date(state.user.metadata.lastSignInTime).toLocaleString()}
+                    </span>
                   </div>
                 )}
               </div>
 
               <button
                 onClick={() => setState(prev => ({ ...prev, accountInfoOpen: false }))}
-                className="w-full mt-8 py-4 rounded-xl bg-secondary border border-white/5 text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl"
+                className="modal-close-btn"
               >
                 Close
               </button>
@@ -1191,41 +1139,39 @@ function Profile() {
         )}
 
         {state.isOwnProfile && state.showDeleteConfirm && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-red-950/20 backdrop-blur-xl" onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false }))} />
-            <div className="glass-panel w-full max-w-lg rounded-3xl p-8 relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl overflow-hidden border-red-500/20">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl opacity-50" />
-
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-1.5 h-8 bg-red-500 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
-                <h3 className="font-display text-2xl font-black uppercase tracking-tight italic text-red-500 font-black">Delete Account</h3>
+          <div className="profile-modal-overlay">
+            <div className="profile-modal-backdrop danger" onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false }))} />
+            <div className="profile-modal-content delete-modal">
+              <div className="profile-modal-title-row">
+                <div className="profile-modal-title-bar danger" />
+                <h3 className="profile-modal-title delete-title">Delete Account</h3>
               </div>
 
-              <div className="space-y-6">
-                <div className="p-4 bg-red-500/5 rounded-2xl border border-red-500/20">
-                  <p className="text-sm font-bold text-red-200 leading-relaxed mb-4">
+              <div className="delete-modal-body">
+                <div className="delete-warning-box">
+                  <p className="delete-warning-text">
                     Are you absolutely certain? Account deletion is a destructive operation that cannot be reversed.
                   </p>
-                  <ul className="space-y-2">
+                  <ul className="delete-impact-list">
                     {["Full Profile Data Wipe", "Riot Account Unlinked", "Post History Deleted"].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400/70">
-                        <div className="w-1 h-1 rounded-full bg-red-500" />
+                      <li key={i} className="impact-item">
+                        <div className="impact-dot" />
                         {item}
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="modal-actions-row">
                   <button
                     onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false }))}
-                    className="flex-1 py-4 rounded-xl bg-secondary border border-white/5 text-[10px] font-black uppercase tracking-widest transition-all"
+                    className="modal-abort-btn"
                   >
                     Abort
                   </button>
                   <button
                     onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false, showReauthModal: true }))}
-                    className="flex-1 py-4 rounded-xl bg-red-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl shadow-red-500/20 active:scale-95"
+                    className="modal-confirm-btn"
                   >
                     Delete Account
                   </button>
@@ -1236,47 +1182,47 @@ function Profile() {
         )}
 
         {state.isOwnProfile && state.showReauthModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setState(prev => ({ ...prev, showReauthModal: false, password: "", reauthError: "" }))} />
-            <div className="glass-panel w-full max-w-lg rounded-3xl p-8 relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
-                <h3 className="font-display text-2xl font-black uppercase tracking-tight italic">Security Check</h3>
+          <div className="profile-modal-overlay">
+            <div className="profile-modal-backdrop" onClick={() => setState(prev => ({ ...prev, showReauthModal: false, password: "", reauthError: "" }))} />
+            <div className="profile-modal-content security-modal">
+              <div className="profile-modal-title-row">
+                <div className="profile-modal-title-bar" />
+                <h3 className="profile-modal-title">Security Check</h3>
               </div>
 
-              <div className="space-y-6">
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center">
+              <div className="security-modal-body">
+                <p className="security-desc">
                   Enter your password to confirm account deletion.
                 </p>
 
-                <div className="space-y-2">
-                  <label htmlFor="password" className="text-[9px] font-black uppercase tracking-[0.3em] text-primary/50 ml-1 italic">Password</label>
+                <div className="form-field">
+                  <label htmlFor="password" className="form-label">Password</label>
                   <input
                     id="password"
                     type="password"
                     value={state.password}
                     onChange={(e) => setState(prev => ({ ...prev, password: e.target.value }))}
                     placeholder="Enter Password"
-                    className="w-full bg-secondary/50 border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-red-500/30 transition-all placeholder:text-muted-foreground/10"
+                    className="form-input security-input"
                   />
                   {state.reauthError && (
-                    <div className="text-[10px] font-black text-red-500 uppercase tracking-widest italic animate-shake ml-1">
+                    <div className="form-error-msg animate-shake">
                       {state.reauthError}
                     </div>
                   )}
                 </div>
 
-                <div className="flex gap-3">
+                <div className="modal-actions-row">
                   <button
                     onClick={() => setState(prev => ({ ...prev, showReauthModal: false, password: "", reauthError: "" }))}
-                    className="flex-1 py-4 rounded-xl bg-secondary border border-white/5 text-[10px] font-black uppercase tracking-widest transition-all"
+                    className="modal-abort-btn"
                     disabled={state.deletingAccount}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleReauthentication}
-                    className="flex-1 py-4 rounded-xl bg-red-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl shadow-red-500/20 active:scale-95 disabled:opacity-50"
+                    className="modal-confirm-btn danger"
                     disabled={state.deletingAccount || !state.password}
                   >
                     {state.deletingAccount ? "Deleting..." : "Delete Account"}

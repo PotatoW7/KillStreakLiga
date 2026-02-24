@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import IconRenderer, { LoLSuggestions } from './IconRenderer';
-
 
 function Chat({ selectedFriend, onBack }) {
   const [messages, setMessages] = useState([]);
@@ -27,24 +25,21 @@ function Chat({ selectedFriend, onBack }) {
   const [activeVideo, setActiveVideo] = useState(null);
 
   const messagesEndRef = useRef(null);
-
   const chatMessagesRef = useRef(null);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
-
   if (!selectedFriend) {
     return (
       <div className="chat-container">
         <div className="chat-header">
-          <button onClick={onBack} className="back-btn">← Back</button>
-          <div className="chat-friend-info">
-          </div>
+          <button onClick={onBack} className="chat-back-btn">
+            <span className="arrow">←</span> Back
+          </button>
         </div>
         <div className="chat-messages">
-          <div className="no-chat-selected">
-          </div>
+          <div className="no-chat-selected" />
         </div>
       </div>
     );
@@ -68,10 +63,7 @@ function Chat({ selectedFriend, onBack }) {
     };
 
     chatMessages.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      chatMessages.removeEventListener('wheel', handleWheel);
-    };
+    return () => chatMessages.removeEventListener('wheel', handleWheel);
   }, []);
 
   const scrollToBottom = () => {
@@ -202,8 +194,6 @@ function Chat({ selectedFriend, onBack }) {
       };
     }
 
-
-
     const igMatch = content.match(instagramRegex);
     if (igMatch) {
       return {
@@ -214,8 +204,6 @@ function Chat({ selectedFriend, onBack }) {
       };
     }
 
-
-
     const xMatch = content.match(xRegex);
     if (xMatch) {
       return { type: 'x', id: xMatch[1], thumbnail: 'https://cdn-icons-png.flaticon.com/512/5968/5968830.png' };
@@ -223,7 +211,6 @@ function Chat({ selectedFriend, onBack }) {
 
     return null;
   };
-
 
   const getCaretCoordinates = (textarea) => {
     const { clientWidth } = textarea;
@@ -253,7 +240,7 @@ function Chat({ selectedFriend, onBack }) {
     document.body.removeChild(div);
 
     return {
-      top: spanTop - scrollTop - 5, // Adjusted for positioning above input
+      top: spanTop - scrollTop - 5,
       left: Math.min(spanLeft, clientWidth - 200)
     };
   };
@@ -338,8 +325,6 @@ function Chat({ selectedFriend, onBack }) {
     setActiveVideo(null);
   };
 
-
-
   const handleRightClick = (e, message) => {
     e.preventDefault();
     if (message.senderId !== auth.currentUser.uid) return;
@@ -407,13 +392,7 @@ function Chat({ selectedFriend, onBack }) {
   const handleImageUpload = async (file) => {
     if (!file) return;
 
-    const validTypes = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-    ];
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       alert('Please select a valid image file (JPEG, PNG, GIF, WebP)');
       return;
@@ -486,54 +465,47 @@ function Chat({ selectedFriend, onBack }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-black/20 overflow-hidden relative">
-      <div className="absolute inset-0 bg-primary/2 opacity-20 pointer-events-none" />
+    <div className="chat-container">
+      <div className="chat-bg-overlay" />
 
       {/* Header */}
-      <div className="p-6 border-b border-white/5 bg-white/[0.01] flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:text-black hover:border-primary transition-all group active:scale-90"
-          >
-            <span className="text-lg group-hover:-translate-x-1 transition-transform">←</span>
+      <div className="chat-header">
+        <div className="chat-header-left">
+          <button onClick={onBack} className="chat-back-btn">
+            <span className="arrow">←</span>
           </button>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full" />
+          <div className="chat-profile-row">
+            <div className="chat-avatar-wrapper">
+              <div className="chat-avatar-glow" />
               <img
                 src={friendProfile?.profileImage || 'https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png'}
                 alt={friendProfile?.username}
-                className="w-12 h-12 rounded-2xl object-cover relative z-10 border border-white/10"
+                className="chat-friend-avatar"
               />
-              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-background rounded-full shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+              <div className="chat-online-dot" />
             </div>
-            <div className="space-y-0.5">
+            <div className="chat-header-text">
               <h3
-                className="font-display text-xl font-black text-white uppercase italic tracking-tight hover:text-primary cursor-pointer transition-colors"
+                className="chat-friend-name"
                 onClick={() => navigate(`/profile/${selectedFriend.id}`)}
               >
                 {friendProfile?.username}
               </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] italic">Online</span>
-              </div>
+              <span className="chat-header-status">Online</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="px-3 py-1.5 rounded-lg bg-black/40 border border-white/5 flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest italic">Live Content</span>
-          </div>
+        <div className="chat-header-badge">
+          <div className="chat-badge-dot" />
+          <span className="chat-badge-text">Live Content</span>
         </div>
       </div>
 
       {/* Message Stream */}
       <div
         ref={chatMessagesRef}
-        className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar relative z-10"
+        className="chat-messages custom-scrollbar"
         onWheel={(e) => {
           const element = e.currentTarget;
           const isAtTop = element.scrollTop === 0;
@@ -551,98 +523,94 @@ function Chat({ selectedFriend, onBack }) {
           return (
             <div
               key={msg.id}
-              className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'} ${isDeleting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} transition-all duration-300`}
+              className={`message-row ${isOwnMessage ? 'own' : 'other'} ${isDeleting ? 'deleting' : ''}`}
               onContextMenu={(e) => handleRightClick(e, msg)}
             >
               {showUser && (
-                <div className={`flex items-center gap-3 mb-2 px-1 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className="message-user-info">
                   <img
                     src={getSenderProfileImage(msg.senderId)}
                     alt={msg.senderName}
-                    className="w-6 h-6 rounded-lg object-cover border border-white/10"
+                    className="message-sender-avatar"
                   />
-                  <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] italic">
+                  <span className="message-sender-name">
                     {isOwnMessage ? 'You' : msg.senderName}
                   </span>
                 </div>
               )}
 
-              <div className={`relative group max-w-[85%] ${isOwnMessage ? 'pl-10' : 'pr-10'}`}>
+              <div className="message-content-wrapper">
                 {editingMessageId === msg.id ? (
-                  <div className="glass-panel p-4 rounded-2xl border-primary/30 w-full min-w-[300px] flex flex-col gap-3">
+                  <div className="chat-edit-panel">
                     <textarea
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-medium text-white placeholder:text-white/20 focus:outline-none focus:border-primary/40 transition-all custom-scrollbar"
+                      className="chat-edit-textarea custom-scrollbar"
                       rows={3}
                       autoFocus
                     />
-                    <div className="flex justify-end gap-2">
-                      <button onClick={handleCancelEdit} className="px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all italic">Cancel</button>
+                    <div className="fl-actions" style={{ justifyContent: 'flex-end' }}>
+                      <button onClick={handleCancelEdit} className="fl-cancel-text-btn">Cancel</button>
                       <button
                         onClick={handleSaveEdit}
                         disabled={!editText.trim() || editText === msg.text}
-                        className="px-4 py-2 rounded-lg bg-primary text-black text-[9px] font-black uppercase tracking-widest hover:bg-white transition-all disabled:opacity-50 italic"
+                        className="fl-accept-btn"
+                        style={{ height: '32px' }}
                       >
                         Save
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className={`relative transition-all duration-300 ${isOwnMessage ? 'items-end flex flex-col' : 'items-start flex flex-col'}`}>
-                    <div
-                      className={`relative z-10 px-5 py-3.5 message-bubble ${isOwnMessage
-                        ? 'bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20 rounded-2xl rounded-tr-none text-white'
-                        : 'bg-white/5 border-white/10 rounded-2xl rounded-tl-none text-white/90'
-                        } border backdrop-blur-md shadow-2xl group-hover:border-primary/30 transition-all`}
-                    >
-                      <div className="text-sm font-medium leading-relaxed break-words">
+                  <>
+                    <div className="message-bubble">
+                      <div className="message-text">
                         <IconRenderer text={msg.text} />
                       </div>
 
                       {msg.socialPreview && (
                         <div
-                          className={`mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/40 cursor-pointer group/vid relative ${msg.socialPreview.isIcon ? 'w-24 h-24 flex items-center justify-center' : 'w-full aspect-video'}`}
+                          className={`message-preview ${msg.socialPreview.isIcon ? 'icon' : 'video'}`}
                           onClick={() => handleOpenVideo(msg.socialPreview)}
                         >
                           <img
                             src={msg.socialPreview.thumbnail}
                             alt="Preview"
-                            className={`${msg.socialPreview.isIcon ? 'w-12 h-12 grayscale group-hover/vid:grayscale-0' : 'w-full h-full object-cover group-hover/vid:scale-105'} transition-all duration-700`}
+                            className="message-preview-thumb"
                           />
-                          {!msg.socialPreview.isIcon && <div className="absolute inset-0 bg-black/40 group-hover/vid:bg-black/20 transition-all" />}
-                          <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-all">
-                            <div className="w-12 h-12 rounded-full bg-primary/20 backdrop-blur-md border border-primary/40 flex items-center justify-center text-primary group-hover/vid:scale-110 transition-transform">
-                              <span className="text-xl ml-1">▶</span>
+                          <div className="message-preview-overlay" />
+                          <div className="message-play-btn">
+                            <div className="play-icon-box">
+                              <span style={{ marginLeft: '4px' }}>▶</span>
                             </div>
-                            {!msg.socialPreview.isIcon && <span className="mt-2 text-[9px] font-black uppercase tracking-[0.2em] text-white/60">Play Video</span>}
+                            {!msg.socialPreview.isIcon && <span className="play-btn-text">Play Video</span>}
                           </div>
                         </div>
                       )}
 
                       {msg.type === 'image' && (
-                        <div className="mt-3 rounded-xl overflow-hidden border border-white/10 bg-black/20 group/img relative cursor-pointer" onClick={() => window.open(msg.imageData)}>
-                          <img src={msg.imageData} alt="Shared" className="w-full max-h-[300px] object-cover group-hover/img:scale-105 transition-transform duration-700" />
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-white/60 bg-black/40 px-3 py-1.5 rounded-lg border border-white/10">View Image</span>
+                        <div className="message-image-shared" onClick={() => window.open(msg.imageData)}>
+                          <img src={msg.imageData} alt="Shared" className="message-image" />
+                          <div className="image-overlay">
+                            <span className="view-image-badge">View Image</span>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    <div className={`mt-1.5 flex items-center gap-3 text-[8px] font-black uppercase tracking-widest text-white/20 italic ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <div className="message-meta">
                       <span>{msg.timestamp ? new Date(msg.timestamp?.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just Now'}</span>
-                      {msg.edited && <span className="text-primary/40">Edited</span>}
-                      {isOwnMessage && <span className={msg.read ? 'text-primary' : 'text-white/10'}>{msg.read ? 'Read ✓✓' : 'Sent ✓'}</span>}
+                      {msg.edited && <span className="edited-label">Edited</span>}
+                      {isOwnMessage && <span className={msg.read ? 'status-read' : 'status-sent'}>{msg.read ? 'Read ✓✓' : 'Sent ✓'}</span>}
                     </div>
 
                     {contextMenu === msg.id && isOwnMessage && !isDeleting && (
-                      <div className={`absolute top-0 flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200 ${isOwnMessage ? 'right-full mr-3' : 'left-full ml-3'}`}>
-                        <button onClick={() => handleEditMessage(msg.id, msg.text)} className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-primary hover:border-primary/40 hover:bg-primary/10 transition-all active:scale-90" title="Edit">✏️</button>
-                        <button onClick={() => handleDeleteMessage(msg.id)} className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-red-500 hover:border-red-500/40 hover:bg-red-500/10 transition-all active:scale-90" title="Delete">🗑️</button>
+                      <div className="chat-context-menu">
+                        <button onClick={() => handleEditMessage(msg.id, msg.text)} className="context-btn edit" title="Edit">✏️</button>
+                        <button onClick={() => handleDeleteMessage(msg.id)} className="context-btn delete" title="Delete">🗑️</button>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -652,7 +620,7 @@ function Chat({ selectedFriend, onBack }) {
       </div>
 
       {/* Input Section */}
-      <div className="p-6 border-t border-white/5 bg-white/[0.01] relative z-10 flex items-end gap-3">
+      <div className="chat-footer">
         <input
           type="file"
           ref={fileInputRef}
@@ -663,20 +631,20 @@ function Chat({ selectedFriend, onBack }) {
         <button
           onClick={triggerFileInput}
           disabled={uploading}
-          className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-primary hover:border-primary/50 hover:bg-primary/10 transition-all active:scale-90 shadow-xl disabled:opacity-50"
+          className="chat-upload-btn"
           title="Upload Image (20MB Max)"
         >
           {uploading ? (
-            <div className="w-4 h-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <div className="lg-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
           ) : (
-            <span className="text-xl">📎</span>
+            <span className="emoji-icon">📎</span>
           )}
         </button>
 
-        <div className="flex-1 relative">
+        <div className="chat-input-wrapper">
           {showSuggestions && (
             <div
-              className="absolute bottom-full left-0 mb-4 z-50 animate-in slide-in-from-bottom-2 duration-200"
+              className="suggestion-popover"
               style={{ left: suggestionCoords.left }}
             >
               <LoLSuggestions
@@ -686,52 +654,44 @@ function Chat({ selectedFriend, onBack }) {
               />
             </div>
           )}
-          <div className="relative group">
-            <textarea
-              ref={inputRef}
-              value={newMessage}
-              onChange={(e) => handleTextareaChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={uploading}
-              placeholder="Type a message..."
-              className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pr-16 text-xs font-medium text-white placeholder:text-white/20 focus:outline-none focus:border-primary/40 focus:bg-white/[0.08] transition-all min-h-[48px] max-h-[120px] custom-scrollbar resize-none"
-              rows={1}
-              onInput={(e) => {
-                e.target.style.height = 'auto';
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-              }}
-            />
-            <button
-              onClick={handleSend}
-              disabled={uploading || !newMessage.trim()}
-              className="absolute right-2 bottom-2 w-10 h-10 rounded-xl bg-primary text-black flex items-center justify-center hover:bg-white transition-all shadow-xl active:scale-90 disabled:opacity-30 group/send"
-            >
-              <span className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">➤</span>
-            </button>
-          </div>
+          <textarea
+            ref={inputRef}
+            value={newMessage}
+            onChange={(e) => handleTextareaChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={uploading}
+            placeholder="Type a message..."
+            className="chat-textarea custom-scrollbar"
+            rows={1}
+            onInput={(e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={uploading || !newMessage.trim()}
+            className="chat-send-btn"
+          >
+            <span>➤</span>
+          </button>
         </div>
       </div>
 
       {activeVideo && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-10 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={handleCloseVideo} />
-          <div
-            className={`w-full max-w-5xl glass-panel rounded-[2rem] border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden relative z-10 aspect-video flex flex-col animate-in zoom-in-95 duration-500`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-              <div className="flex items-center gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 italic">{activeVideo.type.toUpperCase()}</span>
+        <div className="video-modal-overlay">
+          <div className="video-modal-backdrop" onClick={handleCloseVideo} />
+          <div className="video-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="video-modal-header">
+              <div className="video-modal-title">
+                <div className="video-type-dot" />
+                <span className="video-type-label">{activeVideo.type}</span>
               </div>
-              <button
-                onClick={handleCloseVideo}
-                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-red-500 border border-white/10 text-white transition-all flex items-center justify-center active:scale-90"
-              >
+              <button onClick={handleCloseVideo} className="video-close-btn">
                 ✕
               </button>
             </div>
-            <div className="flex-1 bg-black">
+            <div className="video-iframe-wrapper">
               {activeVideo.type === 'youtube' && (
                 <iframe
                   width="100%"
@@ -758,19 +718,17 @@ function Chat({ selectedFriend, onBack }) {
                 ></iframe>
               )}
               {activeVideo.type === 'x' && (
-                <div className="w-full h-full flex flex-col items-center justify-center text-center p-10 space-y-6">
-                  <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center">
-                    <span className="text-4xl">𝕏</span>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="font-display text-xl font-black text-white uppercase italic">External Link Required</p>
-                    <p className="text-[11px] font-bold text-white/20 uppercase tracking-widest max-w-sm">X (Twitter) videos cannot be rendered here. Use the direct link.</p>
+                <div className="x-link-fallback">
+                  <div className="x-logo-box">𝕏</div>
+                  <div className="x-text-info">
+                    <p className="x-fallback-title">External Link Required</p>
+                    <p className="x-fallback-desc">X (Twitter) videos cannot be rendered here. Use the direct link.</p>
                   </div>
                   <a
                     href={`https://x.com/i/status/${activeVideo.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-8 py-3 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-white transition-all italic shadow-xl"
+                    className="x-open-btn"
                   >
                     Open Link
                   </a>
@@ -782,7 +740,6 @@ function Chat({ selectedFriend, onBack }) {
         document.body
       )}
     </div>
-
   );
 }
 

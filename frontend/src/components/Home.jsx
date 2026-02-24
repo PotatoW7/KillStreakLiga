@@ -65,98 +65,88 @@ function Home() {
   ];
 
   return (
-    <div className="flex flex-col items-center min-h-screen">
+    <div className="home-page">
 
-      <section className="w-full relative overflow-hidden flex flex-col items-center justify-center min-h-[70vh] py-24 px-4 text-center">
-        {/* Abstract Background Elements */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute top-1/4 right-[10%] w-[300px] h-[300px] bg-accent/5 rounded-full blur-[80px] pointer-events-none" />
+      <section className="hero-section">
+        <div className="hero-glow-primary" />
+        <div className="hero-glow-accent" />
 
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 mb-8 backdrop-blur-sm">
-            <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-primary">Beta</span>
+        <div className="hero-content">
+          <div className="beta-badge">
+            <span>Beta</span>
           </div>
 
-          <h1 className="font-display text-6xl md:text-9xl font-black tracking-tighter mb-8 leading-[0.9] text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <h1 className="hero-title">
             DOMINATE<br />THE RIFT
           </h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+          <p className="hero-desc">
             The ultimate League of Legends companion. Track stats, find duo partners, and learn from the best coaches.
           </p>
 
-          <form onSubmit={handleSearch} className="w-full max-w-2xl mx-auto glass-panel rounded-full p-2 flex flex-col md:flex-row items-stretch md:items-center shadow-2xl shadow-primary/10 group focus-within:shadow-primary/25 transition-all duration-500 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-400">
-            <div className="flex-1 flex items-center px-6 py-2 md:py-0">
+          <form onSubmit={handleSearch} className="hero-search-form glass-panel">
+            <div className="search-input-wrapper">
               <input
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Enter Riot ID (name#tag)"
-                className="w-full border-0 bg-transparent focus:ring-0 text-xl font-medium placeholder:text-muted-foreground/30 h-12 text-foreground outline-none"
+                className="search-input"
                 required
               />
             </div>
-            <div className="flex items-center gap-2 p-1 border-t md:border-t-0 md:border-l border-border/40">
-              <div className="relative group/select">
+            <div className="search-controls">
+              <div className="region-select-wrapper">
                 <select
                   value={searchRegion}
                   onChange={(e) => setSearchRegion(e.target.value)}
-                  className="appearance-none bg-transparent border-0 text-muted-foreground font-black pl-4 pr-10 py-2 focus:ring-0 cursor-pointer hover:text-primary transition-all uppercase tracking-wider text-xs outline-none"
+                  className="region-select"
                 >
                   {regions.map(region => (
-                    <option key={region.value} value={region.value} className="bg-neutral-900 text-white">
+                    <option key={region.value} value={region.value}>
                       {region.label}
                     </option>
                   ))}
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground/30 group-hover/select:text-primary transition-colors">
-                  <ChevronDown className="w-4 h-4" />
+                <div className="region-chevron">
+                  <ChevronDown />
                 </div>
               </div>
-              <button
-                type="submit"
-                className="bg-primary text-primary-foreground hover:bg-white hover:text-black px-10 py-4 rounded-full font-black text-lg transition-all active:scale-95 shadow-xl shadow-primary/20 whitespace-nowrap"
-              >
+              <button type="submit" className="search-submit">
                 SEARCH
               </button>
             </div>
           </form>
-          {searchError && <div className="mt-4 text-red-500 font-bold text-sm bg-red-500/10 py-2 px-4 rounded-full inline-block border border-red-500/20">{searchError}</div>}
+          {searchError && <div className="search-error">{searchError}</div>}
         </div>
       </section>
 
 
       {user && riotAccount && (
-        <section className="w-full max-w-7xl px-4 py-12">
-          <div className="glass-panel p-8 rounded-3xl border-primary/20 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="flex items-center gap-6">
-                <div className="relative">
+        <section className="account-banner">
+          <div className="account-banner-inner glass-panel">
+            <div className="account-banner-gradient" />
+            <div className="account-banner-content">
+              <div className="account-info">
+                <div className="account-avatar-wrapper">
                   <img
                     src={`https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/${riotAccount.profileIconId}.png`}
                     alt="Profile"
-                    className="w-24 h-24 rounded-2xl border-2 border-primary shadow-2xl shadow-primary/20"
+                    className="account-avatar"
                   />
-                  <div className="absolute -bottom-3 -right-3 bg-primary text-black font-black text-xs px-3 py-1.5 rounded-lg shadow-xl">
+                  <div className="account-level-badge">
                     {riotAccount.summonerLevel}
                   </div>
                 </div>
                 <div>
-                  <h2 className="font-display text-3xl font-bold mb-1">{riotAccount.gameName}#{riotAccount.tagLine}</h2>
-                  <p className="text-primary font-bold tracking-widest text-xs uppercase">{riotAccount.region.toUpperCase()} Region</p>
+                  <h2 className="account-name">{riotAccount.gameName}#{riotAccount.tagLine}</h2>
+                  <p className="account-region">{riotAccount.region.toUpperCase()} Region</p>
                 </div>
               </div>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/profile" className="px-8 py-3 rounded-xl bg-secondary text-foreground hover:bg-primary hover:text-black font-bold transition-all">
-                  Show Stats
-                </Link>
-                <Link to="/summoner" className="px-8 py-3 rounded-xl border border-border hover:border-primary text-foreground font-bold transition-all">
-                  Inspect Rift
-                </Link>
-                <Link to="/queue" className="px-8 py-3 rounded-xl bg-primary text-black font-bold hover:bg-white transition-all shadow-lg shadow-primary/10">
-                  Find Duo
-                </Link>
+              <div className="account-actions">
+                <Link to="/profile" className="btn-secondary">Show Stats</Link>
+                <Link to="/summoner" className="btn-outline">Inspect Rift</Link>
+                <Link to="/queue" className="btn-primary">Find Duo</Link>
               </div>
             </div>
           </div>
@@ -164,12 +154,12 @@ function Home() {
       )}
 
 
-      <section className="w-full max-w-7xl px-4 py-24">
-        <div className="text-center mb-16">
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Level Up Your Game</h2>
-          <div className="w-20 h-1 bg-primary mx-auto rounded-full" />
+      <section className="features-section">
+        <div className="features-header">
+          <h2>Level Up Your Game</h2>
+          <div className="features-header-line" />
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="features-grid">
           <FeatureCard
             icon="/project-icons/Home icons/player search.png"
             title="Player Search"
@@ -199,31 +189,23 @@ function Home() {
       </section>
 
 
-      <section className="w-full max-w-5xl mx-auto px-4 py-24">
-        <div className="glass-panel p-16 rounded-[3rem] text-center border-accent/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-accent/20 rounded-full blur-[80px] -z-10" />
-          <h2 className="font-display text-4xl md:text-6xl font-black mb-6">READY TO CLIMB?</h2>
-          <p className="text-xl text-muted-foreground mb-12 max-w-xl mx-auto underline-offset-4 decoration-primary/50">
+      <section className="cta-section">
+        <div className="cta-inner glass-panel">
+          <div className="cta-glow" />
+          <h2>READY TO CLIMB?</h2>
+          <p className="cta-desc">
             Join thousands of players using Rifthub to track their progress and find teammates.
           </p>
-          <div className="flex flex-wrap justify-center gap-6">
+          <div className="cta-buttons">
             {!user ? (
               <>
-                <Link to="/register" className="px-12 py-5 rounded-full bg-primary text-black font-bold text-xl hover:bg-white transition-all shadow-xl shadow-primary/20">
-                  Get Started
-                </Link>
-                <Link to="/summoner" className="px-12 py-5 rounded-full border border-border hover:border-primary text-foreground font-bold text-xl transition-all">
-                  Browse Players
-                </Link>
+                <Link to="/register" className="btn-cta-primary">Get Started</Link>
+                <Link to="/summoner" className="btn-cta-outline">Browse Players</Link>
               </>
             ) : (
               <>
-                <Link to="/summoner" className="px-12 py-5 rounded-full bg-primary text-black font-bold text-xl hover:bg-white transition-all shadow-xl shadow-primary/20">
-                  Search Players
-                </Link>
-                <Link to="/coaching" className="px-12 py-5 rounded-full border border-border hover:border-primary text-foreground font-bold text-xl transition-all">
-                  Find a Coach
-                </Link>
+                <Link to="/summoner" className="btn-cta-primary">Search Players</Link>
+                <Link to="/coaching" className="btn-cta-outline">Find a Coach</Link>
               </>
             )}
           </div>
@@ -235,14 +217,12 @@ function Home() {
 
 function FeatureCard({ icon, title, desc }) {
   return (
-    <div className="glass-panel p-10 rounded-[2rem] hover:-translate-y-2 transition-all duration-500 group border-white/5 hover:border-primary/20 bg-background/40">
-      <div className="w-20 h-20 rounded-2xl bg-secondary flex items-center justify-center mb-8 border border-white/5 group-hover:bg-primary/10 transition-colors group-hover:scale-110 duration-500">
-        <img src={icon} alt={title} className="w-12 h-12 object-contain" />
+    <div className="feature-card glass-panel">
+      <div className="feature-card-icon">
+        <img src={icon} alt={title} />
       </div>
-      <h3 className="font-display text-2xl font-bold mb-4 group-hover:text-primary transition-colors">{title}</h3>
-      <p className="text-muted-foreground leading-relaxed">
-        {desc}
-      </p>
+      <h3>{title}</h3>
+      <p>{desc}</p>
     </div>
   );
 }

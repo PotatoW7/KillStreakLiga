@@ -113,65 +113,65 @@ function Feeds() {
 
 
     return (
-        <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-12">
-            <div className="flex flex-col lg:flex-row gap-8">
-                <main className="flex-1 min-w-0 space-y-8">
-                    <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary/20 via-background to-background border border-white/5 p-10 md:p-16">
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[120px] -mr-48 -mt-48 pointer-events-none" />
-                        <div className="relative z-10 max-w-2xl">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 mb-6 backdrop-blur-md">
-                                <Zap className="w-3 h-3 text-primary animate-pulse" />
-                                <span className="text-[10px] uppercase font-black tracking-[0.2em] text-primary">Live Community Feed</span>
+        <div className="feeds-page">
+            <div className="feeds-layout">
+                <main className="feeds-main">
+                    <div className="feeds-hero">
+                        <div className="feeds-hero-glow" />
+                        <div className="feeds-hero-content">
+                            <div className="feeds-hero-badge">
+                                <Zap className="feeds-hero-badge-icon" />
+                                <span className="feeds-hero-badge-text">Live Community Feed</span>
                             </div>
-                            <h1 className="font-display text-5xl md:text-7xl font-black tracking-tighter text-white mb-6 leading-none">
-                                COMMUNITY<br /><span className="text-primary italic">FEED</span>
+                            <h1 className="feeds-hero-title">
+                                COMMUNITY<br /><span className="highlight">FEED</span>
                             </h1>
-                            <p className="text-muted-foreground text-lg md:text-xl font-medium leading-relaxed">
+                            <p className="feeds-hero-desc">
                                 Curating community highlights, top discussions, and global RiftHub activity.
                             </p>
                         </div>
                     </div>
 
-                    <div className="sticky top-24 z-30 glass-panel rounded-2xl p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 shadow-2xl shadow-black/20">
-                        <div className="flex-1 flex p-1 bg-white/5 rounded-xl gap-1">
+                    <div className="feeds-toolbar glass-panel">
+                        <div className="feeds-tabs">
                             <button
                                 onClick={() => setActiveTab('recent')}
-                                className={`flex-1 flex items-center justify-center gap-3 py-3 px-6 rounded-lg font-black text-[10px] uppercase tracking-[0.2em] transition-all ${activeTab === 'recent' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-muted-foreground hover:bg-white/5 hover:text-white'}`}
+                                className={`feeds-tab ${activeTab === 'recent' ? 'active' : ''}`}
                             >
-                                <Clock className="w-3.5 h-3.5" />
+                                <Clock className="feeds-tab-icon" />
                                 Latest
                             </button>
                             <button
                                 onClick={() => setActiveTab('trending')}
-                                className={`flex-1 flex items-center justify-center gap-3 py-3 px-6 rounded-lg font-black text-[10px] uppercase tracking-[0.2em] transition-all ${activeTab === 'trending' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-muted-foreground hover:bg-white/5 hover:text-white'}`}
+                                className={`feeds-tab ${activeTab === 'trending' ? 'active' : ''}`}
                             >
-                                <TrendingUp className="w-3.5 h-3.5" />
+                                <TrendingUp className="feeds-tab-icon" />
                                 Trending
                             </button>
                         </div>
 
-                        <div className="relative group flex-1 md:max-w-xs">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        <div className="feeds-search-wrapper">
+                            <Search className="feeds-search-icon" />
                             <input
                                 type="text"
                                 placeholder="Search community posts..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-white/5 border border-white/5 hover:border-white/10 focus:border-primary/30 rounded-xl pl-12 pr-4 py-3.5 text-sm font-bold placeholder:text-muted-foreground/30 outline-none transition-all"
+                                className="feeds-search-input"
                             />
                         </div>
                     </div>
 
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-32 space-y-6">
-                            <div className="relative">
-                                <Activity className="w-12 h-12 text-primary animate-pulse" />
-                                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+                        <div className="feeds-loading">
+                            <div className="feeds-loading-icon-wrapper">
+                                <Activity className="feeds-loading-icon" />
+                                <div className="feeds-loading-glow" />
                             </div>
-                            <p className="text-[10px] uppercase font-black tracking-[0.3em] text-primary/40 animate-pulse italic">Loading Community Feed...</p>
+                            <p className="feeds-loading-text">Loading Community Feed...</p>
                         </div>
                     ) : (
-                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                        <div className="animate-slide-up-sm">
                             <ProfilePosts
                                 user={user}
                                 profileImage={profileImage}
@@ -184,77 +184,76 @@ function Feeds() {
                     )}
                 </main>
 
-                <aside className="w-full lg:w-96 space-y-8">
-                    <div className="glass-panel rounded-[2rem] overflow-hidden">
-                        <div className="p-8 border-b border-white/5 bg-gradient-to-br from-primary/5 to-transparent">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-display text-2xl font-black tracking-tight text-white italic">TOP PERFORMERS</h3>
-                                <img src="/project-icons/Feeds icons/leaderboard.png" alt="" className="w-8 h-8 object-contain" />
+                <aside className="feeds-sidebar">
+                    <div className="feeds-leaderboard glass-panel">
+                        <div className="feeds-leaderboard-header">
+                            <div className="feeds-leaderboard-title-row">
+                                <h3 className="feeds-leaderboard-title">TOP PERFORMERS</h3>
+                                <img src="/project-icons/Feeds icons/leaderboard.png" alt="" className="feeds-leaderboard-icon" />
                             </div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Highest Community Engagement</p>
+                            <p className="feeds-leaderboard-subtitle">Highest Community Engagement</p>
                         </div>
-                        <div className="p-2 space-y-1">
+                        <div className="feeds-leaderboard-list">
                             {likesLeaderboard.map((leader, index) => (
                                 <button
                                     key={leader.userId}
                                     onClick={() => window.location.href = `/profile/${leader.userId}`}
-                                    className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 group transition-all text-left"
+                                    className="feeds-leader-btn"
                                 >
-                                    <div className="relative">
-                                        <div className={`w-12 h-12 rounded-xl border-2 overflow-hidden transition-all group-hover:scale-105 ${index === 0 ? 'border-primary shadow-[0_0_15px_rgba(234,179,8,0.3)]' : 'border-white/10'}`}>
-                                            <img src={leader.profileImage} alt="" className="w-full h-full object-cover" />
+                                    <div className="feeds-leader-avatar-wrapper">
+                                        <div className={`feeds-leader-avatar ${index === 0 ? 'first' : ''}`}>
+                                            <img src={leader.profileImage} alt="" />
                                         </div>
-                                        <div className="absolute -top-2 -left-2 w-7 h-7 flex items-center justify-center">
-                                            {index === 0 && <img src="/project-icons/Feeds icons/medal first.png" alt="" className="w-full h-full object-contain drop-shadow-lg" />}
-                                            {index === 1 && <img src="/project-icons/Feeds icons/medal second.png" alt="" className="w-full h-full object-contain drop-shadow-lg" />}
-                                            {index === 2 && <img src="/project-icons/Feeds icons/medal third.png" alt="" className="w-full h-full object-contain drop-shadow-lg" />}
+                                        <div className="feeds-leader-medal">
+                                            {index === 0 && <img src="/project-icons/Feeds icons/medal first.png" alt="" />}
+                                            {index === 1 && <img src="/project-icons/Feeds icons/medal second.png" alt="" />}
+                                            {index === 2 && <img src="/project-icons/Feeds icons/medal third.png" alt="" />}
                                             {index > 2 && (
-                                                <div className="w-6 h-6 rounded-lg bg-secondary border border-white/10 text-white flex items-center justify-center text-[10px] font-black shadow-lg">
+                                                <div className="feeds-leader-rank-badge">
                                                     #{index + 1}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-black text-sm text-white group-hover:text-primary transition-colors truncate">
+                                    <div className="feeds-leader-info">
+                                        <h4 className="feeds-leader-name">
                                             {leader.username}
                                         </h4>
-                                        <div className="flex items-center gap-1.5 mt-1">
-                                            <TrendingUp className="w-3 h-3 text-primary/50" />
-                                            <span className="text-[10px] font-black text-primary/50 uppercase tracking-widest">{leader.totalLikes} Points</span>
+                                        <div className="feeds-leader-stats">
+                                            <TrendingUp className="feeds-leader-stats-icon" />
+                                            <span className="feeds-leader-stats-text">{leader.totalLikes} Points</span>
                                         </div>
                                     </div>
-                                    <ChevronRight className="w-4 h-4 text-white/5 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                                    <ChevronRight className="feeds-leader-chevron" />
                                 </button>
                             ))}
                             {likesLeaderboard.length === 0 && (
-                                <div className="p-10 text-center space-y-4">
-                                    <Activity className="w-8 h-8 text-white/5 mx-auto" />
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/10 italic">No community activity detected</p>
+                                <div className="feeds-leaderboard-empty">
+                                    <Activity className="feeds-leaderboard-empty-icon" />
+                                    <p className="feeds-leaderboard-empty-text">No community activity detected</p>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Community Stats or similar if needed */}
-                    <div className="glass-panel rounded-[2rem] p-8 border border-primary/10">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
-                                <Users className="w-6 h-6 text-primary" />
+                    <div className="feeds-stats-card glass-panel">
+                        <div className="feeds-stats-header">
+                            <div className="feeds-stats-icon-box">
+                                <Users className="feeds-stats-icon" />
                             </div>
                             <div>
-                                <h4 className="text-sm font-black text-white uppercase tracking-widest leading-none mb-1">Community Stats</h4>
-                                <p className="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em]">Activity</p>
+                                <h4 className="feeds-stats-title">Community Stats</h4>
+                                <p className="feeds-stats-subtitle">Activity</p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-white/2 rounded-2xl border border-white/5">
-                                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Global Posts</p>
-                                <p className="text-xl font-display font-black text-white italic">{posts.length}</p>
+                        <div className="feeds-stats-grid">
+                            <div className="feeds-stat-box">
+                                <p className="feeds-stat-label">Global Posts</p>
+                                <p className="feeds-stat-value">{posts.length}</p>
                             </div>
-                            <div className="p-4 bg-white/2 rounded-2xl border border-white/5">
-                                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Active Members</p>
-                                <p className="text-xl font-display font-black text-white italic">{likesLeaderboard.length}</p>
+                            <div className="feeds-stat-box">
+                                <p className="feeds-stat-label">Active Members</p>
+                                <p className="feeds-stat-value">{likesLeaderboard.length}</p>
                             </div>
                         </div>
                     </div>

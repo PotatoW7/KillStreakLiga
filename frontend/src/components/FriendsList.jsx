@@ -27,7 +27,6 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         const data = docSnap.data();
         const friendsList = data.friends || [];
 
-
         const uniqueFriends = [];
         const seenIds = new Set();
         friendsList.forEach(f => {
@@ -41,9 +40,7 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         setPendingRequests(data.pendingRequests || []);
         setSentFriendRequests(data.sentFriendRequests || []);
 
-
         const currentFriendIds = new Set(uniqueFriends.map(f => f.id));
-
 
         for (const [id, unsub] of friendUnsubscribes.entries()) {
           if (!currentFriendIds.has(id)) {
@@ -51,7 +48,6 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
             friendUnsubscribes.delete(id);
           }
         }
-
 
         uniqueFriends.forEach(friend => {
           if (!friendUnsubscribes.has(friend.id)) {
@@ -110,7 +106,6 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
     };
   }, [friends]);
 
-
   useEffect(() => {
     const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
     if (onUnreadCountChange) {
@@ -166,11 +161,9 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const targetUserRef = doc(db, 'users', targetUserId);
 
-
       const currentUserDoc = await getDoc(currentUserRef);
       const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
       const currentUserProfileImage = currentUserData.profileImage || null;
-
 
       const targetUserDoc = await getDoc(targetUserRef);
       const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
@@ -404,21 +397,21 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
   const totalPendingCount = pendingRequests.length + sentFriendRequests.length;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="p-6 border-b border-white/5 bg-white/[0.01]">
-        <div className="relative group">
+    <div className="friends-list-container">
+      <div className="fl-search-section">
+        <div className="fl-search-wrapper">
           <input
             type="text"
             placeholder="Search Users..."
             value={searchUsername}
             onChange={(e) => setSearchUsername(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && searchUsers()}
-            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:bg-white/8 transition-all uppercase tracking-widest italic"
+            className="fl-search-input"
           />
           <button
             onClick={searchUsers}
             disabled={searchLoading}
-            className="absolute right-2 top-2 h-8 px-4 bg-primary text-black font-black text-[9px] tracking-widest uppercase rounded-lg hover:bg-white transition-all disabled:opacity-50 italic"
+            className="fl-search-btn"
           >
             {searchLoading ? 'Searching...' : 'Search'}
           </button>
@@ -426,33 +419,31 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
       </div>
 
       {searchResults.length > 0 && (
-        <div className="p-6 bg-primary/5 border-b border-white/5 animate-in slide-in-from-top duration-500">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-3 bg-primary rounded-full shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
-            <h4 className="font-display font-black text-[10px] uppercase tracking-[0.3em] text-white italic">Search Results ({searchResults.length})</h4>
+        <div className="fl-search-results">
+          <div className="fl-section-title-row">
+            <div className="fl-title-dot" />
+            <h4 className="fl-section-title">Search Results ({searchResults.length})</h4>
           </div>
-          <div className="space-y-3">
+          <div className="fl-results-list">
             {searchResults.map(user => (
-              <div key={user.id} className="flex items-center justify-between p-3 rounded-2xl bg-black/20 border border-white/5 group hover:border-primary/20 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <img
-                      src={user.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
-                      alt={user.username}
-                      className="w-10 h-10 rounded-xl object-cover border border-white/10"
-                      onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"; }}
-                    />
-                  </div>
-                  <span className="font-display font-black text-xs text-white uppercase italic tracking-tight">{user.username}</span>
+              <div key={user.id} className="fl-result-card">
+                <div className="fl-user-info">
+                  <img
+                    src={user.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                    alt={user.username}
+                    className="fl-user-avatar"
+                    onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"; }}
+                  />
+                  <span className="fl-user-name">{user.username}</span>
                 </div>
                 {user.isAlreadyFriend ? (
-                  <span className="text-[8px] font-black text-white/20 uppercase tracking-widest px-3 py-1.5 rounded-lg bg-white/5 italic">Friends</span>
+                  <span className="fl-status-badge friends">Friends</span>
                 ) : user.hasPendingRequest ? (
-                  <span className="text-[8px] font-black text-primary uppercase tracking-widest px-3 py-1.5 rounded-lg bg-primary/10 italic">Sent</span>
+                  <span className="fl-status-badge sent">Sent</span>
                 ) : (
                   <button
                     onClick={() => sendFriendRequest(user.id, user.username)}
-                    className="h-8 px-4 bg-white/5 hover:bg-primary hover:text-black border border-white/10 hover:border-primary font-black text-[9px] tracking-[0.2em] uppercase rounded-lg transition-all italic"
+                    className="fl-connect-btn"
                   >
                     + Connect
                   </button>
@@ -463,50 +454,50 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
         </div>
       )}
 
-      <div className="flex p-2 bg-black/20 mx-6 mt-6 rounded-xl border border-white/5">
+      <div className="fl-tabs">
         <button
-          className={`flex-1 h-9 rounded-lg font-black text-[9px] tracking-[0.3em] uppercase transition-all flex items-center justify-center italic ${friendsTabView === 'all' ? 'bg-primary text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+          className={`fl-tab-btn ${friendsTabView === 'all' ? 'active' : ''}`}
           onClick={() => setFriendsTabView('all')}
         >
           All Friends
         </button>
         <button
-          className={`flex-1 h-9 rounded-lg font-black text-[9px] tracking-[0.3em] uppercase transition-all flex items-center justify-center gap-2 italic ${friendsTabView === 'pending' ? 'bg-primary text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+          className={`fl-tab-btn ${friendsTabView === 'pending' ? 'active' : ''}`}
           onClick={() => setFriendsTabView('pending')}
         >
           Pending
           {totalPendingCount > 0 && (
-            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] ${friendsTabView === 'pending' ? 'bg-black text-primary' : 'bg-primary text-black shadow-[0_0_8px_rgba(234,179,8,0.5)]'}`}>{totalPendingCount}</span>
+            <span className="fl-tab-count">{totalPendingCount}</span>
           )}
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="fl-content custom-scrollbar">
         {friendsTabView === 'pending' ? (
-          <div className="p-6 space-y-8">
+          <div className="fl-list-padding fl-requests-list">
             {pendingRequests.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 px-2">
-                  <div className="w-1 h-3 bg-primary/40 rounded-full" />
-                  <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 italic">Friend Requests</h5>
+              <div className="fl-request-group">
+                <div className="fl-request-header">
+                  <div className="fl-header-dot pending" />
+                  <h5 className="fl-header-label">Friend Requests</h5>
                 </div>
                 {pendingRequests.map((req, idx) => (
-                  <div key={`received-${idx}`} className="glass-panel p-4 rounded-2xl border-white/5 flex items-center justify-between group hover:border-primary/20 transition-all relative overflow-hidden">
-                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="relative z-10 flex items-center gap-4">
-                      <div className="relative cursor-pointer" onClick={() => navigate(`/profile/${req.from}`)}>
+                  <div key={`received-${idx}`} className="fl-request-card glass-panel">
+                    <div className="fl-card-bg-glow" />
+                    <div className="fl-request-user">
+                      <div className="fl-avatar-container" onClick={() => navigate(`/profile/${req.from}`)}>
                         <img
                           src={req.fromProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
                           alt={req.fromUsername}
-                          className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                          className="fl-request-avatar"
                         />
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary border-2 border-background rounded-full animate-pulse" />
+                        <div className="fl-pulse-dot" />
                       </div>
-                      <span className="font-display font-black text-xs text-white uppercase italic tracking-tight">{req.fromUsername}</span>
+                      <span className="fl-user-name">{req.fromUsername}</span>
                     </div>
-                    <div className="relative z-10 flex gap-2">
-                      <button onClick={() => acceptFriendRequest(req)} className="h-9 px-4 bg-primary text-black font-black text-[9px] tracking-widest uppercase rounded-lg hover:bg-white transition-all shadow-xl active:scale-95 italic text-center">✓ Accept</button>
-                      <button onClick={() => rejectFriendRequest(req)} className="w-9 h-9 bg-white/5 border border-white/10 text-white/40 hover:text-red-500 hover:border-red-500/30 flex items-center justify-center rounded-lg transition-all active:scale-95 text-center">✕</button>
+                    <div className="fl-actions">
+                      <button onClick={() => acceptFriendRequest(req)} className="fl-accept-btn">✓ Accept</button>
+                      <button onClick={() => rejectFriendRequest(req)} className="fl-cancel-btn">✕</button>
                     </div>
                   </div>
                 ))}
@@ -514,25 +505,25 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
             )}
 
             {sentFriendRequests.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 px-2">
-                  <div className="w-1 h-3 bg-white/20 rounded-full" />
-                  <h5 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 italic">Sent Requests</h5>
+              <div className="fl-request-group">
+                <div className="fl-request-header">
+                  <div className="fl-header-dot sent" />
+                  <h5 className="fl-header-label">Sent Requests</h5>
                 </div>
                 {sentFriendRequests.map((req, idx) => (
-                  <div key={`sent-${idx}`} className="glass-panel p-4 rounded-2xl border-white/5 flex items-center justify-between group opacity-70 hover:opacity-100 transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className="relative cursor-pointer" onClick={() => navigate(`/profile/${req.to}`)}>
+                  <div key={`sent-${idx}`} className="fl-request-card sent glass-panel">
+                    <div className="fl-request-user">
+                      <div className="fl-avatar-container" onClick={() => navigate(`/profile/${req.to}`)}>
                         <img
                           src={req.toProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
                           alt={req.toUsername}
-                          className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                          className="fl-request-avatar"
                         />
                       </div>
-                      <span className="font-display font-black text-xs text-white uppercase italic tracking-tight">{req.toUsername}</span>
+                      <span className="fl-user-name">{req.toUsername}</span>
                     </div>
                     <button
-                      className="h-9 px-4 border border-white/10 text-white/20 hover:text-red-500 hover:border-red-500/30 font-black text-[9px] tracking-widest uppercase rounded-lg transition-all italic text-center"
+                      className="fl-cancel-text-btn"
                       onClick={() => cancelSentRequest(req)}
                     >
                       Cancel
@@ -543,36 +534,36 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
             )}
 
             {pendingRequests.length === 0 && sentFriendRequests.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-48 text-center opacity-30 space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                  <img src="/project-icons/Friends and Chat icons/bell.png" alt="Empty" className="w-5 h-5 grayscale" />
+              <div className="fl-empty-state">
+                <div className="fl-empty-icon-box">
+                  <img src="/project-icons/Friends and Chat icons/bell.png" alt="Empty" className="fl-empty-icon" />
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white italic">No pending requests</p>
+                <p className="fl-empty-text">No pending requests</p>
               </div>
             )}
           </div>
         ) : (
-          <div className="p-6">
+          <div className="fl-list-padding">
             {friends.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-center opacity-30 space-y-4 mt-20">
-                <div className="w-16 h-16 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center">
-                  <img src="/project-icons/Friends and Chat icons/comment chat balloon.png" alt="No Friends" className="w-6 h-6 grayscale" />
+              <div className="fl-empty-state" style={{ marginTop: '5rem' }}>
+                <div className="fl-empty-icon-box" style={{ width: '4rem', height: '4rem', borderRadius: '1.5rem' }}>
+                  <img src="/project-icons/Friends and Chat icons/comment chat balloon.png" alt="No Friends" className="fl-empty-icon" />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-black uppercase tracking-widest text-white italic">No friends yet</p>
-                  <p className="text-[9px] font-bold text-white uppercase tracking-[0.2em] max-w-[160px]">No friends found. Search for users to add them.</p>
+                  <p className="fl-empty-text">No friends yet</p>
+                  <p className="fl-empty-subtext">No friends found. Search for users to add them.</p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-3 pb-8">
+              <div className="fl-friends-grid">
                 {friends.map(friend => (
                   <div
                     key={friend.id}
-                    className={`glass-panel p-4 rounded-[2rem] border-white/5 hover:border-primary/30 transition-all group relative overflow-hidden flex items-center justify-between ${unreadCounts[friend.id] > 0 ? 'bg-primary/5' : ''}`}
+                    className={`fl-friend-card glass-panel ${unreadCounts[friend.id] > 0 ? 'unread' : ''}`}
                   >
-                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="fl-card-bg-glow" />
                     <div
-                      className="relative z-10 flex items-center gap-4 flex-1 cursor-pointer"
+                      className="fl-friend-info-group"
                       onClick={() => onSelectFriend({
                         id: friend.id,
                         username: friend.username,
@@ -580,37 +571,35 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
                       })}
                     >
                       <div className="relative">
-                        <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full scale-0 group-hover:scale-100 transition-transform duration-700" />
+                        <div className="fl-avatar-glow" />
                         <img
                           src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
                           alt={friend.username}
-                          className="w-12 h-12 rounded-2xl object-cover border border-white/10 group-hover:border-primary/40 transition-colors"
+                          className="fl-friend-avatar"
                           onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"; }}
                         />
-                        <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-background rounded-full shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                        <div className="fl-online-indicator" />
                       </div>
-                      <div className="space-y-0.5">
-                        <span className="font-display font-black text-sm text-white uppercase italic tracking-tight group-hover:text-primary transition-colors">{friend.username}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] group-hover:text-white/40 transition-colors italic">Online</span>
-                        </div>
+                      <div className="fl-friend-text">
+                        <span className="fl-friend-username">{friend.username}</span>
+                        <span className="fl-online-label">Online</span>
                       </div>
                       {unreadCounts[friend.id] > 0 && (
-                        <div className="ml-auto w-6 h-6 rounded-lg bg-red-500 flex items-center justify-center text-[10px] font-black text-white shadow-lg animate-bounce border border-red-400/50">
+                        <div className="fl-unread-badge">
                           {unreadCounts[friend.id]}
                         </div>
                       )}
                     </div>
 
                     <button
-                      className="relative z-10 p-3 opacity-0 group-hover:opacity-40 hover:opacity-100 hover:text-red-500 transition-all flex items-center justify-center"
+                      className="fl-unfriend-btn"
                       onClick={(e) => {
                         e.stopPropagation();
                         unfriend(friend.id, friend.username);
                       }}
                       title="Unfriend"
                     >
-                      <span className="text-lg">✕</span>
+                      ✕
                     </button>
                   </div>
                 ))}

@@ -1,0 +1,118 @@
+/* ===== ITEM TOOLTIP STYLES ===== */
+
+.item-tooltip {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0d0d1a 100%);
+    border: 1px solid #785a28;
+    border-radius: 8px;
+    padding: 12px;
+    max-width: 320px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 10px rgba(120, 90, 40, 0.3);
+    pointer-events: none;
+    z-index: 10001;
+    font-family: var(--font-sans);
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.item-tooltip-image {
+    width: 48px;
+    height: 48px;
+    margin-right: 12px;
+    border-radius: 4px;
+    border: 1px solid #785a28;
+    object-fit: cover;
+}
+
+.item-main-info {
+    flex: 1;
+}
+
+.item-name {
+    color: #c8aa6e;
+    font-weight: 700;
+    font-size: 14px;
+    display: block;
+}
+
+.item-cost {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #eab308;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.gold-icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* Description Styling */
+.tooltip-content {
+    font-size: 11px;
+    color: #a0a0b0;
+    line-height: 1.5;
+    border-top: 1px solid rgba(120, 90, 40, 0.3);
+    padding-top: 8px;
+}
+
+.item-stats {
+    color: #5b9bd5;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.item-passive {
+    color: #c8aa6e;
+    font-weight: 700;
+}
+
+.item-active {
+    color: #ff8c00;
+    font-weight: 700;
+}
+
+.text-attention {
+    color: #c8aa6e;
+    font-weight: 700;
+}
+
+.text-limit {
+    color: #ff4444;
+}
+
+.text-rarity {
+    color: #e0c068;
+}
+
+.text-keyword {
+    color: #d070d0;
+    font-style: italic;
+}
+
+.text-speed {
+    color: #f0e68c;
+}
+
+.text-status {
+    color: #ff6b6b;
+}
+
+/* Footer */
+.tooltip-footer {
+    border-top: 1px solid rgba(120, 90, 40, 0.2);
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+.item-flavor {
+    font-size: 10px;
+    color: #666680;
+    font-style: italic;
+    line-height: 1.4;
+}

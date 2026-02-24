@@ -254,9 +254,9 @@ function Summoner() {
 
   const renderRankCard = (rankData, label) => {
     if (!rankData) return (
-      <div className="bg-secondary/20 backdrop-blur-md rounded-2xl p-4 border border-white/5 min-w-[200px] flex flex-col justify-center">
-        <div className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-widest mb-1">{label}</div>
-        <div className="text-xs font-bold text-muted-foreground/30 italic tracking-tight">Unranked</div>
+      <div className="summoner-rank-card unranked">
+        <div className="summoner-rank-label">{label}</div>
+        <div className="summoner-rank-unranked">Unranked</div>
       </div>
     );
 
@@ -264,34 +264,34 @@ function Summoner() {
     const tierName = rankData.tier.charAt(0) + rankData.tier.slice(1).toLowerCase();
 
     return (
-      <div className="bg-secondary/40 backdrop-blur-md rounded-2xl p-6 border border-white/5 min-w-[280px] z-10 hover:border-primary/20 transition-all group/rank">
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">{label}</div>
-          <div className={`text-[10px] font-black ${winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+      <div className="summoner-rank-card ranked">
+        <div className="summoner-rank-header">
+          <div className="summoner-rank-label">{label}</div>
+          <div className={`summoner-rank-wr ${winRate >= 50 ? 'positive' : 'negative'}`}>
             {winRate}% WR
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="summoner-rank-display">
           <img
             src={`/rank-icons/Rank=${tierName}.png`}
             alt={rankData.tier}
-            className="w-16 h-16 group-hover/rank:scale-110 transition-transform duration-500"
+            className="summoner-rank-icon"
             onError={(e) => (e.target.src = "/rank-icons/Rank=Unranked.png")}
           />
           <div>
-            <div className="font-display text-2xl font-black text-primary leading-none mb-1">{rankData.tier} {rankData.rank}</div>
-            <div className="font-bold text-lg text-foreground">{rankData.leaguePoints} LP</div>
+            <div className="summoner-rank-tier">{rankData.tier} {rankData.rank}</div>
+            <div className="summoner-rank-lp">{rankData.leaguePoints} LP</div>
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+        <div className="summoner-rank-stats">
           <span>{rankData.wins} Wins</span>
           <span>{rankData.losses} Losses</span>
         </div>
-        <div className="mt-2 h-1 bg-white/5 rounded-full overflow-hidden">
+        <div className="summoner-rank-bar-track">
           <div
-            className="h-full bg-gradient-to-r from-primary to-accent"
+            className="summoner-rank-bar-fill"
             style={{ width: `${winRate}%` }}
           />
         </div>
@@ -300,106 +300,106 @@ function Summoner() {
   };
 
   return (
-    <div className="container max-w-6xl mx-auto py-8 px-4 animate-in fade-in duration-500">
-      {/* Search Section (Simplified for top) */}
-      <div className="mb-8 flex flex-col md:flex-row items-center gap-4">
-        <div className="relative flex-1 group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur opacity-25 group-focus-within:opacity-50 transition duration-1000"></div>
-          <div className="relative glass-panel rounded-2xl p-2 flex items-center gap-3">
+    <div className="summoner-page">
+      {/* Search Section */}
+      <div className="summoner-search">
+        <div className="summoner-search-glow-wrapper">
+          <div className="summoner-search-glow"></div>
+          <div className="summoner-search-bar glass-panel">
             <input
               type="text"
               value={riotId}
               onChange={(e) => setRiotId(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Faker#KR1"
-              className="flex-1 border-0 bg-transparent px-4 py-2 text-lg font-medium placeholder:text-muted-foreground/30 outline-none"
+              className="summoner-search-input"
             />
-            <div className="relative group/select">
+            <div className="summoner-region-wrapper">
               <select
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                className="appearance-none bg-white/5 border border-white/10 rounded-xl pl-4 pr-10 py-2 text-[10px] font-black tracking-[0.2em] uppercase text-white/70 hover:text-primary hover:border-primary/50 transition-all outline-none cursor-pointer"
+                className="summoner-region-select"
               >
-                <option value="euw1" className="bg-neutral-900">EUW</option>
-                <option value="eun1" className="bg-neutral-900">EUNE</option>
-                <option value="na1" className="bg-neutral-900">NA</option>
-                <option value="kr" className="bg-neutral-900">KR</option>
-                <option value="jp1" className="bg-neutral-900">JP</option>
-                <option value="br1" className="bg-neutral-900">BR</option>
-                <option value="la1" className="bg-neutral-900">LAN</option>
-                <option value="la2" className="bg-neutral-900">LAS</option>
-                <option value="oc1" className="bg-neutral-900">OCE</option>
-                <option value="ru" className="bg-neutral-900">RU</option>
-                <option value="tr1" className="bg-neutral-900">TR</option>
+                <option value="euw1">EUW</option>
+                <option value="eun1">EUNE</option>
+                <option value="na1">NA</option>
+                <option value="kr">KR</option>
+                <option value="jp1">JP</option>
+                <option value="br1">BR</option>
+                <option value="la1">LAN</option>
+                <option value="la2">LAS</option>
+                <option value="oc1">OCE</option>
+                <option value="ru">RU</option>
+                <option value="tr1">TR</option>
               </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/20 group-hover/select:text-primary/50 transition-colors">
-                <ChevronDown className="w-3.5 h-3.5" />
+              <div className="summoner-region-chevron">
+                <ChevronDown />
               </div>
             </div>
             <button
               onClick={getSummonerInfo}
               disabled={loading}
-              className="bg-primary text-black px-6 py-2 rounded-xl font-black text-xs tracking-widest uppercase hover:bg-white active:scale-95 transition-all"
+              className="summoner-search-btn"
             >
-              <Search className="w-4 h-4" />
+              <Search className="icon-sm" />
             </button>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="glass-panel border-red-500/30 bg-red-500/5 p-4 rounded-2xl mb-8 flex items-center gap-3 animate-in zoom-in-95 duration-300">
-          <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-red-500 font-bold">!</span>
+        <div className="summoner-error glass-panel">
+          <div className="summoner-error-icon">
+            <span>!</span>
           </div>
-          <p className="text-red-400 text-sm font-medium">{error}</p>
+          <p className="summoner-error-text">{error}</p>
         </div>
       )}
 
       {data && (
         <>
-          <div className="glass-panel p-8 rounded-3xl mb-8 flex flex-col md:flex-row items-center md:items-start gap-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px]" />
+          <div className="summoner-profile glass-panel">
+            <div className="summoner-profile-glow" />
 
-            <div className="relative group">
-              <div className="absolute -inset-2 bg-primary/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+            <div className="summoner-avatar-wrapper">
+              <div className="summoner-avatar-glow"></div>
               <img
                 src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${data.profileIconId}.png`}
                 alt="Profile Icon"
-                className="w-32 h-32 rounded-2xl border-4 border-secondary/50 shadow-2xl relative z-10"
+                className="summoner-avatar"
               />
-              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-background border-2 border-primary text-primary px-3 py-1 rounded-full text-xs font-black shadow-xl z-20">
+              <div className="summoner-level-badge">
                 {data.summonerLevel}
               </div>
             </div>
 
-            <div className="flex-1 text-center md:text-left z-10">
-              <h1 className="font-display text-4xl font-black text-foreground mb-2 flex flex-col md:flex-row md:items-baseline gap-2">
+            <div className="summoner-info">
+              <h1 className="summoner-name">
                 <span>{riotId.split('#')[0]}</span>
-                <span className="text-muted-foreground font-medium text-2xl tracking-tight">#{riotId.split('#')[1] || data.tagLine || region.toUpperCase()}</span>
+                <span className="summoner-tag">#{riotId.split('#')[1] || data.tagLine || region.toUpperCase()}</span>
               </h1>
 
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-primary/20 bg-primary/5 text-primary">
-                  <Trophy className="w-4 h-4" />
-                  <span className="text-[10px] uppercase font-black tracking-widest">Master Tier</span>
+              <div className="summoner-badges">
+                <div className="summoner-badge primary">
+                  <Trophy className="icon-sm" />
+                  <span>Master Tier</span>
                 </div>
                 {liveGame?.inGame && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-green-500/20 bg-green-500/5 text-green-500 animate-pulse">
-                    <Activity className="w-4 h-4" />
-                    <span className="text-[10px] uppercase font-black tracking-widest">In Game</span>
+                  <div className="summoner-badge live">
+                    <Activity className="icon-sm" />
+                    <span>In Game</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-muted-foreground">
-                  <Target className="w-4 h-4" />
-                  <span className="text-[10px] uppercase font-black tracking-widest">{region.toUpperCase()} Region</span>
+                <div className="summoner-badge region">
+                  <Target className="icon-sm" />
+                  <span>{region.toUpperCase()} Region</span>
                 </div>
               </div>
 
               {playerTags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4 justify-center md:justify-start">
+                <div className="summoner-tags">
                   {playerTags.slice(0, 4).map((tag, index) => (
-                    <span key={index} className="px-2 py-1 rounded-lg bg-secondary/60 text-[9px] font-black tracking-wider uppercase border border-white/5 text-foreground/70">
+                    <span key={index} className="summoner-player-tag">
                       {tag}
                     </span>
                   ))}
@@ -407,7 +407,7 @@ function Summoner() {
               )}
             </div>
 
-            <div className="flex flex-wrap gap-4 z-10">
+            <div className="summoner-ranks">
               {(() => {
                 const solo = data.ranked?.find(q => q.queueType === "RANKED_SOLO_5x5");
                 return renderRankCard(solo, "Ranked Solo");
@@ -419,32 +419,30 @@ function Summoner() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="space-y-8">
-              <div className="glass-panel p-8 rounded-3xl group">
-                <h4 className="font-display text-xl font-black mb-6 flex items-center gap-3">
-                  <div className="w-1.5 h-6 bg-primary rounded-full" />
+          <div className="summoner-content-grid">
+            <div className="summoner-sidebar">
+              <div className="summoner-mastery-section glass-panel">
+                <h4 className="summoner-section-title">
+                  <div className="summoner-section-bar" />
                   Champion Mastery
                 </h4>
                 <ChampionMastery masteryData={data.mastery} champIdToName={champIdToName} version={version} />
               </div>
             </div>
 
-            <div className="lg:col-span-2 space-y-6">
+            <div className="summoner-match-section">
               {liveGame?.inGame && (
                 <div
-                  className="group relative overflow-hidden rounded-3xl border border-green-500/30 bg-green-500/5 p-6 flex flex-col md:flex-row items-center gap-6 cursor-pointer hover:bg-green-500/10 transition-all"
+                  className="summoner-live-banner"
                   onClick={handleLiveGameClick}
                 >
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-[80px]" />
+                  <div className="summoner-live-glow" />
 
-                  <div className="relative flex-shrink-0">
-                    <div className="bg-green-500 text-black font-black text-[9px] px-4 py-1.5 rounded-full relative z-10 tracking-[0.2em]">
-                      LIVE GAME
-                    </div>
+                  <div className="summoner-live-badge" style={{ flexShrink: 0 }}>
+                    LIVE GAME
                   </div>
 
-                  <div className="flex-1 flex items-center gap-4 z-10">
+                  <div className="summoner-live-details">
                     {(() => {
                       const currentPlayer = getLiveGameChampion();
                       if (currentPlayer && champIdToName[currentPlayer.championId]) {
@@ -454,12 +452,12 @@ function Summoner() {
                             <img
                               src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
                               alt={champName}
-                              className="w-12 h-12 rounded-xl border-2 border-green-500/50"
+                              className="summoner-live-champ-icon"
                             />
                             <div>
-                              <div className="text-green-400 font-black text-[10px] uppercase tracking-widest mb-0.5">Match In Progress</div>
-                              <div className="font-display text-xl font-bold">
-                                {champName} <span className="text-muted-foreground/50 font-normal mx-2">-</span> {getGameModeName(liveGame.gameMode, liveGame.gameQueueConfigId)}
+                              <div className="summoner-live-status">Match In Progress</div>
+                              <div className="summoner-live-mode">
+                                {champName} <span className="separator">-</span> {getGameModeName(liveGame.gameMode, liveGame.gameQueueConfigId)}
                               </div>
                             </div>
                           </>
@@ -469,25 +467,25 @@ function Summoner() {
                     })()}
                   </div>
 
-                  <div className="z-10 text-right">
-                    <div className="text-2xl font-black text-white tabular-nums leading-none mb-1">{formatElapsedTime(elapsedTime)}</div>
-                    <div className="text-[9px] font-black text-green-500/70 tracking-[0.2em] uppercase">Duration</div>
+                  <div className="summoner-live-timer">
+                    <div className="summoner-live-time">{formatElapsedTime(elapsedTime)}</div>
+                    <div className="summoner-live-label">Duration</div>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center justify-between px-2 mb-2">
-                <h2 className="font-display text-2xl font-black uppercase tracking-tight italic">Match History</h2>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Recent History</div>
+              <div className="summoner-match-header">
+                <h2 className="summoner-match-title">Match History</h2>
+                <div className="summoner-match-label">
+                  <div className="summoner-match-dot" />
+                  <div className="summoner-match-label-text">Recent History</div>
                 </div>
               </div>
 
               {matchLoading ? (
-                <div className="glass-panel p-20 rounded-3xl flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
-                  <p className="text-muted-foreground font-bold tracking-[0.3em] uppercase text-[10px]">Loading Match History...</p>
+                <div className="summoner-match-loading glass-panel">
+                  <div className="summoner-match-spinner" />
+                  <p className="summoner-match-loading-text">Loading Match History...</p>
                 </div>
               ) : (
                 <MatchHistory

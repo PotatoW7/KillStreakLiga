@@ -1,0 +1,573 @@
+/* ===== UTILITY CLASSES & ANIMATIONS ===== */
+
+/* ===== GLASS PANEL ===== */
+.glass-panel {
+    background: hsl(var(--background) / 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsl(var(--border) / 0.5);
+    box-shadow: var(--shadow-2xl);
+}
+
+/* ===== GOLD GLOW ===== */
+.gold-glow {
+    box-shadow: 0 0 20px -5px rgba(234, 179, 8, 0.3);
+}
+
+.gold-glow:hover {
+    box-shadow: 0 0 30px -5px rgba(234, 179, 8, 0.5);
+}
+
+/* ===== TEXT GRADIENT ===== */
+.text-gradient {
+    background: linear-gradient(to right, var(--color-primary), white, var(--color-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ===== LOADING INDICATOR ===== */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    color: var(--color-muted-foreground);
+    font-family: var(--font-sans);
+}
+
+/* ===== ERROR BOX ===== */
+.error-box {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-muted-foreground);
+    font-size: 1.25rem;
+}
+
+/* ===== ANIMATION KEYFRAMES ===== */
+
+/* Fade In */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Slide In From Bottom */
+@keyframes slideInFromBottom4 {
+    from {
+        opacity: 0;
+        transform: translateY(1rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInFromBottom8 {
+    from {
+        opacity: 0;
+        transform: translateY(2rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInFromBottom12 {
+    from {
+        opacity: 0;
+        transform: translateY(3rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Slide In From Left */
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-2.5rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Slide In From Right */
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(2rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Zoom In */
+@keyframes zoomIn95 {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Pulse */
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Ping */
+@keyframes ping {
+
+    75%,
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* Bounce */
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(-25%);
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+
+    50% {
+        transform: translateY(0);
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+}
+
+/* Spin */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ===== ANIMATION UTILITY CLASSES ===== */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up-sm {
+    animation: slideInFromBottom4 0.7s ease-out forwards;
+}
+
+.animate-slide-up-md {
+    animation: slideInFromBottom8 1s ease-out forwards;
+}
+
+.animate-slide-up-lg {
+    animation: slideInFromBottom12 1s ease-out forwards;
+}
+
+.animate-slide-left {
+    animation: slideInFromLeft 1s ease-out forwards;
+}
+
+.animate-slide-right {
+    animation: slideInFromRight 1s ease-out forwards;
+}
+
+.animate-zoom-in {
+    animation: zoomIn95 0.2s ease-out forwards;
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-ping {
+    animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.animate-bounce {
+    animation: bounce 1s infinite;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Animation delays */
+.delay-200 {
+    animation-delay: 200ms;
+}
+
+.delay-300 {
+    animation-delay: 300ms;
+}
+
+.delay-400 {
+    animation-delay: 400ms;
+}
+
+.delay-500 {
+    animation-delay: 500ms;
+}
+
+.delay-700 {
+    animation-delay: 700ms;
+}
+
+.delay-1000 {
+    animation-delay: 1000ms;
+}
+
+/* Fill mode for delayed animations */
+.animate-slide-up-sm,
+.animate-slide-up-md,
+.animate-slide-up-lg,
+.animate-slide-left,
+.animate-slide-right,
+.animate-zoom-in {
+    opacity: 0;
+}
+
+/* ===== ICON SIZES ===== */
+.icon-xs {
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+.icon-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+.icon-md {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.icon-lg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.icon-xl {
+    width: 2rem;
+    height: 2rem;
+}
+
+.icon-xxl {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.icon-mega {
+    width: 3.5rem;
+    height: 3.5rem;
+}
+
+/* ===== SPACING & BRIDGES ===== */
+.panel-padding {
+    padding: 2rem;
+}
+
+.spacing-v-sm {
+    margin-bottom: 0.75rem;
+}
+
+.spacing-v-md {
+    margin-bottom: 1rem;
+}
+
+.spacing-v-lg {
+    margin-bottom: 1.5rem;
+}
+
+.u-relative {
+    position: relative;
+}
+
+.u-absolute {
+    position: absolute;
+}
+
+.u-z-10 {
+    z-index: 10;
+}
+
+.u-z-50 {
+    z-index: 50;
+}
+
+.u-z-9999 {
+    z-index: 9999;
+}
+
+.u-flex-1 {
+    flex: 1 1 0%;
+}
+
+.u-flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.u-flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.u-items-center {
+    display: flex;
+    align-items: center;
+}
+
+.u-justify-between {
+    display: flex;
+    justify-content: space-between;
+}
+
+.u-gap-1 {
+    gap: 0.25rem;
+}
+
+.u-gap-2 {
+    gap: 0.5rem;
+}
+
+.u-gap-3 {
+    gap: 0.75rem;
+}
+
+.u-gap-4 {
+    gap: 1rem;
+}
+
+.u-flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.u-mt-2 {
+    margin-top: 0.5rem;
+}
+
+.u-mt-4 {
+    margin-top: 1rem;
+}
+
+.u-ml-4 {
+    margin-left: 1rem;
+}
+
+.u-ml-auto {
+    margin-left: auto;
+}
+
+.u-mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.u-text-right {
+    text-align: right;
+}
+
+.u-text-xs {
+    font-size: 0.75rem;
+}
+
+.u-text-sm {
+    font-size: 0.875rem;
+}
+
+.u-font-bold {
+    font-weight: 700;
+}
+
+.u-uppercase {
+    text-transform: uppercase;
+}
+
+.u-tracking-widest {
+    letter-spacing: 0.1em;
+}
+
+.u-bg-black-20 {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.u-bg-black-10 {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.u-border-b {
+    border-bottom: 1px solid hsla(var(--border) / 0.1);
+}
+
+.u-border-t {
+    border-top: 1px solid hsla(var(--border) / 0.1);
+}
+
+.u-object-contain {
+    object-fit: contain;
+}
+
+.u-w-full {
+    width: 100%;
+}
+
+.u-h-full {
+    height: 100%;
+}
+
+.u-mb-0 {
+    margin-bottom: 0;
+}
+
+.u-mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.u-mb-3 {
+    margin-bottom: 0.75rem;
+}
+
+.u-mb-6 {
+    margin-bottom: 1.5rem;
+}
+
+.u-mb-8 {
+    margin-bottom: 2rem;
+}
+
+.u-border-b-thin {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.u-shadow-2xl {
+    box-shadow: var(--shadow-2xl);
+}
+
+.u-bottom-full {
+    bottom: 100%;
+}
+
+.u-left-0 {
+    left: 0;
+}
+
+.u-max-h-modal {
+    max-height: 60vh;
+}
+
+.u-overflow-y-auto {
+    overflow-y: auto;
+}
+
+.u-py-2 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.u-py-8 {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.u-py-16 {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+}
+
+.u-mb-8 {
+    margin-bottom: 2rem;
+}
+
+.u-text-cyan {
+    color: var(--color-accent);
+}
+
+.u-w-5 {
+    width: 1.25rem;
+}
+
+.u-h-5 {
+    height: 1.25rem;
+}
+
+.u-w-6 {
+    width: 1.5rem;
+}
+
+.u-h-6 {
+    height: 1.5rem;
+}
+
+.u-w-8 {
+    width: 2rem;
+}
+
+.u-h-8 {
+    height: 2rem;
+}
+
+.u-w-10 {
+    width: 2.5rem;
+}
+
+.u-h-10 {
+    height: 2.5rem;
+}
+
+/* ===== POINTER EVENTS ===== */
+.pointer-events-none {
+    pointer-events: none;
+}
+
+/* ===== SCREEN READER ONLY ===== */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
