@@ -5,7 +5,6 @@ import {
   collection, query, where, onSnapshot, doc, updateDoc,
   arrayUnion, getDoc, serverTimestamp
 } from "firebase/firestore";
-import "../styles/componentsCSS/announcement.css";
 
 function Announcement({ notificationCount, setNotificationCount, isEmbedded = false }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -355,344 +354,189 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
 
   if (isEmbedded) {
     return (
-      <>
-        <div className="embedded-notification-content">
-          <div className="notification-panel-body">
-            {loading ? (
-              <div className="notification-loading">
-                <div className="loading-spinner"></div>
-                <p>Loading requests...</p>
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-40 space-y-4">
+              <div className="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 italic">Processing Data...</p>
+            </div>
+          ) : gameRequests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-40">
+              <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center">
+                <img src="/project-icons/Friends and Chat icons/bell.png" alt="Empty" className="w-8 h-8 grayscale opacity-50" />
               </div>
-            ) : gameRequests.length === 0 ? (
-              <div className="notification-empty">
-                <div className="empty-icon">📭</div>
-                <p>No pending requests</p>
-                <span>Players who request to join your games will appear here</span>
+              <div className="space-y-2">
+                <p className="text-xs font-black uppercase tracking-widest text-white italic">Node Status: Nomimal</p>
+                <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] max-w-[180px] leading-relaxed">System logs are currently clear. No active neural requests detected.</p>
               </div>
-            ) : (
-              <div className="notification-list">
-                {gameRequests.map(request => (
-                  <div key={request.id} className="notification-item">
-                    <div className="notification-item-content">
-                      <div className="notification-item-badge">NEW</div>
-                      <div className="notification-item-user">
-                        <strong>{request.displayName}</strong> wants to join
-                      </div>
-                      <div className="notification-item-details">
-                        <span className="notification-queue-type">
-                          {getQueueTypeName(request.gameQueueType)}
-                        </span>
-                        <span className="notification-time">
-                          {formatTimeAgo(request.appliedAt)}
-                        </span>
-                      </div>
-                      {request.gameDescription && (
-                        <div className="notification-item-preview">
-                          "{request.gameDescription.substring(0, 50)}..."
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="px-2 mb-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 italic">Pending game requests ({gameRequests.length})</p>
+              </div>
+              {gameRequests.map(request => (
+                <div key={request.id} className="glass-panel p-5 rounded-2xl border-white/5 hover:border-primary/30 transition-all group relative overflow-hidden">
+                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative z-10 flex flex-col gap-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-1 h-3 bg-primary rounded-full" />
+                          <h5 className="font-display font-black text-sm text-white uppercase italic tracking-tight">{request.displayName}</h5>
                         </div>
-                      )}
+                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Wants to synchronize</p>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black tracking-widest uppercase italic">{getQueueTypeName(request.gameQueueType)}</span>
+                    </div>
 
-                      <div className="notification-item-actions">
+                    {request.gameDescription && (
+                      <p className="text-[11px] font-medium text-white/40 italic leading-relaxed pl-3 border-l border-white/10">
+                        "{request.gameDescription}"
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <span className="text-[9px] font-black text-white/20 uppercase tracking-widest italic">{formatTimeAgo(request.appliedAt)}</span>
+                      <div className="flex gap-2">
                         <button
-                          className="notification-accept-btn"
-                          onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                          onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                          className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-xl active:scale-95"
+                          title="Purge Request"
                         >
-                          ✅ Accept
+                          ✕
                         </button>
                         <button
-                          className="notification-decline-btn"
-                          onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                          onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                          className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center hover:bg-primary hover:text-black transition-all shadow-xl active:scale-95"
+                          title="Authorize Sync"
                         >
-                          ❌ Decline
+                          ✓
                         </button>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {gameRequests.length > 0 && (
-            <div className="notification-panel-footer">
-              <button onClick={handleManageRequests} className="notification-manage-all-btn">
-                Manage All Requests →
-              </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
-        {showManageModal && ReactDOM.createPortal(
-          <div className="request-management-modal">
-            <div className="request-modal-content">
-              <div className="request-modal-header">
-                <h3 className="request-modal-title">
-                  Manage Game Requests ({gameRequests.length})
-                </h3>
-                <button className="request-modal-close" onClick={handleCloseModal}>
-                  ✕
-                </button>
-              </div>
 
-              <div className="request-modal-body">
-                {gameRequests.length === 0 ? (
-                  <div className="no-requests">
-                    <div className="no-requests-icon">📭</div>
-                    <p>No pending requests</p>
-                    <p style={{ fontSize: '14px', color: '#7f8c8d' }}>
-                      Players who request to join your games will appear here
-                    </p>
-                  </div>
-                ) : (
-                  <div className="request-list">
-                    {gameRequests.map(request => {
-                      const soloQueue = getQueueData(request.rankedData, 'RANKED_SOLO_5x5');
-                      const rankText = soloQueue ? formatRankDisplay(soloQueue) : 'Unranked';
-                      const rankIcon = getRankIcon(soloQueue?.tier);
-
-                      return (
-                        <div key={request.id} className="request-card-new">
-                          <div className="request-card-top">
-                            <div className="request-profile-section">
-                              <div className="request-avatar-wrapper">
-                                {request.profileImage && request.profileImage.startsWith('data:image') ? (
-                                  <img
-                                    src={request.profileImage}
-                                    alt={request.displayName}
-                                    className="request-avatar"
-                                    onError={(e) => {
-                                      e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                                    }}
-                                  />
-                                ) : (
-                                  <img
-                                    src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
-                                    alt={request.displayName}
-                                    className="request-avatar"
-                                  />
-                                )}
-                              </div>
-                              <div className="request-user-info-main">
-                                <div className="name-status-row">
-                                  <span className="request-name-text">{request.displayName}</span>
-                                  <span className="request-badge">Pending</span>
-                                </div>
-                                <div className="request-riot-id">
-                                  {request.riotAccount || 'No Riot account linked'}
-                                </div>
-                                <div className="request-rank-display">
-                                  <img
-                                    src={rankIcon}
-                                    alt={rankText}
-                                    className="req-rank-icon"
-                                    onError={(e) => e.target.style.display = 'none'}
-                                  />
-                                  <span className="req-rank-text">{rankText}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="request-details-section">
-                              <div className="request-tags-group">
-                                <span className="req-tag queue-tag">
-                                  {getQueueTypeName(request.gameQueueType)}
-                                </span>
-                                <span className="req-tag role-tag-new">
-                                  <img
-                                    src={getRoleImage(request.role || 'fill')}
-                                    alt={request.role || 'fill'}
-                                    className="tag-icon"
-                                    onError={(e) => e.target.style.display = 'none'}
-                                  />
-                                  {roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name || 'Fill'}
-                                </span>
-                              </div>
-                              <div className="request-time-text">
-                                Applied {formatTimeAgo(request.appliedAt)}
-                              </div>
-                            </div>
-
-                            <div className="request-actions-section">
-                              <button
-                                className="btn-view-profile"
-                                onClick={() => handleViewProfile(request.userId)}
-                              >
-                                View Profile
-                              </button>
-                              <button
-                                className="btn-decline"
-                                onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                              >
-                                Decline
-                              </button>
-                              <button
-                                className="btn-accept"
-                                onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                              >
-                                Accept
-                              </button>
-                            </div>
-                          </div>
-
-                          {request.message && (
-                            <div className="request-message-block">
-                              <span className="quote-mark">"</span>
-                              <span className="message-content">{request.message}</span>
-                              <span className="quote-mark">"</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="request-modal-footer">
-                <button
-                  onClick={handleCloseModal}
-                  style={{
-                    background: 'rgba(52, 152, 219, 0.1)',
-                    color: '#3498db',
-                    border: '1px solid #3498db',
-                    padding: '10px 30px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
+        {gameRequests.length > 0 && (
+          <div className="p-6 border-t border-white/5 bg-white/[0.02]">
+            <button
+              onClick={handleManageRequests}
+              className="w-full h-12 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-primary hover:text-black hover:border-primary font-black text-[10px] tracking-[0.3em] uppercase transition-all flex items-center justify-center group"
+            >
+              Manage All Requests
+              <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+          </div>
         )}
-      </>
+      </div>
     );
   }
-
 
   return (
     <>
       <div style={{ display: 'none' }}></div>
       {showManageModal && ReactDOM.createPortal(
-        <div className="request-management-modal">
-          <div className="request-modal-content">
-            <div className="request-modal-header">
-              <h3 className="request-modal-title">
-                Manage Game Requests ({gameRequests.length})
-              </h3>
-              <button className="request-modal-close" onClick={handleCloseModal}>
-                ✕
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-10">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleCloseModal} />
+          <div className="w-full max-w-4xl max-h-[90vh] glass-panel rounded-[3rem] border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col relative z-10 animate-in fade-in zoom-in-95 duration-500">
+            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+              <div className="space-y-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-6 bg-primary rounded-full shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
+                  <h3 className="font-display text-2xl font-black text-white uppercase italic tracking-tight">System Log Analyst</h3>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 italic ml-4">Active Requests</p>
+              </div>
+              <button
+                onClick={handleCloseModal}
+                className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-red-500 border border-white/10 hover:border-red-500 text-white transition-all flex items-center justify-center active:scale-90 group"
+              >
+                <span className="text-xl group-hover:scale-125 transition-transform">✕</span>
               </button>
             </div>
 
-            <div className="request-modal-body">
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
               {gameRequests.length === 0 ? (
-                <div className="no-requests">
-                  <p>No pending requests</p>
-                  <p style={{ fontSize: '14px', color: '#7f8c8d' }}>
-                    Players who request to join your games will appear here
-                  </p>
+                <div className="flex flex-col items-center justify-center h-64 text-center opacity-40">
+                  <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+                    <img src="/project-icons/Friends and Chat icons/bell.png" alt="Empty" className="w-10 h-10 grayscale" />
+                  </div>
+                  <h4 className="font-display text-xl font-black text-white uppercase italic mb-2">Logs Decrypted: Null</h4>
+                  <p className="text-[11px] font-bold text-white/20 uppercase tracking-[0.3em]">No synchronization requests found in existing data stream.</p>
                 </div>
               ) : (
-                <div className="request-list">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4">
                   {gameRequests.map(request => {
                     const soloQueue = getQueueData(request.rankedData, 'RANKED_SOLO_5x5');
                     const rankText = soloQueue ? formatRankDisplay(soloQueue) : 'Unranked';
                     const rankIcon = getRankIcon(soloQueue?.tier);
 
                     return (
-                      <div key={request.id} className="request-card-new">
-                        <div className="request-card-top">
-                          <div className="request-profile-section">
-                            <div className="request-avatar-wrapper">
-                              {request.profileImage && request.profileImage.startsWith('data:image') ? (
-                                <img
-                                  src={request.profileImage}
-                                  alt={request.displayName}
-                                  className="request-avatar"
-                                  onError={(e) => {
-                                    e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                                  }}
-                                />
-                              ) : (
-                                <img
-                                  src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
-                                  alt={request.displayName}
-                                  className="request-avatar"
-                                />
-                              )}
+                      <div key={request.id} className="glass-panel p-6 rounded-[2rem] border-white/5 hover:border-primary/20 transition-all group relative overflow-hidden flex flex-col">
+                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                        <div className="relative z-10 space-y-6 flex-1">
+                          <div className="flex items-start gap-5">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-0 group-hover:scale-100 transition-transform duration-700" />
+                              <img
+                                src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                                alt={request.displayName}
+                                className="w-16 h-16 rounded-2xl object-cover relative z-10 border border-white/10 group-hover:border-primary/40 transition-colors"
+                                onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"; }}
+                              />
                             </div>
-                            <div className="request-user-info-main">
-                              <div className="name-status-row">
-                                <span className="request-name-text">{request.displayName}</span>
-                                <span className="request-badge">Pending</span>
-                              </div>
-                              <div className="request-riot-id">
-                                {request.riotAccount || 'No Riot account linked'}
-                              </div>
-                              <div className="request-rank-display">
-                                <img
-                                  src={rankIcon}
-                                  alt={rankText}
-                                  className="req-rank-icon"
-                                  onError={(e) => e.target.style.display = 'none'}
-                                />
-                                <span className="req-rank-text">{rankText}</span>
+                            <div className="space-y-1">
+                              <h4 className="font-display text-xl font-black text-white uppercase italic group-hover:text-primary transition-colors">{request.displayName}</h4>
+                              <div className="flex items-center gap-2">
+                                <img src={rankIcon} alt={rankText} className="w-4 h-4 object-contain grayscale group-hover:grayscale-0 transition-all" />
+                                <span className="text-[10px] font-black text-white/30 group-hover:text-white/60 transition-colors uppercase tracking-widest">{rankText}</span>
                               </div>
                             </div>
                           </div>
 
-                          <div className="request-details-section">
-                            <div className="request-tags-group">
-                              <span className="req-tag queue-tag">
-                                {getQueueTypeName(request.gameQueueType)}
-                              </span>
-                              <span className="req-tag role-tag-new">
-                                <img
-                                  src={getRoleImage(request.role || 'fill')}
-                                  alt={request.role || 'fill'}
-                                  className="tag-icon"
-                                  onError={(e) => e.target.style.display = 'none'}
-                                />
-                                {roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name || 'Fill'}
-                              </span>
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap gap-2">
+                              <span className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black text-white opacity-60 uppercase tracking-widest italic">{getQueueTypeName(request.gameQueueType)}</span>
+                              <div className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-2">
+                                <img src={getRoleImage(request.role || 'fill')} alt="Role" className="w-3 h-3" />
+                                <span className="text-[9px] font-black text-primary uppercase tracking-widest italic">{roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name || 'Fill'}</span>
+                              </div>
                             </div>
-                            <div className="request-time-text">
-                              Applied {formatTimeAgo(request.appliedAt)}
-                            </div>
+
+                            {request.message && (
+                              <div className="p-4 rounded-xl bg-white/2 border border-white/5 relative">
+                                <span className="absolute -top-2 left-3 px-2 bg-background text-[8px] font-black text-white/20 uppercase tracking-[0.3em]">Message</span>
+                                <p className="text-[11px] font-medium text-white/40 italic leading-relaxed">"{request.message}"</p>
+                              </div>
+                            )}
                           </div>
 
-                          <div className="request-actions-section">
-                            <button
-                              className="btn-view-profile"
-                              onClick={() => handleViewProfile(request.userId)}
-                            >
-                              View Profile
-                            </button>
-                            <button
-                              className="btn-decline"
-                              onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                            >
-                              Decline
-                            </button>
-                            <button
-                              className="btn-accept"
-                              onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                            >
-                              Accept
-                            </button>
+                          <div className="flex items-center justify-between text-[9px] font-black text-white/20 uppercase tracking-[0.4em] italic mb-4">
+                            <span>Sent {formatTimeAgo(request.appliedAt)}</span>
                           </div>
                         </div>
 
-                        {request.message && (
-                          <div className="request-message-block">
-                            <span className="quote-mark">"</span>
-                            <span className="message-content">{request.message}</span>
-                            <span className="quote-mark">"</span>
-                          </div>
-                        )}
+                        <div className="relative z-10 mt-6 pt-6 border-t border-white/5 grid grid-cols-2 gap-3">
+                          <button
+                            onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                            className="h-12 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:bg-red-500/20 hover:text-red-500 hover:border-red-500/50 font-black text-[10px] tracking-[0.3em] uppercase transition-all shadow-xl active:scale-95 italic"
+                          >
+                            Decline
+                          </button>
+                          <button
+                            onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                            className="h-12 rounded-xl bg-primary text-black font-black text-[10px] tracking-[0.3em] uppercase transition-all shadow-xl hover:bg-white active:scale-95 italic"
+                          >
+                            Accept
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -700,10 +544,10 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
               )}
             </div>
 
-            <div className="request-modal-footer">
+            <div className="p-8 border-t border-white/5 bg-white/[0.01]">
               <button
-                className="btn-modal-close"
                 onClick={handleCloseModal}
+                className="w-full h-14 rounded-2xl bg-white/5 border border-white/10 text-white/40 hover:bg-white hover:text-black font-black text-[11px] tracking-[0.3em] uppercase transition-all flex items-center justify-center italic active:scale-95"
               >
                 Close
               </button>

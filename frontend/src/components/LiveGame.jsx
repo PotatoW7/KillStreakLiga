@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { fetchDDragon } from '../utils/fetchDDragon';
-import '../styles/componentsCSS/livegame.css';
 
 function LiveGame() {
     const [liveData, setLiveData] = useState(null);
@@ -24,7 +23,7 @@ function LiveGame() {
     useEffect(() => {
         const loadData = async () => {
             if (!region || !puuid) {
-                setError('Missing region or player data.');
+                setError('Error: Missing region or player data.');
                 setLoading(false);
                 return;
             }
@@ -40,20 +39,18 @@ function LiveGame() {
                     rolesSnapshot.forEach((docSnap) => {
                         rolesMap[docSnap.id] = docSnap.data();
                     });
-                    console.log('Loaded champion roles from Firestore:', Object.keys(rolesMap).length);
                     setChampionRoles(rolesMap);
                 } catch (rolesErr) {
-                    console.warn('Could not load champion roles from Firestore (permissions?):', rolesErr.message);
-                    console.warn('Live game will still work, but role sorting may be less accurate.');
+                    console.warn('Could not load champion roles from Firestore');
                 }
 
                 const res = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/spectator/${region}/${puuid}`);
-                if (!res.ok) throw new Error('Failed to fetch live game data');
+                if (!res.ok) throw new Error('Error: Failed to fetch live game data');
 
                 const data = await res.json();
 
                 if (!data.inGame) {
-                    setError('This player is not currently in a game.');
+                    setError('Not in Game: This player is not currently in a live match.');
                     setLoading(false);
                     return;
                 }
@@ -107,27 +104,11 @@ function LiveGame() {
             '1300': "Nexus Blitz",
             '1400': "Ultimate Spellbook",
             '1700': "Arena",
-            '1900': "URF",
-            '2000': "Tutorial",
-            '2010': "Tutorial",
-            '2020': "Tutorial"
+            '1900': "URF"
         };
-
         const qId = String(queueId);
         if (modes[qId]) return modes[qId];
-
-        const modeLabels = {
-            CLASSIC: "Summoner's Rift",
-            ARAM: 'ARAM',
-            URF: 'URF',
-            CHERRY: 'Arena',
-            ONEFORALL: 'One For All',
-            NEXUSBLITZ: 'Nexus Blitz',
-            ULTBOOK: 'Ultimate Spellbook',
-            PRACTICETOOL: 'Practice Tool',
-            TUTORIAL: 'Tutorial'
-        };
-        return modeLabels[gameMode] || gameMode || "Live Game";
+        return gameMode || "Live Game";
     };
 
     const getRuneIconPath = (perkId) => {
@@ -179,27 +160,17 @@ function LiveGame() {
         if (player.spell1Id === 11 || player.spell2Id === 11) {
             return [{ role: 'JUNGLE', priority: 100 }];
         }
-
         const champIdStr = player.championId.toString();
         const champName = champIdToName[champIdStr];
         const champData = championRoles[champName];
         const priorities = [];
-
         if (champData) {
-            (champData.mainRoles || []).forEach(role => {
-                priorities.push({ role, priority: 3 });
-            });
-            (champData.secondaryRoles || []).forEach(role => {
-                priorities.push({ role, priority: 2 });
-            });
-            (champData.offMetaRoles || []).forEach(role => {
-                priorities.push({ role, priority: 1 });
-            });
+            (champData.mainRoles || []).forEach(role => priorities.push({ role, priority: 3 }));
+            (champData.secondaryRoles || []).forEach(role => priorities.push({ role, priority: 2 }));
+            (champData.offMetaRoles || []).forEach(role => priorities.push({ role, priority: 1 }));
         }
-
         const spell1 = player.spell1Id;
         const spell2 = player.spell2Id;
-
         if (spell1 === 3 || spell2 === 3) {
             const existing = priorities.find(p => p.role === 'SUPPORT');
             if (existing) existing.priority += 0.5;
@@ -211,31 +182,20 @@ function LiveGame() {
             else priorities.push({ role: 'ADC', priority: 0.5 });
         }
         priorities.sort((a, b) => b.priority - a.priority);
-
         return priorities.length > 0 ? priorities : [{ role: 'UNKNOWN', priority: 0 }];
-    };
-
-    const detectRoleForPlayer = (player) => {
-        const priorities = getRolePriorities(player);
-        return priorities[0]?.role || 'UNKNOWN';
     };
 
     const sortParticipantsByRole = (participants, teamId) => {
         if (!participants || participants.length === 0) return [];
-
         let teamPlayers = participants.filter(p => p.teamId === teamId);
         if (teamPlayers.length === 0) return [];
-
         const correctOrder = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
-
         const playerPriorities = teamPlayers.map(player => ({
             player,
             priorities: getRolePriorities(player)
         }));
-
         const assigned = {};
         const usedPlayers = new Set();
-
         const jungler = playerPriorities.find(pp =>
             pp.priorities.length === 1 &&
             pp.priorities[0].role === 'JUNGLE' &&
@@ -245,46 +205,34 @@ function LiveGame() {
             assigned['JUNGLE'] = jungler.player;
             usedPlayers.add(jungler.player.puuid || jungler.player.championId);
         }
-
         const rolesToFill = correctOrder.filter(r => !assigned[r]);
         for (const role of rolesToFill) {
             let bestPlayer = null;
             let bestScore = -1;
-
             for (const pp of playerPriorities) {
                 const playerId = pp.player.puuid || pp.player.championId;
                 if (usedPlayers.has(playerId)) continue;
-
                 const rolePriority = pp.priorities.find(p => p.role === role);
                 if (rolePriority && rolePriority.priority > bestScore) {
                     bestScore = rolePriority.priority;
                     bestPlayer = pp;
                 }
             }
-
             if (bestPlayer) {
                 assigned[role] = bestPlayer.player;
                 usedPlayers.add(bestPlayer.player.puuid || bestPlayer.player.championId);
             }
         }
-
         const leftover = teamPlayers.filter(p => {
             const id = p.puuid || p.championId;
             return !usedPlayers.has(id);
         });
-
         for (const role of correctOrder) {
-            if (!assigned[role] && leftover.length > 0) {
-                assigned[role] = leftover.shift();
-            }
+            if (!assigned[role] && leftover.length > 0) assigned[role] = leftover.shift();
         }
-
-
         return correctOrder.map(role => {
             const player = assigned[role];
-            if (player) {
-                return { ...player, detectedRole: role };
-            }
+            if (player) return { ...player, detectedRole: role };
             return null;
         }).filter(Boolean);
     };
@@ -307,10 +255,7 @@ function LiveGame() {
             14: 'Ignite', 21: 'Barrier', 32: 'Mark', 39: 'Mark',
         };
         const spellName = spellMap[spellId];
-        if (!spellName) {
-            return '/summoner-spells/unknown.png';
-        }
-        return `/summoner-spells/${spellName}.png`;
+        return spellName ? `/summoner-spells/${spellName}.png` : '/summoner-spells/unknown.png';
     };
 
     const isRolelessMode = () => {
@@ -319,33 +264,18 @@ function LiveGame() {
         return qId === 450 || mode === 'ARAM' || mode === 'URF' || qId === 900 || qId === 1900;
     };
 
-    const isStreamerMode = (participant) => {
-        return !participant.puuid || participant.puuid === '' || participant.bot === true;
-    };
-
     const getPlayerDisplayName = (participant) => {
-        if (isStreamerMode(participant)) {
-            return null;
-        }
-
-        if (participant.riotId && participant.riotId !== 'Unknown') {
-            return participant.riotId;
-        }
-        if (participant.summonerName && participant.summonerName !== 'Unknown') {
-            return participant.summonerName;
-        }
+        if (!participant.puuid || participant.puuid === '' || participant.bot === true) return 'Streamer Mode';
+        if (participant.riotId && participant.riotId !== 'Unknown') return participant.riotId;
+        if (participant.summonerName && participant.summonerName !== 'Unknown') return participant.summonerName;
         if (participant.gameName && participant.gameName !== 'Unknown') {
-            if (participant.tagLine) {
-                return `${participant.gameName}#${participant.tagLine}`;
-            }
-            return participant.gameName;
+            return participant.tagLine ? `${participant.gameName}#${participant.tagLine}` : participant.gameName;
         }
-
-        return 'Unknown';
+        return 'Unknown Player';
     };
 
     const handlePlayerClick = (participant) => {
-        if (isStreamerMode(participant)) return;
+        if (!participant.puuid || participant.puuid === '' || participant.bot === true) return;
         const username = getPlayerDisplayName(participant);
         if (username && username !== 'Unknown') {
             navigate(`/summoner?search=${encodeURIComponent(username)}&region=${region}`);
@@ -353,29 +283,23 @@ function LiveGame() {
     };
 
     const renderPlayerRunes = (player) => {
-        if (!player.perks || !player.perks.perkIds || player.perks.perkIds.length === 0) {
-            return null;
-        }
-
+        if (!player.perks || !player.perks.perkIds || player.perks.perkIds.length === 0) return null;
         const perks = player.perks;
         const keystoneId = perks.perkIds[0];
         const secondaryStyle = perks.perkSubStyle;
-
-        if (!keystoneId) return null;
-
         return (
-            <div className="live-player-runes-simple">
+            <div className="flex flex-col gap-1.5 ">
                 <img
                     src={getRuneIconPath(keystoneId)}
                     alt="Keystone"
-                    className="live-rune-keystone"
+                    className="w-6 h-6 object-contain drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]"
                     onError={(e) => (e.target.src = "/runes/unknown.png")}
                 />
                 {secondaryStyle && (
                     <img
                         src={getRuneIconPath(secondaryStyle)}
-                        alt="Secondary Style"
-                        className="live-rune-secondary"
+                        alt="Secondary"
+                        className="w-4 h-4 object-contain opacity-50 mx-auto"
                         onError={(e) => (e.target.src = "/runes/unknown.png")}
                     />
                 )}
@@ -385,162 +309,163 @@ function LiveGame() {
 
     const renderPlayerCard = (player, idx) => {
         const champName = champIdToName[player.championId] || 'Unknown';
-        const streamer = isStreamerMode(player);
+        const streamer = !player.puuid || player.puuid === '' || player.bot === true;
         const displayName = getPlayerDisplayName(player);
-        const spell1 = getSummonerSpellPath(player.spell1Id);
-        const spell2 = getSummonerSpellPath(player.spell2Id);
-        const loadingUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champName}_0.jpg`;
-
+        const splashUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champName}_0.jpg`;
 
         return (
             <div
                 key={player.puuid || idx}
-                className={`live-player-card ${streamer ? 'streamer-mode' : ''}`}
                 onClick={() => handlePlayerClick(player)}
-                style={{
-                    backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.2), rgba(10,12,20,1)), url(${loadingUrl})`,
-                    cursor: streamer ? 'default' : 'pointer'
-                }}
+                className={`group relative overflow-hidden rounded-2xl border border-white/5 bg-black/40 transition-all duration-700 hover:border-primary/30 hover:shadow-[0_0_30px_rgba(234,179,8,0.1)] ${streamer ? 'cursor-default' : 'cursor-pointer'}`}
             >
-                <div className="card-top">
-                    <span className="card-champ-name">{champName}</span>
-                </div>
+                <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                    style={{ backgroundImage: `url(${splashUrl})` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                <div className="relative h-48 flex flex-col justify-end p-4">
+                    <div className="flex justify-between items-end gap-2">
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary italic mb-1 drop-shadow-lg">{champName}</p>
+                            <h4 className="text-xs font-black uppercase tracking-widest text-white truncate drop-shadow-lg">
+                                {streamer ? <span className="text-muted-foreground/50">{displayName}</span> : displayName}
+                            </h4>
+                        </div>
 
-                <div className="card-bottom">
-                    <div className="card-horizontal-row">
-                        <div className="card-spells-runes">
-                            {!isRolelessMode() && (
-                                <div className="card-role">
-                                    {player.detectedRole && (
-                                        <img
-                                            src={getRoleIconPath(player.detectedRole)}
-                                            alt={player.detectedRole}
-                                            className="card-role-icon"
-                                        />
-                                    )}
-                                </div>
+                        <div className="flex items-center gap-2 pb-1">
+                            {!isRolelessMode() && player.detectedRole && (
+                                <img src={getRoleIconPath(player.detectedRole)} className="w-4 h-4 object-contain opacity-60" alt={player.detectedRole} />
                             )}
-                            <div className="card-spells">
-                                <img src={spell1} alt="Spell 1" className="card-spell-icon" />
-                                <img src={spell2} alt="Spell 2" className="card-spell-icon" />
+                            <div className="flex flex-col gap-1">
+                                <img src={getSummonerSpellPath(player.spell1Id)} className="w-4 h-4 rounded-md border border-white/10" alt="Spell1" />
+                                <img src={getSummonerSpellPath(player.spell2Id)} className="w-4 h-4 rounded-md border border-white/10" alt="Spell2" />
                             </div>
-                            <div className="card-runes">
-                                {renderPlayerRunes(player)}
-                            </div>
+                            {renderPlayerRunes(player)}
                         </div>
                     </div>
-
-                    <div className="card-summoner-details">
-                        {streamer ? (
-                            <span className="card-streamer-badge">
-                                {player.bot ? 'BOT' : 'Streamer Mode'}
-                            </span>
-                        ) : (
-                            <span className="card-summoner-name">{displayName}</span>
-                        )}
-                    </div>
                 </div>
+
+                {!streamer && <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(234,179,8,0.6)]" />}
             </div>
         );
     };
 
-    const renderTeam = (teamId, teamClass) => {
-        if (!liveData?.participants) return null;
+    if (loading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6">
+            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary animate-pulse">Loading Live Game...</p>
+        </div>
+    );
 
-        const teamPlayers = sortParticipantsByRole(liveData.participants, teamId);
-
-        console.log(`Team ${teamId} players:`, teamPlayers.map(p => ({
-            name: getPlayerDisplayName(p),
-            champion: champIdToName[p.championId],
-            role: p.detectedRole,
-            spells: [p.spell1Id, p.spell2Id]
-        })));
-
-        return (
-            <div className={`live-team-grid ${teamClass}`}>
-                {teamPlayers.map((player, idx) => renderPlayerCard(player, idx))}
+    if (error) return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6">
+            <div className="glass-panel p-8 rounded-3xl border-red-500/20 max-w-md">
+                <p className="text-sm font-black uppercase tracking-widest text-red-400 mb-6 italic">{error}</p>
+                <button
+                    onClick={() => navigate(-1)}
+                    className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+                >
+                    Go Back
+                </button>
             </div>
-        );
-    };
+        </div>
+    );
 
-    if (loading) {
-        return (
-            <div className="live-game-page">
-                <div className="live-game-loading">
-                    <div className="live-loading-spinner"></div>
-                    <p>Loading live game data...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="live-game-page">
-                <div className="live-game-error">
-                    <p>{error}</p>
-                    <button onClick={() => navigate(-1)} className="live-back-btn">← Go Back</button>
-                </div>
-            </div>
-        );
-    }
-
-    const blueTeamBans = liveData.bannedChampions?.filter(b => b.teamId === 100) || [];
-    const redTeamBans = liveData.bannedChampions?.filter(b => b.teamId === 200) || [];
+    const blueBans = liveData.bannedChampions?.filter(b => b.teamId === 100) || [];
+    const redBans = liveData.bannedChampions?.filter(b => b.teamId === 200) || [];
 
     return (
-        <div className="live-game-page">
-            <div className="live-sidebar-nav">
-                <button onClick={() => navigate(-1)} className="live-back-btn">← Back to Profile</button>
-            </div>
+        <div className="min-h-screen pt-24 pb-16 px-4">
+            <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-            <div className="live-game-content">
-                <div className="live-game-header-simple">
-                    <span className="header-mode-text">
-                        {getGameModeName(liveData.gameMode, liveData.gameQueueConfigId)}
-                    </span>
-                    <span className="header-timer-text">{formatTime(elapsedTime)}</span>
-                </div>
 
-                <div className="live-main-grid">
-                    {renderTeam(100, 'blue-team')}
-
-                    <div className="live-bans-bar">
-                        {!isRolelessMode() && <div className="team-ban-label">BLUE TEAM BANS</div>}
-                        <div className="team-bans blue-bans">
-                            {!isRolelessMode() && blueTeamBans.map((ban, idx) => {
-                                const champName = champIdToName[ban.championId];
-                                return champName && ban.championId !== -1 ? (
-                                    <div key={idx} className="ban-item">
-                                        <img
-                                            src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
-                                            className="ban-icon-mini"
-                                            alt={`Ban ${champName}`}
-                                        />
-                                    </div>
-                                ) : <div key={idx} className="ban-placeholder-mini"></div>;
-                            })}
+                <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="w-1.5 h-10 bg-primary rounded-full shadow-[0_0_15px_rgba(234,179,8,0.4)]" />
+                        <div>
+                            <h1 className="font-display text-3xl font-black uppercase tracking-[0.2em] italic text-white leading-none">Live Game</h1>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/50 mt-2">Mode: {getGameModeName(liveData.gameMode, liveData.gameQueueConfigId)}</p>
                         </div>
-
-                        <div className="vs-logo">VS</div>
-                        <div className="team-bans red-bans">
-                            {!isRolelessMode() && redTeamBans.map((ban, idx) => {
-                                const champName = champIdToName[ban.championId];
-                                return champName && ban.championId !== -1 ? (
-                                    <div key={idx} className="ban-item">
-                                        <img
-                                            src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
-                                            className="ban-icon-mini"
-                                            alt={`Ban ${champName}`}
-                                        />
-                                    </div>
-                                ) : <div key={idx} className="ban-placeholder-mini"></div>;
-                            })}
-                        </div>
-                        {!isRolelessMode() && <div className="team-ban-label">RED TEAM BANS</div>}
                     </div>
 
-                    {renderTeam(200, 'red-team')}
+                    <div className="glass-panel px-12 py-4 rounded-2xl border-primary/20 text-center relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary/40 mb-1">Duration</p>
+                        <p className="font-display text-3xl font-black text-white italic tracking-widest">{formatTime(elapsedTime)}</p>
+                    </div>
+
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="px-6 py-3 rounded-xl bg-white/2 border border-white/5 text-[9px] font-black uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all group shrink-0"
+                    >
+                        <span className="opacity-40 group-hover:opacity-100 transition-opacity mr-2">←</span> Exit Match
+                    </button>
+                </div>
+
+
+                <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-8 items-start">
+
+
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400 italic">Blue Team</h3>
+                            <div className="h-0.5 flex-1 mx-4 bg-gradient-to-r from-blue-400/20 to-transparent" />
+                        </div>
+                        <div className="grid gap-3">
+                            {sortParticipantsByRole(liveData.participants, 100).map((p, i) => renderPlayerCard(p, i))}
+                        </div>
+                    </div>
+
+
+                    <div className="flex flex-col items-center gap-8 py-12">
+                        <div className="flex flex-col gap-4">
+                            {!isRolelessMode() && blueBans.map((ban, i) => {
+                                const name = champIdToName[ban.championId];
+                                return (
+                                    <div key={i} className="w-10 h-10 rounded-xl border border-red-500/20 bg-black grayscale opacity-40 hover:opacity-100 transition-all group overflow-hidden relative">
+                                        {name && ban.championId !== -1 ? (
+                                            <img src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${name}.png`} alt="Ban" className="w-full h-full object-cover" />
+                                        ) : <div className="w-full h-full bg-white/2" />}
+                                        <div className="absolute inset-0 bg-red-500/20 group-hover:opacity-0 transition-opacity" />
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="font-display text-2xl font-black italic text-white/10 tracking-[0.5em] [writing-mode:vertical-lr] select-none">BANNED CHAMPIONS</div>
+
+                        <div className="flex flex-col gap-4">
+                            {!isRolelessMode() && redBans.map((ban, i) => {
+                                const name = champIdToName[ban.championId];
+                                return (
+                                    <div key={i} className="w-10 h-10 rounded-xl border border-red-500/20 bg-black grayscale opacity-40 hover:opacity-100 transition-all group overflow-hidden relative">
+                                        {name && ban.championId !== -1 ? (
+                                            <img src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${name}.png`} alt="Ban" className="w-full h-full object-cover" />
+                                        ) : <div className="w-full h-full bg-white/2" />}
+                                        <div className="absolute inset-0 bg-red-500/20 group-hover:opacity-0 transition-opacity" />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <div className="h-0.5 flex-1 mx-4 bg-gradient-to-l from-red-400/20 to-transparent" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-red-400 italic">Red Team</h3>
+                        </div>
+                        <div className="grid gap-3">
+                            {sortParticipantsByRole(liveData.participants, 200).map((p, i) => renderPlayerCard(p, i))}
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div className="text-center opacity-10 pt-12">
+                    <p className="text-[8px] font-black uppercase tracking-[0.8em] hidden">End of Live Game Data</p>
                 </div>
             </div>
         </div>

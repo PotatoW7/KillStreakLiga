@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchDDragon } from "../utils/fetchDDragon";
 import ItemTooltip from "./ItemTooltip";
+import { ChevronDown } from "lucide-react";
 
 export default function MatchHistory({ matches, champIdToName, champNameToId, itemsData, version, puuid, onPlayerClick }) {
   const [expandedMatch, setExpandedMatch] = useState(null);
@@ -276,11 +277,12 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   const renderObjectives = (teamObjectives) => {
     if (!teamObjectives) return null;
     return (
-      <div className="objectives-row">
+      <div className="flex flex-wrap gap-3">
         {Object.entries(teamObjectives).map(([key, val]) =>
           val > 0 && (
-            <div key={key} className="objective-item">
-              <span className="objective-text">{key.charAt(0).toUpperCase() + key.slice(1)}: {val}</span>
+            <div key={key} className="flex items-center gap-2 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{key}:</span>
+              <span className="text-[10px] font-black text-foreground">{val}</span>
             </div>
           )
         )}
@@ -308,80 +310,51 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
 
   const renderPlayerRow = (p, isCurrent, queueId) => {
     const key = `${p.puuid}-${p.championName}`;
-
-
-    const trinketId = p.item6;
     const normalItems = p.items.slice(0, 6).filter((id) => id > 0);
-    const emptySlots = 6 - normalItems.length;
-    const itemsOrdered = [...normalItems, ...Array(emptySlots).fill(0)];
+    const itemsOrdered = [...normalItems, ...Array(6 - normalItems.length).fill(0)];
 
     return (
-      <div className={`player-row ${isCurrent ? "current-player" : ""}`} key={p.puuid}>
-        <img
-          src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[p.championId] || p.championName}.png`}
-          className="champion-icon"
-          onError={(e) => (e.target.src = "/placeholder-champ.png")}
-        />
-        <div className="summoner-spells">
+      <div className={`flex items-center gap-3 p-2 rounded-xl border border-white/5 transition-colors ${isCurrent ? "bg-primary/10 border-primary/20" : "hover:bg-white/5"}`} key={p.puuid}>
+        <div className="relative flex-shrink-0">
           <img
-            src={getSummonerSpellPath(p.summoner1Id)}
-            className="summoner-spell"
-            onMouseEnter={(e) => {
-              if (spellIdToData && spellIdToData[p.summoner1Id]) {
-                setHoveredItem(spellIdToData[p.summoner1Id]);
-                setTooltipPos({ x: e.clientX, y: e.clientY });
-              }
-            }}
-            onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
-            onMouseLeave={handleItemLeave}
-            onError={(e) => (e.target.src = "/summoner-spells/unknown.png")}
+            src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[p.championId] || p.championName}.png`}
+            className="w-10 h-10 rounded-lg border border-white/10 shadow-lg"
+            onError={(e) => (e.target.src = "/placeholder-champ.png")}
           />
-          <img
-            src={getSummonerSpellPath(p.summoner2Id)}
-            className="summoner-spell"
-            onMouseEnter={(e) => {
-              if (spellIdToData && spellIdToData[p.summoner2Id]) {
-                setHoveredItem(spellIdToData[p.summoner2Id]);
-                setTooltipPos({ x: e.clientX, y: e.clientY });
-              }
-            }}
-            onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
-            onMouseLeave={handleItemLeave}
-            onError={(e) => (e.target.src = "/summoner-spells/unknown.png")}
-          />
+          <div className="absolute -bottom-1 -right-1 bg-black border border-white/20 text-[8px] font-black px-1 rounded-sm text-foreground/80">
+            {p.champLevel}
+          </div>
         </div>
-        <div className="runes-section">
-          {queueId === 1700 ? renderPlayerAugments(p) : renderPlayerRunes(p, key)}
+
+        <div className="flex flex-col gap-0.5 min-w-[30px]">
+          <img src={getSummonerSpellPath(p.summoner1Id)} className="w-4 h-4 rounded-md brightness-110" onMouseEnter={(e) => handleItemEnter(p.summoner1Id, e)} onMouseLeave={handleItemLeave} />
+          <img src={getSummonerSpellPath(p.summoner2Id)} className="w-4 h-4 rounded-md brightness-110" onMouseEnter={(e) => handleItemEnter(p.summoner2Id, e)} onMouseLeave={handleItemLeave} />
         </div>
-        <div className="player-info">
-          <div className="champion-name">{formatChampionName(p.championName)}</div>
-          <div className={`player-name ${!isCurrent ? "clickable-player" : ""}`} onClick={!isCurrent ? (e) => handlePlayerClick(p.riotId, e) : undefined}>{p.riotId}</div>
-          <div className="player-kda">{p.kills}/{p.deaths}/{p.assists}</div>
+
+        <div className="flex-1 min-w-0">
+          <div className={`text-[11px] font-black truncate tracking-tight transition-colors ${!isCurrent ? "text-muted-foreground group-hover/row:text-foreground cursor-pointer" : "text-primary"}`} onClick={!isCurrent ? (e) => handlePlayerClick(p.riotId, e) : undefined}>
+            {p.riotId}
+          </div>
+          <div className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">
+            {p.kills}/{p.deaths}/{p.assists}
+          </div>
         </div>
-        <div className="items-row">
-          {itemsOrdered.map((id, i) =>
+
+        <div className="flex gap-1">
+          {itemsOrdered.map((id, i) => (
             id > 0 ? (
               <img
                 key={i}
                 src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${id}.png`}
-                className="item-icon"
+                className="w-6 h-6 rounded-md border border-white/5"
                 onMouseEnter={(e) => handleItemEnter(id, e)}
                 onMouseMove={handleItemMove}
                 onMouseLeave={handleItemLeave}
               />
             ) : (
-              <div key={i} className="item-icon" />
+              <div key={i} className="w-6 h-6 bg-white/5 rounded-md border border-white/5" />
             )
-          )}
-          {trinketId > 0 && (
-            <img
-              src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${trinketId}.png`}
-              className="item-icon trinket-icon"
-              onMouseEnter={(e) => handleItemEnter(trinketId, e)}
-              onMouseMove={handleItemMove}
-              onMouseLeave={handleItemLeave}
-            />
-          )}
+          ))}
         </div>
       </div>
     );
@@ -393,64 +366,28 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   };
 
   const renderArenaMatchDetails = (match) => {
-    // Group players by placement
     const teamsByPlacement = {};
     match.players.forEach((p) => {
       const placement = p.placement || p.subteamPlacement || 0;
-      if (!teamsByPlacement[placement]) {
-        teamsByPlacement[placement] = [];
-      }
+      if (!teamsByPlacement[placement]) teamsByPlacement[placement] = [];
       teamsByPlacement[placement].push(p);
     });
 
-    // Sort placements 1..8
     const sortedPlacements = Object.keys(teamsByPlacement).sort((a, b) => Number(a) - Number(b));
 
-    const leftColumn = [];
-    const rightColumn = [];
-
-    sortedPlacements.forEach((placement, index) => {
-      // 1st (index 0) -> Left
-      // 2nd (index 1) -> Right
-      // 3rd (index 2) -> Left ...
-      if (index % 2 === 0) {
-        leftColumn.push({ placement, players: teamsByPlacement[placement] });
-      } else {
-        rightColumn.push({ placement, players: teamsByPlacement[placement] });
-      }
-    });
-
-    const getPlacementSuffix = (n) => {
-      const num = Number(n);
-      if (num === 1) return "st";
-      if (num === 2) return "nd";
-      if (num === 3) return "rd";
-      return "th";
-    };
-
-    const getPlacementColorClass = (n) => {
-      const num = Number(n);
-      if (num === 1) return "place-1st";
-      if (num === 2) return "place-2nd";
-      if (num === 3) return "place-3rd";
-      if (num === 4) return "place-4th";
-      return "place-other";
-    };
-
-    const renderArenaTeamCard = (group) => {
-      const placement = group.placement;
-      const players = group.players;
-      // You can add logic here to map placement/teamId to names like "Team Sentinel" if data exists
-      // For now using generic "Team" or just placement
-      const teamName = `Team ${placement}`;
+    const renderArenaTeamCard = (placement, players) => {
+      const num = Number(placement);
+      const isTopPlace = num <= 2;
+      const suffix = num === 1 ? "st" : num === 2 ? "nd" : num === 3 ? "rd" : "th";
 
       return (
-        <div key={placement} className={`arena-team-card ${getPlacementColorClass(placement)}`}>
-          <div className="arena-team-header">
-            <span className="placement-text">{placement}{getPlacementSuffix(placement)} place</span>
-            {/* - <span className="team-name-text">{teamName}</span> */}
+        <div key={placement} className={`glass-panel p-4 rounded-2xl border transition-all ${isTopPlace ? "border-primary/30 bg-primary/5" : "border-white/5 bg-white/5"}`}>
+          <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
+            <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isTopPlace ? "text-primary" : "text-muted-foreground"}`}>
+              {num}{suffix} PLACE
+            </span>
           </div>
-          <div className="arena-players">
+          <div className="space-y-2">
             {players.map((p) => renderPlayerRow(p, p.puuid === puuid, 1700))}
           </div>
         </div>
@@ -458,15 +395,8 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     };
 
     return (
-      <div className="match-details arena-details">
-        <div className="arena-details-grid">
-          <div className="arena-column">
-            {leftColumn.map(group => renderArenaTeamCard(group))}
-          </div>
-          <div className="arena-column">
-            {rightColumn.map(group => renderArenaTeamCard(group))}
-          </div>
-        </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        {sortedPlacements.map(placement => renderArenaTeamCard(placement, teamsByPlacement[placement]))}
       </div>
     );
   };
@@ -477,98 +407,107 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     const blue = match.players.filter((p) => p.teamId === 100);
     const red = match.players.filter((p) => p.teamId === 200);
     const expanded = expandedMatch === i;
-    const playerItems = [player.item0, player.item1, player.item2, player.item3, player.item4, player.item5].filter(id => id > 0);
+    const playerItems = [player.item0, player.item1, player.item2, player.item3, player.item4, player.item5, player.item6].filter(id => id > 0);
     const kdaRatio = calculateKDA(player.kills, player.deaths, player.assists);
     const timeAgo = getTimeAgo(match.gameEndTimestamp || match.gameStartTimestamp);
-
-    // For Arena, use placement instead of generic Victory/Defeat text if preferred, 
-    // but usually "Victory" means top 1 (or top 2/4 depending on definition). 
-    // We'll stick to what the backend provides for player.win, or customize:
     const isArena = match.queueId === 1700;
-    const resultText = isArena ? `${player.placement || "?"}${['st', 'nd', 'rd', 'th'][Math.min(3, (player.placement || 0) - 1)] || 'th'} Place` : (player.win ? "VICTORY" : "DEFEAT");
-    const resultClass = isArena ? (player.placement === 1 ? "victory" : "defeat") : (player.win ? "victory" : "defeat");
-    // Actually Arena "Win" is typically top 2 or 4. Let's trust player.win for the card border color for now.
+    const isWin = player.win;
 
     return (
-      <div key={i} className={`match-card ${player.win ? "victory" : "defeat"}`}>
-        <div className="match-header" onClick={() => toggleMatch(i)}>
-          <div className="match-basic-info">
-            <div className={`match-result ${player.win ? "victory" : "defeat"}`}>
-              <img
-                src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[player.championId] || player.championName}.png`}
-                className="match-champion-icon"
-                onError={(e) => (e.target.src = "/placeholder-champ.png")}
-              />
-              <div className="champion-info">
-                <div className="champion-name">{formatChampionName(player.championName)}</div>
-                <span className="result-text">{resultText}</span>
-                <div className="match-time">{timeAgo}</div>
+      <div key={i} className={`group/match relative overflow-hidden rounded-3xl transition-all duration-500 border hover:shadow-2xl mb-4 ${isWin ? "border-green-500/30 bg-green-500/5 shadow-green-500/5 hover:border-green-500/50" : "border-red-500/30 bg-red-500/5 shadow-red-500/5 hover:border-red-500/50"}`}>
+        <div className="match-header p-5 cursor-pointer select-none" onClick={() => toggleMatch(i)}>
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            {/* Visual Indicator */}
+            <div className={`absolute left-0 top-0 bottom-0 w-1 ${isWin ? "bg-green-500" : "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]"}`} />
+
+            {/* Left: Champion & Result */}
+            <div className="flex items-center gap-4 min-w-[180px]">
+              <div className="relative">
+                <img
+                  src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[player.championId] || player.championName}.png`}
+                  className={`w-16 h-16 rounded-2xl border-2 shadow-lg group-hover/match:scale-105 transition-transform duration-500 ${isWin ? "border-green-500/50" : "border-red-500/50"}`}
+                  onError={(e) => (e.target.src = "/placeholder-champ.png")}
+                />
+                <div className="absolute -bottom-2 -right-2 bg-background border border-border px-2 py-0.5 rounded-lg text-[9px] font-black italic tracking-widest text-foreground shadow-xl">
+                  {player.champLevel}
+                </div>
+              </div>
+              <div>
+                <div className={`text-xs font-black uppercase tracking-[0.2em] mb-0.5 ${isWin ? "text-green-400" : "text-red-400"}`}>
+                  {isArena ? `POS ${player.placement}` : (isWin ? "Victory" : "Defeat")}
+                </div>
+                <div className="font-display text-lg font-black text-foreground leading-none">{formatChampionName(player.championName)}</div>
+                <div className="text-[10px] text-muted-foreground/60 font-bold mt-1 uppercase tracking-widest leading-none">{timeAgo}</div>
               </div>
             </div>
-            <div className="match-game-info">
-              <div className="match-mode">{getGameMode(match.queueId)}</div>
-              <div className="match-duration">{Math.floor(match.gameDuration / 60)}:{(match.gameDuration % 60).toString().padStart(2, "0")}</div>
-            </div>
-            <div className="match-stats">
-              <div className="match-kda">
-                <div className="kda-numbers">{player.kills}/{player.deaths}/{player.assists}</div>
-                <div className="kda-ratio-compact">{kdaRatio} KDA</div>
+
+            {/* Middle: Stats */}
+            <div className="flex flex-1 items-center justify-around gap-4">
+              <div className="text-center">
+                <div className="font-display text-2xl font-black text-foreground tracking-tight leading-none mb-1">
+                  {player.kills} <span className="opacity-20 text-sm">/</span> <span className="text-red-400">{player.deaths}</span> <span className="opacity-20 text-sm">/</span> {player.assists}
+                </div>
+                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{kdaRatio} KDA</div>
               </div>
-              <div className="match-build">
-                <div className="match-items">
-                  {playerItems.map((id, index) =>
-                    id > 0 ? (
-                      <img
-                        key={index}
-                        src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${id}.png`}
-                        className="match-item"
-                        onMouseEnter={(e) => handleItemEnter(id, e)}
-                        onMouseMove={handleItemMove}
-                        onMouseLeave={handleItemLeave}
-                      />
-                    ) : (
-                      <div key={index} className="match-item" />
-                    )
-                  )}
-                  {player.item6 > 0 && (
+
+              <div className="hidden lg:flex flex-col items-center gap-1">
+                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{getGameMode(match.queueId)}</div>
+                <div className="text-sm font-bold opacity-60 italic tabular-nums">
+                  {Math.floor(match.gameDuration / 60)}:{(match.gameDuration % 60).toString().padStart(2, "0")}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1 max-w-[160px] justify-center">
+                {[0, 1, 2, 3, 4, 5, 6].map((idx) => {
+                  const itemId = player[`item${idx}`];
+                  return itemId > 0 ? (
                     <img
-                      src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${player.item6}.png`}
-                      className="match-item trinket"
-                      onMouseEnter={(e) => handleItemEnter(player.item6, e)}
+                      key={idx}
+                      src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/item/${itemId}.png`}
+                      className="w-8 h-8 rounded-lg border border-white/5 hover:scale-110 transition-transform cursor-help"
+                      onMouseEnter={(e) => handleItemEnter(itemId, e)}
                       onMouseMove={handleItemMove}
                       onMouseLeave={handleItemLeave}
                     />
-                  )}
-                </div>
+                  ) : (
+                    <div key={idx} className="w-8 h-8 rounded-lg bg-black/20 border border-white/5" />
+                  );
+                })}
               </div>
+            </div>
+
+            {/* Right: Toggle Button */}
+            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${isWin ? "bg-green-500/20 border-green-500/20 text-green-400" : "bg-red-500/20 border-red-500/20 text-red-400"}`}>
+              <span className={`text-lg font-black transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}>▼</span>
             </div>
           </div>
         </div>
+
         {expanded && (
-          isArena ? renderArenaMatchDetails(match) : (
-            <div className="match-details">
-              <div className="objectives-section">
-                <div className="team-objectives blue-team">
-                  <h5>Blue Team Objectives</h5>
-                  {renderObjectives(match.teams?.[100])}
+          <div className="px-5 pb-5 border-t border-white/5 pt-5 animate-in slide-in-from-top-4 duration-300">
+            {isArena ? renderArenaMatchDetails(match) : (
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 px-2 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                    <h5 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Blue Team</h5>
+                  </div>
+                  <div className="space-y-2">
+                    {blue.map((p) => renderPlayerRow(p, p.puuid === puuid, match.queueId))}
+                  </div>
                 </div>
-                <div className="team-objectives red-team">
-                  <h5>Red Team Objectives</h5>
-                  {renderObjectives(match.teams?.[200])}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 px-2 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-red-400" />
+                    <h5 className="text-[10px] font-black text-red-400 uppercase tracking-widest">Red Team</h5>
+                  </div>
+                  <div className="space-y-2">
+                    {red.map((p) => renderPlayerRow(p, p.puuid === puuid, match.queueId))}
+                  </div>
                 </div>
               </div>
-              <div className="team-container">
-                <div className="team blue-team">
-                  <h4>Blue Team</h4>
-                  {blue.map((p) => renderPlayerRow(p, p.puuid === puuid, match.queueId))}
-                </div>
-                <div className="team red-team">
-                  <h4>Red Team</h4>
-                  {red.map((p) => renderPlayerRow(p, p.puuid === puuid, match.queueId))}
-                </div>
-              </div>
-            </div>
-          )
+            )}
+          </div>
         )}
       </div>
     );
@@ -590,16 +529,14 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   });
 
   return (
-    <div className="match-container">
-      <h3 className="text-center">Match History</h3>
-
-      <div className="match-filters">
-        <div className="filter-group">
-          <label>Champion:</label>
-          <div className="custom-select-container" style={{ position: 'relative' }}>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-6 bg-secondary/30 p-5 rounded-2xl border border-white/10 mb-8 backdrop-blur-md">
+        <div className="flex flex-col gap-2 min-w-[200px]">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Champion</label>
+          <div className="relative group/select">
             <input
               type="text"
-              className="champion-search-input"
+              className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold text-foreground placeholder:text-muted-foreground/30 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
               placeholder="Search champion..."
               value={isDropdownOpen ? searchQuery : (filterChampion === "all" ? "All Champions" : formatChampionName(filterChampion))}
               onChange={(e) => {
@@ -614,23 +551,23 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
               onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
             />
             {isDropdownOpen && (
-              <div className="custom-dropdown-list">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-secondary border border-white/10 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                 <div
-                  className="custom-option"
+                  className="px-4 py-3 hover:bg-white/5 cursor-pointer text-sm font-bold border-b border-white/5"
                   onClick={() => {
                     setFilterChampion("all");
                     setIsDropdownOpen(false);
                     setSearchQuery("");
                   }}
                 >
-                  <span>All Champions</span>
+                  All Champions
                 </div>
                 {playedChampions
                   .filter(champ => champ.toLowerCase().includes(searchQuery.toLowerCase()))
                   .map(champ => (
                     <div
                       key={champ}
-                      className="custom-option"
+                      className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 border-b border-white/5 last:border-0"
                       onClick={() => {
                         setFilterChampion(champ);
                         setIsDropdownOpen(false);
@@ -640,31 +577,39 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
                       <img
                         src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[champNameToId?.[champ]] || champ}.png`}
                         alt={champ}
-                        className="option-champ-img"
+                        className="w-6 h-6 rounded-md"
                         onError={(e) => (e.target.src = "/placeholder-champ.png")}
                       />
-                      <span>{formatChampionName(champ)}</span>
+                      <span className="text-sm font-bold">{formatChampionName(champ)}</span>
                     </div>
                   ))}
               </div>
             )}
-            <div className="custom-select-arrow">▼</div>
           </div>
         </div>
 
-        <div className="filter-group">
-          <label>Queue:</label>
-          <select value={filterQueue} onChange={(e) => setFilterQueue(e.target.value)}>
-            <option value="all">All Queues</option>
-            <option value="420">Solo/Duo</option>
-            <option value="440">Flex</option>
-            <option value="450">ARAM</option>
-            <option value="2400">Aram Mayhem</option>
-            <option value="900">URF</option>
-            <option value="480">Swiftplay</option>
-            <option value="400">Draft</option>
-            <option value="1700">Arena</option>
-          </select>
+        <div className="flex flex-col gap-2 min-w-[180px]">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Queue</label>
+          <div className="relative group/select">
+            <select
+              value={filterQueue}
+              onChange={(e) => setFilterQueue(e.target.value)}
+              className="w-full bg-background/50 border border-white/10 rounded-xl pl-4 pr-10 py-2.5 text-sm font-bold text-foreground focus:border-primary/50 outline-none appearance-none cursor-pointer transition-all"
+            >
+              <option value="all" className="bg-neutral-900">All Queues</option>
+              <option value="420" className="bg-neutral-900">Solo/Duo</option>
+              <option value="440" className="bg-neutral-900">Flex</option>
+              <option value="450" className="bg-neutral-900">ARAM</option>
+              <option value="2400" className="bg-neutral-900">Aram Mayhem</option>
+              <option value="900" className="bg-neutral-900">URF</option>
+              <option value="480" className="bg-neutral-900">Swiftplay</option>
+              <option value="400" className="bg-neutral-900">Draft</option>
+              <option value="1700" className="bg-neutral-900">Arena</option>
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground/30 group-hover/select:text-primary transition-colors">
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
         </div>
       </div>
 

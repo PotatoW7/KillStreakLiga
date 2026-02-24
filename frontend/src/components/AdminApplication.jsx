@@ -13,7 +13,6 @@ import {
     orderBy,
     limit
 } from 'firebase/firestore';
-import '../styles/componentsCSS/admin.css';
 
 const REAPPLY_COOLDOWN_MS = 5 * 30 * 24 * 60 * 60 * 1000;
 
@@ -240,7 +239,7 @@ function AdminApplication() {
                         <h3>Application Form</h3>
 
                         <div className="form-group">
-                            <label htmlFor="reason">Why do you want to become an Admin? *</label>
+                            <label htmlFor="reason">Why do you want to become an Admin?</label>
                             <textarea
                                 id="reason"
                                 value={form.reason}
@@ -255,7 +254,7 @@ function AdminApplication() {
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="experience">Relevant Experience *</label>
+                            <label htmlFor="experience">Relevant Experience</label>
                             <textarea
                                 id="experience"
                                 value={form.experience}

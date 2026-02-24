@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { fetchDDragon } from "../utils/fetchDDragon";
 import ProfilePosts from "./ProfilePosts";
+import { ChevronDown } from "lucide-react";
 
 const REGIONS = [
   { value: "na1", label: "NA" },
@@ -42,27 +43,46 @@ const RankedInfo = ({ rankedData }) => {
 
   const renderRankCard = (queue, queueName) => {
     if (!queue) return (
-      <div className="rank-card">
-        <div className="queue-name">{queueName}</div>
-        <div className="unranked">Unranked</div>
+      <div className="bg-secondary/20 backdrop-blur-md rounded-2xl p-4 border border-white/5 flex flex-col justify-center min-w-[200px]">
+        <div className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-widest mb-1">{queueName}</div>
+        <div className="text-xs font-bold text-muted-foreground/30 italic">Unranked</div>
       </div>
     );
     const totalGames = queue.wins + queue.losses;
     const winRate = totalGames > 0 ? Math.round((queue.wins / totalGames) * 100) : 0;
+    const tierName = queue.tier.charAt(0) + queue.tier.slice(1).toLowerCase();
+
     return (
-      <div className="rank-card">
-        <div className="rank-info">
-          {getRankIcon(queue.tier) && <img src={getRankIcon(queue.tier)} alt={`${queue.tier} icon`} className="rank-icon" />}
-          <div className="rank-details">
-            <div className="tier">{queue.tier} {queue.rank}</div>
-            <div className="queue-label">{queueName}</div>
-            <div className="stats">
-              <div className="lp">{queue.leaguePoints} LP</div>
-              <div className="winrate">{winRate}% WR</div>
-              <div className="games">{totalGames}G</div>
-            </div>
-            <div className="record">{queue.wins}W {queue.losses}L</div>
+      <div className="bg-secondary/40 backdrop-blur-md rounded-2xl p-6 border border-white/5 min-w-[280px] hover:border-primary/20 transition-all group/rank relative overflow-hidden">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">{queueName}</div>
+          <div className={`text-[10px] font-black ${winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+            {winRate}% WR
           </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <img
+            src={`/rank-icons/Rank=${tierName}.png`}
+            alt={queue.tier}
+            className="w-16 h-16 group-hover/rank:scale-110 transition-transform duration-500"
+            onError={(e) => (e.target.src = "/rank-icons/Rank=Unranked.png")}
+          />
+          <div>
+            <div className="font-display text-2xl font-black text-primary leading-none mb-1">{queue.tier} {queue.rank}</div>
+            <div className="font-bold text-lg text-foreground">{queue.leaguePoints} LP</div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+          <span>{queue.wins} Wins</span>
+          <span>{queue.losses} Losses</span>
+        </div>
+        <div className="mt-2 h-1 bg-white/5 rounded-full overflow-hidden" title={`${winRate}% Win Rate`}>
+          <div
+            className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000"
+            style={{ width: `${winRate}%` }}
+          />
         </div>
       </div>
     );
@@ -72,9 +92,9 @@ const RankedInfo = ({ rankedData }) => {
   const rankedFlex = getQueueData('RANKED_FLEX_SR');
 
   return (
-    <div className="ranked-container">
-      {renderRankCard(rankedSolo, "Solo/Duo")}
-      {renderRankCard(rankedFlex, "Flex")}
+    <div className="flex flex-wrap gap-4 mt-6">
+      {renderRankCard(rankedSolo, "Ranked Solo")}
+      {renderRankCard(rankedFlex, "Ranked Flex")}
     </div>
   );
 };
@@ -102,7 +122,7 @@ function Profile() {
     latestVersion: "25.12",
     verificationLoading: false,
     emailVerificationSent: false,
-    terminationButtonActive: false,
+    deleteButtonActive: false,
     ripple: false,
     profileData: null,
     isOwnProfile: true,
@@ -657,7 +677,7 @@ function Profile() {
       console.error("Error during account deletion:", error);
       showNotification(error.code === 'permission-denied' ? "Permission denied." :
         error.code === 'unavailable' ? "Network error." :
-          "Error terminating account.", "error");
+          "Error deleting account.", "error");
       setState(prev => ({ ...prev, deletingAccount: false, showDeleteConfirm: false }));
     }
   };
@@ -725,66 +745,76 @@ function Profile() {
   const coachAppStatus = state.profileData?.coachApplication?.status;
 
   return (
-    <div className="profile-page">
-      <div className="profile-container">
-        <div className="profile-title-row">
-          <h2 className="profile-title">
-            {state.isOwnProfile ? "Your Profile" : `${state.profileData.username || "Anonymous User"}'s Profile`}
-          </h2>
+    <div className="min-h-screen py-12 px-4 animate-in fade-in duration-500">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-2">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <h2 className="font-display text-4xl font-black tracking-tight uppercase italic flex items-center gap-4">
+              <div className="w-2 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+              {state.isOwnProfile ? "Profile Dashboard" : `${state.profileData.username || "Member"}`}
+            </h2>
+            {userRole !== "user" && (
+              <span className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl ${userRole === 'owner' ? 'bg-primary text-black' :
+                userRole === 'admin' ? 'bg-red-500 text-white' :
+                  'bg-blue-500 text-white'
+                }`}>
+                {userRole.toUpperCase()}
+              </span>
+            )}
+            {coachAppStatus === "pending" && state.isOwnProfile && (
+              <span className="px-4 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-black uppercase tracking-widest">Coach App Pending</span>
+            )}
+          </div>
+
           {!state.isOwnProfile && state.user && (
-            <button className="follow-btn">
-              <img src="/project-icons/Profile icons/follow icon.png" alt="Follow" className="btn-icon" onError={(e) => e.target.style.display = 'none'} />
+            <button className="px-8 py-3 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-white transition-all active:scale-95 flex items-center gap-3">
+              <img src="/project-icons/Profile icons/follow icon.png" alt="" className="w-4 h-4 brightness-0" />
               Follow
             </button>
-          )}
-          {userRole !== "user" && (
-            <span className={`role-badge ${userRole}`}>
-              {userRole === "coach" ? "Coach" : userRole === "admin" ? "Admin" : userRole === "owner" ? "Owner" : ""}
-            </span>
-          )}
-          {coachAppStatus === "pending" && state.isOwnProfile && (
-            <span className="role-badge pending">Coach App Pending</span>
-          )}
-          {state.profileData?.adminApplication?.status === "pending" && state.isOwnProfile && (
-            <span className="role-badge pending">Admin App Pending</span>
           )}
         </div>
 
 
 
-        <div className="profile-card">
+        <div className="glass-panel p-8 rounded-3xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px]" />
+
           {state.notification.visible && (
-            <div className={`profile-notification ${state.notification.type}`}>
+            <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[70] px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-top duration-300 shadow-2xl ${state.notification.type === 'success' ? 'bg-green-500 text-black' : 'bg-red-500 text-white'
+              }`}>
               {state.notification.message}
             </div>
           )}
+
           {state.isOwnProfile && (
-            <div className="profile-actions-menu">
+            <div className="absolute top-8 right-8 z-20">
               <button
                 ref={hamburgerRef}
-                className={`hamburger-menu ${state.menuOpen ? 'active' : ''}`}
+                className="w-10 h-10 rounded-xl bg-secondary/50 border border-white/5 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-all group/ham"
                 onClick={() => setState(prev => ({ ...prev, menuOpen: !prev.menuOpen }))}
               >
-                <span></span>
-                <span></span>
-                <span></span>
+                <span className={`w-5 h-0.5 bg-muted-foreground transition-all ${state.menuOpen ? 'rotate-45 translate-y-1.5' : ''}`}></span>
+                <span className={`w-5 h-0.5 bg-muted-foreground transition-all ${state.menuOpen ? 'opacity-0' : ''}`}></span>
+                <span className={`w-5 h-0.5 bg-muted-foreground transition-all ${state.menuOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
               </button>
 
               {state.menuOpen && (
-                <div ref={menuRef} className="menu-dropdown">
+                <div ref={menuRef} className="absolute right-0 mt-4 w-56 glass-panel rounded-2xl py-3 animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
                   <button
-                    className="menu-item"
+                    className="w-full text-left px-5 py-3 hover:bg-primary hover:text-black font-bold transition-all text-sm flex items-center gap-3"
                     onClick={() => setState(prev => ({ ...prev, menuOpen: false, accountInfoOpen: true }))}
                   >
+                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
                     Account Info
                   </button>
                   {userRole !== 'admin' && userRole !== 'owner' &&
                     state.profileData?.adminApplication?.status !== 'pending' && (
                       <Link
                         to="/apply-admin"
-                        className="menu-item apply-admin-btn"
+                        className="w-full text-left px-5 py-3 hover:bg-primary hover:text-black font-bold transition-all text-sm flex items-center gap-3"
                         onClick={() => setState(prev => ({ ...prev, menuOpen: false }))}
                       >
+                        <div className="w-1.5 h-1.5 rounded-full bg-current" />
                         Apply for Admin
                       </Link>
                     )}
@@ -793,44 +823,31 @@ function Profile() {
                       setState(prev => ({
                         ...prev,
                         menuOpen: false,
-                        terminationButtonActive: true,
-                        ripple: true,
                         showDeleteConfirm: true
                       }));
-                      setTimeout(() => setState(prev => ({ ...prev, terminationButtonActive: false })), 300);
-                      setTimeout(() => setState(prev => ({ ...prev, ripple: false })), 600);
                     }}
-                    className={`menu-item terminate-menu-btn ${state.terminationButtonActive ? 'active' : ''}`}
+                    className="w-full text-left px-5 py-3 hover:bg-red-500 hover:text-white font-bold transition-all text-sm flex items-center gap-3"
                   >
-                    Terminate Account
-                    {state.ripple && <span className="ripple"></span>}
+                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                    Delete Account
                   </button>
                 </div>
               )}
             </div>
           )}
 
-          <div className="profile-header">
-            <div className="profile-icon-container" ref={profileIconRef}>
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-10">
+            <div className="relative group" ref={profileIconRef}>
+              <div className="absolute -inset-2 bg-primary/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               <img
                 src={currentProfileImage}
                 alt="Profile"
-                className="profile-avatar"
+                className="w-40 h-40 rounded-2xl border-4 border-secondary/50 shadow-2xl relative z-10 object-cover"
                 onContextMenu={state.isOwnProfile ? (e) => {
                   e.preventDefault();
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const profileCardRect = e.currentTarget.closest('.profile-card').getBoundingClientRect();
-
-                  const x = rect.right - profileCardRect.left + 10;
-                  const y = rect.top - profileCardRect.top;
-
-                  setState(prev => ({
-                    ...prev,
-                    contextMenuPosition: {
-                      x: x,
-                      y: y
-                    }
-                  }));
+                  const x = 160 + 10;
+                  const y = 0;
+                  setState(prev => ({ ...prev, contextMenuPosition: { x, y } }));
                 } : undefined}
                 style={{ cursor: state.isOwnProfile ? "pointer" : "default" }}
               />
@@ -838,13 +855,7 @@ function Profile() {
               {state.isOwnProfile && state.contextMenuPosition && (
                 <div
                   ref={contextMenuRef}
-                  className="context-menu"
-                  style={{
-                    position: "absolute",
-                    left: `${state.contextMenuPosition.x}px`,
-                    top: `${state.contextMenuPosition.y}px`,
-                    zIndex: 1000
-                  }}
+                  className="absolute left-[170px] top-0 z-[100] w-48 glass-panel rounded-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-left-4 duration-200 shadow-2xl"
                 >
                   <button
                     onClick={() => {
@@ -852,9 +863,9 @@ function Profile() {
                       setState(prev => ({ ...prev, contextMenuPosition: null }));
                     }}
                     disabled={state.uploading}
-                    className="context-menu-btn"
+                    className="w-full text-left px-4 py-2.5 hover:bg-primary hover:text-black font-bold transition-all text-[10px] uppercase tracking-widest"
                   >
-                    {state.uploading ? "Uploading..." : "Upload Image"}
+                    {state.uploading ? "Uploading..." : "Update Image"}
                   </button>
                   {state.profileImage && (
                     <button
@@ -863,7 +874,7 @@ function Profile() {
                         setState(prev => ({ ...prev, contextMenuPosition: null }));
                         showNotification("Profile image removed!", "success");
                       }}
-                      className="context-menu-btn delete-btn"
+                      className="w-full text-left px-4 py-2.5 hover:bg-red-500 hover:text-white font-bold transition-all text-[10px] uppercase tracking-widest border-t border-white/5"
                     >
                       Delete Image
                     </button>
@@ -882,21 +893,24 @@ function Profile() {
               )}
             </div>
 
-            <div className="profile-info">
-              <h3 className="profile-display-name">{displayUser?.displayName || "Anonymous User"}</h3>
-              <div className="about-me-section">
-                <div className="about-me-header">
-                  <h4 className="about-me-label">About Me</h4>
+            <div className="flex-1 text-center md:text-left pt-4">
+              <h3 className="font-display text-4xl font-black text-white tracking-widest mb-4 uppercase italic">
+                {displayUser?.displayName || "Member"}
+              </h3>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-center md:justify-start gap-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary italic">Bio</h4>
                   {!state.isEditingAbout && state.isOwnProfile && (
-                    <button onClick={startEditingAbout} className="edit-about-btn">
-                      <img src="/project-icons/Profile icons/edit.png" alt="Edit" className="btn-icon" />
+                    <button onClick={startEditingAbout} className="p-1 hover:text-primary transition-colors opacity-50 hover:opacity-100">
+                      <img src="/project-icons/Profile icons/edit.png" alt="" className="w-3 h-3 invert" />
                     </button>
                   )}
                 </div>
 
                 {state.isEditingAbout ? (
-                  <div className="about-me-edit-container">
-                    <div className="about-me-textarea-container">
+                  <div className="space-y-4 max-w-xl">
+                    <div className="relative group">
                       <textarea
                         value={state.tempAbout}
                         onChange={(e) => {
@@ -905,27 +919,26 @@ function Profile() {
                             setState(prev => ({ ...prev, tempAbout: text }));
                           }
                         }}
-                        placeholder="Tell us about yourself, your gaming preferences, favorite champions, etc..."
-                        className="about-me-textarea"
+                        placeholder="Tell us about yourself..."
+                        className="w-full bg-secondary/30 border border-white/5 rounded-2xl p-4 text-xs font-medium min-h-[100px] outline-none focus:border-primary/30 transition-all resize-none"
                         maxLength={200}
                         autoFocus
-                        rows={4}
                       />
-                      <div className={`char-counter ${state.tempAbout.length >= 180 ? 'warning' : ''} ${state.tempAbout.length >= 195 ? 'error' : ''}`}>
+                      <div className={`absolute bottom-3 right-4 text-[9px] font-black ${state.tempAbout.length >= 180 ? 'text-yellow-500' : 'text-muted-foreground/30'}`}>
                         {state.tempAbout.length}/200
                       </div>
                     </div>
-                    <div className="about-me-edit-buttons">
+                    <div className="flex gap-2">
                       <button
                         onClick={saveAboutMe}
-                        className="save-about-btn"
+                        className="px-6 py-2 rounded-xl bg-primary text-black font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50"
                         disabled={state.tempAbout === state.aboutMe}
                       >
                         Save Changes
                       </button>
                       <button
                         onClick={() => setState(prev => ({ ...prev, isEditingAbout: false }))}
-                        className="cancel-about-btn"
+                        className="px-6 py-2 rounded-xl bg-secondary border border-white/5 text-[10px] font-black uppercase tracking-widest transition-all"
                       >
                         Cancel
                       </button>
@@ -933,8 +946,8 @@ function Profile() {
                   </div>
                 ) : (
                   <div className="about-me-content">
-                    <p className="about-me-text">
-                      {state.aboutMe || (state.isOwnProfile ? "No about me yet. Click edit to add a bio." : "No about me yet.")}
+                    <p className="text-sm text-muted-foreground/70 leading-relaxed font-medium max-w-xl italic">
+                      {state.aboutMe || (state.isOwnProfile ? "No bio data recorded..." : "No bio data recorded...")}
                     </p>
                   </div>
                 )}
@@ -942,122 +955,167 @@ function Profile() {
             </div>
           </div>
 
-          <div className="riot-account-section">
-            <h4>Riot Games Account</h4>
+          <div className="mt-12 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-6 bg-primary rounded-full" />
+              <h4 className="font-display text-xl font-black uppercase tracking-tight">Riot Account Link</h4>
+            </div>
 
             {state.linkedAccount ? (
-              <div className="linked-account-container">
-                <div className="linked-account-info">
-                  <div className="account-header">
-                    <div className="account-icon-name">
-                      <img
-                        src={getProfileIconUrl(state.linkedAccount.profileIconId)}
-                        alt="Summoner icon"
-                        className="summoner-icon"
-                        onError={(e) => {
-                          e.target.src = `https://ddragon.leagueoflegends.com/cdn/25.22/img/profileicon/${state.linkedAccount.profileIconId}.png`;
-                        }}
-                      />
-                      <div>
-                        <span className="account-name">
-                          {state.linkedAccount.gameName}#{state.linkedAccount.tagLine}
-                        </span>
-                        <span className="account-level">Level {state.linkedAccount.summonerLevel}</span>
-                      </div>
+              <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                <div className="glass-panel p-6 rounded-3xl border-primary/20 bg-primary/5 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden group">
+                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all" />
+
+                  <div className="relative">
+                    <img
+                      src={getProfileIconUrl(state.linkedAccount.profileIconId)}
+                      alt="Summoner icon"
+                      className="w-20 h-20 rounded-2xl border-2 border-primary/30 shadow-xl object-cover"
+                      onError={(e) => {
+                        e.target.src = `https://ddragon.leagueoflegends.com/cdn/25.22/img/profileicon/${state.linkedAccount.profileIconId}.png`;
+                      }}
+                    />
+                    <div className="absolute -bottom-2 -right-2 bg-background border-2 border-primary text-primary px-2 py-0.5 rounded-lg text-[10px] font-black shadow-lg">
+                      Lvl {state.linkedAccount.summonerLevel}
                     </div>
-                    <span className="account-status verified">✅ Verified</span>
                   </div>
-                  <span className="account-region">
-                    <img src="/project-icons/Profile icons/globe icon.png" alt="Region" className="detail-icon" />
-                    Region: {REGIONS.find(r => r.value === state.linkedAccount.region)?.label || state.linkedAccount.region}
-                  </span>
+
+                  <div className="flex-1 text-center md:text-left">
+                    <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2">
+                      <span className="font-display text-2xl font-black text-white">
+                        {state.linkedAccount.gameName}#{state.linkedAccount.tagLine}
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-500 text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                        <div className="w-1 h-1 rounded-full bg-current animate-pulse" />
+                        Verified
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                        <img src="/project-icons/Profile icons/globe icon.png" alt="" className="w-3 h-3 opacity-30 invert" />
+                        Region: {REGIONS.find(r => r.value === state.linkedAccount.region)?.label || state.linkedAccount.region.toUpperCase()}
+                      </span>
+                      {state.isOwnProfile && (
+                        <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                          Last synced: {formatTimeAgo(state.lastUpdateTime)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
                   {state.isOwnProfile && (
-                    <div className="ranked-update-section">
-                      <div className="update-info">
-                        <span className="last-update">
-                          Last updated: {formatTimeAgo(state.lastUpdateTime)}
-                        </span>
-                        <button
-                          onClick={handleManualRankedUpdate}
-                          className="update-ranked-btn"
-                          disabled={state.rankedUpdateLoading}
-                        >
-                          <img src="/project-icons/Profile icons/update icon.png" alt="Update" className="btn-icon" />
-                          {state.rankedUpdateLoading ? "Updating..." : "Update Ranked Data"}
-                        </button>
-                      </div>
-                      <span className="update-hint">
-                        Ranked data updates automatically every 30 minutes
-                      </span>
+                    <div className="flex flex-col gap-2 w-full md:w-auto">
+                      <button
+                        onClick={handleManualRankedUpdate}
+                        disabled={state.rankedUpdateLoading}
+                        className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black hover:border-primary transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
+                      >
+                        <img src="/project-icons/Profile icons/update icon.png" alt="" className="w-3 h-3 group-hover/btn:rotate-180 transition-transform" />
+                        {state.rankedUpdateLoading ? "Syncing..." : "Sync Data"}
+                      </button>
+                      <button
+                        onClick={unlinkRiotAccount}
+                        className="px-6 py-2.5 rounded-xl text-red-400/50 hover:text-red-400 hover:bg-red-400/10 text-[10px] font-black uppercase tracking-widest transition-all"
+                      >
+                        Unlink Account
+                      </button>
                     </div>
                   )}
                 </div>
 
                 {state.backendError && (
-                  <div className="backend-error-notice" style={{
-                    background: 'rgba(255, 0, 0, 0.1)',
-                    borderLeft: '4px solid #ff4444',
-                    padding: '8px 12px',
-                    marginBottom: '16px',
-                    borderRadius: '4px',
-                    fontSize: '0.85rem',
-                    color: '#ffbbbb'
-                  }}>
-                    Backend server is currently offline. Ranked data updates are disabled.
+                  <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center gap-4 animate-in slide-in-from-left duration-500">
+                    <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-500 font-black">!</div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-red-400">
+                      Backend Offline - Sync Unavailable
+                    </p>
                   </div>
                 )}
 
                 {state.rankedData ? (
-                  <div className="ranked-section">
-                    <h5>Ranked Information</h5>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 px-2">
+                      <div className="w-1 h-4 bg-muted-foreground/30 rounded-full" />
+                      <h5 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/70 italic">Ranked Data</h5>
+                    </div>
                     <RankedInfo rankedData={state.rankedData} />
                   </div>
                 ) : state.backendError ? (
-                  <div className="ranked-section">
-                    <h5>Ranked Information</h5>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                      Connect your Riot account and start the backend to see ranked info.
+                  <div className="glass-panel p-12 rounded-3xl flex flex-col items-center justify-center text-center">
+                    <p className="text-muted-foreground/40 font-black text-[10px] uppercase tracking-[0.3em]">
+                      Updating Account Data...
                     </p>
                   </div>
                 ) : null}
-
-                {state.isOwnProfile && (
-                  <button onClick={unlinkRiotAccount} className="unlink-account-btn">
-                    Unlink Account
-                  </button>
-                )}
               </div>
             ) : state.isOwnProfile ? (
-              <form onSubmit={handleRiotAccountLink} className="link-account-form">
-                <div className="form-group">
-                  <label htmlFor="riotId">Riot ID</label>
-                  <input type="text" id="riotId" value={state.riotId} onChange={(e) => setState(prev => ({ ...prev, riotId: e.target.value }))} placeholder="Enter your Riot ID" className="riot-id-input" maxLength={25} />
-                  <div className="input-hint">Format: Name#Tag</div>
+              <div className="glass-panel p-8 rounded-3xl border-dashed border-white/10 flex flex-col items-center justify-center text-center space-y-6">
+                <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center border border-white/5 shadow-xl group-hover:scale-110 transition-transform duration-500">
+                  <img src="/project-icons/Profile icons/riot guest icon.png" alt="" className="w-8 h-8 opacity-20 invert" />
+                </div>
+                <div>
+                  <h5 className="font-display text-lg font-black text-white uppercase italic tracking-wider mb-2">Link Riot Account</h5>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] max-w-xs mx-auto">
+                    Connect your Riot ID to sync your ranked standings.
+                  </p>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="region">Region</label>
-                  <select
-                    id="region"
-                    value={state.region}
-                    onChange={(e) => setState(prev => ({ ...prev, region: e.target.value }))}
-                    className="region-select"
+                <form onSubmit={handleRiotAccountLink} className="w-full max-w-sm space-y-4">
+                  <div className="space-y-1.5 text-left">
+                    <label htmlFor="riotId" className="text-[9px] font-black uppercase tracking-[0.3em] text-primary/50 ml-1 italic">Riot ID</label>
+                    <input
+                      type="text"
+                      id="riotId"
+                      value={state.riotId}
+                      onChange={(e) => setState(prev => ({ ...prev, riotId: e.target.value }))}
+                      placeholder="Riot#TAG"
+                      className="w-full bg-secondary/50 border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-primary/30 transition-all placeholder:text-muted-foreground/20"
+                      maxLength={25}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 text-left">
+                    <label htmlFor="region" className="text-[9px] font-black uppercase tracking-[0.3em] text-primary/50 ml-1 italic">Region</label>
+                    <div className="relative group/select">
+                      <select
+                        id="region"
+                        value={state.region}
+                        onChange={(e) => setState(prev => ({ ...prev, region: e.target.value }))}
+                        className="w-full bg-secondary/50 border border-white/5 rounded-2xl pl-5 pr-12 py-4 text-sm font-black uppercase tracking-widest outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                      >
+                        {REGIONS.map(region => <option key={region.value} value={region.value} className="bg-secondary text-white">{region.label}</option>)}
+                      </select>
+                      <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-white/20 group-hover/select:text-primary transition-colors">
+                        <ChevronDown className="w-5 h-5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {state.linkError && (
+                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[10px] font-black text-red-500 uppercase tracking-widest italic animate-shake">
+                      {state.linkError}
+                    </div>
+                  )}
+                  {state.linkSuccess && (
+                    <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-[10px] font-black text-green-500 uppercase tracking-widest animate-bounce">
+                      Riot Account Linked
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={state.linkingAccount}
+                    className="w-full py-4 rounded-2xl bg-primary text-black font-black text-xs uppercase tracking-[0.3em] hover:bg-white transition-all shadow-xl shadow-primary/20 active:scale-[0.98] disabled:opacity-50"
                   >
-                    {REGIONS.map(region => <option key={region.value} value={region.value}>{region.label}</option>)}
-                  </select>
-                </div>
-
-                {state.linkError && <div className="error-message">{state.linkError}</div>}
-                {state.linkSuccess && <div className="success-message">{state.linkSuccess}</div>}
-
-                <button type="submit" disabled={state.linkingAccount} className="link-account-btn">
-                  {state.linkingAccount ? "Validating..." : "Link Riot Account"}
-                </button>
-              </form>
+                    {state.linkingAccount ? "Syncing..." : "Link Account"}
+                  </button>
+                </form>
+              </div>
             ) : (
-              <div className="no-riot-account">
-                <p>This user hasn't linked a Riot account yet.</p>
+              <div className="glass-panel p-12 rounded-3xl flex flex-col items-center justify-center text-center">
+                <p className="text-muted-foreground/30 font-black text-[10px] uppercase tracking-[0.3em]">
+                  No Riot Account Linked.
+                </p>
               </div>
             )}
           </div>
@@ -1073,47 +1131,58 @@ function Profile() {
         />
 
         {state.accountInfoOpen && state.isOwnProfile && (
-          <div className="modal-overlay">
-            <div ref={accountInfoModalRef} className="account-info-modal">
-              <h3>Account Information</h3>
-              <div className="account-info-details">
-                <div className="info-row">
-                  <span className="label">Email:</span>
-                  <span className="value">{displayEmail || "No email"}</span>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setState(prev => ({ ...prev, accountInfoOpen: false }))} />
+            <div ref={accountInfoModalRef} className="glass-panel w-full max-w-lg rounded-3xl p-8 relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
+
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+                <h3 className="font-display text-2xl font-black uppercase tracking-tight italic">Account Info</h3>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 group hover:border-white/10 transition-colors">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 italic">Email</span>
+                  <span className="text-sm font-bold text-white selection:bg-primary selection:text-black">{displayEmail || "No data"}</span>
                 </div>
-                <div className="info-row">
-                  <span className="label">Verified:</span>
-                  <span className={`value ${state.user?.emailVerified ? "verified" : "not-verified"}`}>
-                    {state.user?.emailVerified ? "Yes" : "No"}
-                  </span>
-                </div>
-                {!state.user?.emailVerified && (
-                  <div className="verification-actions">
-                    <button
-                      onClick={verifyEmail}
-                      className="verify-btn-small"
-                      disabled={state.verificationLoading || state.emailVerificationSent}
-                    >
-                      {state.verificationLoading ? "Sending..." : "Verify Email"}
-                    </button>
+
+                <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 group hover:border-white/10 transition-colors">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 italic">Link Status</span>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${state.user?.emailVerified ? "text-green-500" : "text-red-500"}`}>
+                      {state.user?.emailVerified ? "Verified" : "Unverified"}
+                    </span>
+                    {!state.user?.emailVerified && (
+                      <button
+                        onClick={verifyEmail}
+                        className="px-3 py-1 rounded-lg bg-red-500 text-white text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+                        disabled={state.verificationLoading || state.emailVerificationSent}
+                      >
+                        {state.verificationLoading ? "Sending..." : "Send Verification"}
+                      </button>
+                    )}
                   </div>
-                )}
-                <div className="info-row">
-                  <span className="label">Joined:</span>
-                  <span className="value">
-                    {joinedDate.toLocaleDateString()} ({accountAgeDays} days ago)
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 group hover:border-white/10 transition-colors">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 italic">Joined</span>
+                  <span className="text-sm font-bold text-white">
+                    {joinedDate.toLocaleDateString()} <span className="text-muted-foreground/30 ml-2 font-black italic">({accountAgeDays} days ago)</span>
                   </span>
                 </div>
+
                 {state.user?.metadata?.lastSignInTime && (
-                  <div className="info-row">
-                    <span className="label">Last Login:</span>
-                    <span className="value">{new Date(state.user.metadata.lastSignInTime).toLocaleString()}</span>
+                  <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 group hover:border-white/10 transition-colors">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 italic">Last Session</span>
+                    <span className="text-xs font-bold text-white/50">{new Date(state.user.metadata.lastSignInTime).toLocaleString()}</span>
                   </div>
                 )}
               </div>
+
               <button
                 onClick={() => setState(prev => ({ ...prev, accountInfoOpen: false }))}
-                className="close-modal-btn"
+                className="w-full mt-8 py-4 rounded-xl bg-secondary border border-white/5 text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl"
               >
                 Close
               </button>
@@ -1122,50 +1191,97 @@ function Profile() {
         )}
 
         {state.isOwnProfile && state.showDeleteConfirm && (
-          <div className="modal-overlay">
-            <div className="delete-modal">
-              <h3>Confirm Account Termination</h3>
-              <div className="delete-warning">
-                <span className="delete-icon"></span>
-                <div>
-                  <p>Are you sure you want to terminate your account? This action is permanent and cannot be undone.</p>
-                  <ul>
-                    <li>All your profile data will be deleted</li>
-                    <li>Your chat history will be removed</li>
-                    <li>Linked Riot account will be unlinked</li>
-                    <li>You will be removed from any active queues</li>
-                    <li>This action cannot be reversed</li>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-red-950/20 backdrop-blur-xl" onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false }))} />
+            <div className="glass-panel w-full max-w-lg rounded-3xl p-8 relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl overflow-hidden border-red-500/20">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl opacity-50" />
+
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-1.5 h-8 bg-red-500 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
+                <h3 className="font-display text-2xl font-black uppercase tracking-tight italic text-red-500 font-black">Delete Account</h3>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-4 bg-red-500/5 rounded-2xl border border-red-500/20">
+                  <p className="text-sm font-bold text-red-200 leading-relaxed mb-4">
+                    Are you absolutely certain? Account deletion is a destructive operation that cannot be reversed.
+                  </p>
+                  <ul className="space-y-2">
+                    {["Full Profile Data Wipe", "Riot Account Unlinked", "Post History Deleted"].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400/70">
+                        <div className="w-1 h-1 rounded-full bg-red-500" />
+                        {item}
+                      </li>
+                    ))}
                   </ul>
                 </div>
-              </div>
-              <div className="modal-actions">
-                <button onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false }))} className="cancel-btn" disabled={state.deletingAccount}>Cancel</button>
-                <button onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false, showReauthModal: true }))} className="confirm-delete-btn" disabled={state.deletingAccount}>
-                  {state.deletingAccount ? "Deleting..." : "Yes, Delete My Account"}
-                </button>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false }))}
+                    className="flex-1 py-4 rounded-xl bg-secondary border border-white/5 text-[10px] font-black uppercase tracking-widest transition-all"
+                  >
+                    Abort
+                  </button>
+                  <button
+                    onClick={() => setState(prev => ({ ...prev, showDeleteConfirm: false, showReauthModal: true }))}
+                    className="flex-1 py-4 rounded-xl bg-red-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl shadow-red-500/20 active:scale-95"
+                  >
+                    Delete Account
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {state.isOwnProfile && state.showReauthModal && (
-          <div className="modal-overlay">
-            <div className="reauth-modal">
-              <h3>Verify Your Identity</h3>
-              <div className="reauth-warning">
-                <span className="reauth-icon"></span>
-                <p>For security reasons, please enter your password to confirm account deletion.</p>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setState(prev => ({ ...prev, showReauthModal: false, password: "", reauthError: "" }))} />
+            <div className="glass-panel w-full max-w-lg rounded-3xl p-8 relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+                <h3 className="font-display text-2xl font-black uppercase tracking-tight italic">Security Check</h3>
               </div>
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input id="password" type="password" value={state.password} onChange={(e) => setState(prev => ({ ...prev, password: e.target.value }))} placeholder="Enter your password" className="riot-id-input" />
-                {state.reauthError && <div className="error-message">{state.reauthError}</div>}
-              </div>
-              <div className="modal-actions">
-                <button onClick={() => setState(prev => ({ ...prev, showReauthModal: false, password: "", reauthError: "" }))} className="cancel-btn" disabled={state.deletingAccount}>Cancel</button>
-                <button onClick={handleReauthentication} className="confirm-delete-btn" disabled={state.deletingAccount || !state.password}>
-                  {state.deletingAccount ? "Deleting..." : "Confirm Deletion"}
-                </button>
+
+              <div className="space-y-6">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center">
+                  Enter your password to confirm account deletion.
+                </p>
+
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-[9px] font-black uppercase tracking-[0.3em] text-primary/50 ml-1 italic">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={state.password}
+                    onChange={(e) => setState(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Enter Password"
+                    className="w-full bg-secondary/50 border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-red-500/30 transition-all placeholder:text-muted-foreground/10"
+                  />
+                  {state.reauthError && (
+                    <div className="text-[10px] font-black text-red-500 uppercase tracking-widest italic animate-shake ml-1">
+                      {state.reauthError}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setState(prev => ({ ...prev, showReauthModal: false, password: "", reauthError: "" }))}
+                    className="flex-1 py-4 rounded-xl bg-secondary border border-white/5 text-[10px] font-black uppercase tracking-widest transition-all"
+                    disabled={state.deletingAccount}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReauthentication}
+                    className="flex-1 py-4 rounded-xl bg-red-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl shadow-red-500/20 active:scale-95 disabled:opacity-50"
+                    disabled={state.deletingAccount || !state.password}
+                  >
+                    {state.deletingAccount ? "Deleting..." : "Delete Account"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import '../styles/componentsCSS/itemTooltip.css';
 
 const ItemTooltip = ({ item, position, version }) => {
     const tooltipRef = React.useRef(null);

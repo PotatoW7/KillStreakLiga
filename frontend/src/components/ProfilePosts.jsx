@@ -5,7 +5,7 @@ import {
     serverTimestamp, arrayUnion, arrayRemove
 } from "firebase/firestore";
 import IconRenderer, { LoLSuggestions } from "./IconRenderer";
-import "../styles/componentsCSS/ProfilePosts.css";
+import { Heart, MessageCircle, Share2, MoreVertical, Trash2, Edit3, Image, Link2, ExternalLink, Play, Youtube, Instagram, Twitter, Eye, X, ChevronDown, Lock, Send } from "lucide-react";
 
 function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCreated, isFeedsPage }) {
     const [state, setState] = useState({
@@ -28,7 +28,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         suggestionIndex: 0,
         suggestionType: null,
         activeCommentId: null,
-        suggestionCoords: { top: 0, left: 0 }
+        suggestionCoords: { top: 0, left: 0 },
+        showAuthPrompt: false
     });
 
     const postImageInputRef = useRef(null);
@@ -209,10 +210,11 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
     };
 
     const createPost = async () => {
+        if (!user) {
+            setState(prev => ({ ...prev, showAuthPrompt: true }));
+            return;
+        }
         const hasContent = state.newPostContent.trim().length > 0;
-        const hasImages = state.newPostImages.length > 0;
-
-        if (!user || (!hasContent && !hasImages) || state.creatingPost) return;
 
         try {
             setState(prev => ({ ...prev, creatingPost: true }));
@@ -321,7 +323,10 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
     };
 
     const handleLike = async (post) => {
-        if (!user) return;
+        if (!user) {
+            setState(prev => ({ ...prev, showAuthPrompt: true }));
+            return;
+        }
         const postRef = doc(db, "posts", post.id);
         const userId = user.uid;
 
@@ -351,7 +356,10 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
     };
 
     const handleDislike = async (post) => {
-        if (!user) return;
+        if (!user) {
+            setState(prev => ({ ...prev, showAuthPrompt: true }));
+            return;
+        }
         const postRef = doc(db, "posts", post.id);
         const userId = user.uid;
 
@@ -381,8 +389,11 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
     };
 
     const handleAddComment = async (postId) => {
+        if (!user) {
+            setState(prev => ({ ...prev, showAuthPrompt: true }));
+            return;
+        }
         const commentText = state.newCommentText[postId]?.trim();
-        if (!user || !commentText || state.postingCommentId === postId) return;
 
         try {
             setState(prev => ({ ...prev, postingCommentId: postId }));
@@ -598,46 +609,51 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
     return (
         <div className={`profile-posts-container ${isFeedsPage ? 'feeds-layout-variant' : ''}`}>
             {isOwnProfile && (
-                <div className={`make-post-container ${isFeedsPage ? 'feeds-variant' : ''}`}>
-                    <h4>Create a Post</h4>
-                    <div className="post-input-wrapper">
-                        <textarea
-                            placeholder={isFeedsPage ? "Share something with the community... | TIP: Type : to add champion, item or emoji icons!" : "Share something with the community... | TIP: Type : to add champion, item or emoji icons!"}
-                            className="post-textarea"
-                            value={state.newPostContent}
-                            onChange={(e) => handleTextareaChange(e.target.value, 'post')}
-                            onKeyDown={handleKeyDown}
-                            onPaste={handlePaste}
-                            maxLength={500}
-                        ></textarea>
+                <div className={`glass-panel p-6 rounded-3xl mb-8 relative overflow-hidden group ${isFeedsPage ? 'border-primary/20 bg-primary/2' : ''}`}>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
 
+                    <div className="flex items-center gap-3 mb-6 px-1">
+                        <div className="w-1 h-5 bg-primary rounded-full shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
+                        <h4 className="font-display text-sm font-black uppercase tracking-[0.2em] italic">Create Post</h4>
+                    </div>
 
-                        {state.showSuggestions && state.suggestionType === 'post' && (
-                            <div className="post-suggestions-wrapper" style={{
-                                position: 'absolute',
-                                top: state.suggestionCoords.top,
-                                left: state.suggestionCoords.left,
-                                zIndex: 4001
-                            }}>
-                                <LoLSuggestions
-                                    query={state.suggestionQuery}
-                                    activeIndex={state.suggestionIndex}
-                                    onSelect={insertSuggestion}
-                                />
+                    <div className="space-y-4">
+                        <div className="relative">
+                            <textarea
+                                placeholder={isFeedsPage ? "Share something with the community... | TIP: Type : for icons" : "Share something on your profile... | TIP: Type : for icons"}
+                                className="w-full bg-secondary/30 border border-white/5 rounded-2xl p-5 text-sm font-medium min-h-[120px] outline-none focus:border-primary/30 transition-all resize-none placeholder:text-muted-foreground/20 leading-relaxed"
+                                value={state.newPostContent}
+                                onChange={(e) => handleTextareaChange(e.target.value, 'post')}
+                                onKeyDown={handleKeyDown}
+                                onPaste={handlePaste}
+                                maxLength={500}
+                            ></textarea>
+
+                            {state.showSuggestions && state.suggestionType === 'post' && (
+                                <div className="absolute z-[4001] shadow-2xl animate-in fade-in zoom-in-95 duration-200" style={{
+                                    top: state.suggestionCoords.top,
+                                    left: state.suggestionCoords.left,
+                                }}>
+                                    <LoLSuggestions
+                                        query={state.suggestionQuery}
+                                        activeIndex={state.suggestionIndex}
+                                        onSelect={insertSuggestion}
+                                    />
+                                </div>
+                            )}
+
+                            <div className="absolute bottom-4 right-5 text-[9px] font-black text-muted-foreground/30 uppercase tracking-widest">
+                                {state.newPostContent.length}/500
                             </div>
-                        )}
-
-                        <div className="post-char-counter">
-                            {state.newPostContent.length}/500 characters
                         </div>
 
                         {state.newPostImages.length > 0 && (
-                            <div className="post-images-preview-grid">
+                            <div className="flex flex-wrap gap-3 p-2 bg-black/20 rounded-2xl border border-white/5">
                                 {state.newPostImages.map((img, index) => (
-                                    <div key={index} className="post-image-preview-container">
-                                        <img src={img} alt={`Preview ${index}`} className="post-image-preview" />
+                                    <div key={index} className="relative group/img">
+                                        <img src={img} alt="" className="w-24 h-24 rounded-xl object-cover border border-white/10" />
                                         <button
-                                            className="remove-post-image-btn"
+                                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold opacity-0 group-hover/img:opacity-100 transition-opacity shadow-lg"
                                             onClick={() => removePostImage(index)}
                                         >
                                             ×
@@ -647,22 +663,29 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                             </div>
                         )}
 
-                        <div className="post-footer-row">
-                            <div className="visibility-selector">
-                                <label htmlFor="post-visibility">Visibility:</label>
-                                <select
-                                    id="post-visibility"
-                                    value={state.postVisibility}
-                                    onChange={(e) => setState(prev => ({ ...prev, postVisibility: e.target.value }))}
-                                    className="visibility-select"
-                                >
-                                    <option value="public">Public - Visible in feeds</option>
-                                    <option value="profile-only">Profile Only - Visible on profile page</option>
-                                    <option value="private">Private - Friends only</option>
-                                </select>
-                            </div>
+                        <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+                            <div className="flex-1 flex items-center gap-3 w-full">
+                                <div className="relative flex-1">
+                                    <select
+                                        id="post-visibility"
+                                        value={state.postVisibility}
+                                        onChange={(e) => setState(prev => ({ ...prev, postVisibility: e.target.value }))}
+                                        className="w-full bg-secondary/50 border border-white/5 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest outline-none focus:border-primary/20 appearance-none cursor-pointer text-muted-foreground hover:text-white transition-colors"
+                                    >
+                                        <option value="public">Global Feed</option>
+                                        <option value="profile-only">Local Feed</option>
+                                        <option value="private">Private (Friends Only)</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground/30" />
+                                </div>
 
-                            <div className="post-actions">
+                                <button
+                                    className="p-3 rounded-xl bg-secondary/50 border border-white/5 hover:border-primary/30 transition-all group/btn"
+                                    onClick={() => postImageInputRef.current?.click()}
+                                    title="Attach Media"
+                                >
+                                    <Image className="w-4 h-4 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
+                                </button>
                                 <input
                                     type="file"
                                     ref={postImageInputRef}
@@ -670,234 +693,251 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                     accept="image/*"
                                     style={{ display: "none" }}
                                 />
-                                <button
-                                    className="post-media-btn"
-                                    onClick={() => postImageInputRef.current?.click()}
-                                >
-                                    Add Image
-                                </button>
-                                <button
-                                    className="post-submit-btn"
-                                    onClick={createPost}
-                                    disabled={(!state.newPostContent.trim() && state.newPostImages.length === 0) || state.creatingPost}
-                                >
-                                    {state.creatingPost ? "Posting..." : "Post to Feed"}
-                                </button>
                             </div>
+
+                            <button
+                                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/10 hover:bg-white transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
+                                onClick={createPost}
+                                disabled={(!state.newPostContent.trim() && state.newPostImages.length === 0) || state.creatingPost}
+                            >
+                                {state.creatingPost ? (
+                                    <>
+                                        <div className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                        Posting...
+                                    </>
+                                ) : "Create Post"}
+                            </button>
                         </div>
+
                         {state.postSuccess && (
-                            <div className="post-success-message">
-                                Post was created
+                            <div className="text-[10px] font-black uppercase tracking-widest text-green-500 italic animate-pulse text-center sm:text-left ml-1">
+                                Post successfully published
                             </div>
                         )}
                     </div>
                 </div>
             )}
 
-            <div className="profile-social-feed">
-                <h4>Activity Feed</h4>
+            <div className="space-y-6">
+                <div className="flex items-center gap-3 px-2">
+                    <div className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_10px_rgba(234,179,8,0.3)]" />
+                    <h4 className="font-display text-lg font-black uppercase tracking-[0.2em] italic">Recent Activity</h4>
+                </div>
+
                 {posts.length === 0 ? (
-                    <div className="no-posts-message">
-                        <p>No posts yet. Share something with the community!</p>
+                    <div className="glass-panel p-16 rounded-3xl flex flex-col items-center justify-center text-center">
+                        <p className="text-muted-foreground/30 font-black text-[10px] uppercase tracking-[0.3em]">
+                            No posts yet...
+                        </p>
                     </div>
                 ) : (
-                    <div className="feed-posts">
+                    <div className="space-y-8">
                         {posts.map(post => (
-                            <div key={post.id} className={`feed-post-wrapper ${state.openCommentsPostId === post.id ? 'comments-open' : ''}`}>
-                                <div className="feed-post">
-                                    <div className="post-header">
-                                        <img
-                                            src={post.userProfileImage || profileImage}
-                                            alt="Poster"
-                                            className="post-avatar"
-                                        />
-                                        <div className="post-meta">
-                                            <span className="post-author">
-                                                {post.username || user?.displayName || "Anonymous User"}
-                                            </span>
-                                            <div className="post-meta-right">
-                                                <span className="post-date">
-                                                    {formatPostTime(post.createdAt)}
-                                                </span>
-                                                {post.visibility && post.visibility !== "public" && (
-                                                    <span className={`visibility-badge ${post.visibility}`}>
-                                                        {post.visibility === "profile-only" && "Profile Only"}
-                                                        {post.visibility === "private" && "Private"}
-                                                    </span>
+                            <div key={post.id} className={`group/post animate-in slide-in-from-bottom-4 duration-500`}>
+                                <div className={`glass-panel rounded-3xl overflow-hidden border-white/5 bg-secondary/10 hover:border-primary/20 transition-all duration-500 ${state.openCommentsPostId === post.id ? 'shadow-2xl shadow-primary/5 border-primary/10 bg-primary/2' : ''}`}>
+                                    <div className="p-6">
+                                        <div className="flex items-start justify-between gap-4 mb-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative">
+                                                    <img
+                                                        src={post.userProfileImage || profileImage}
+                                                        alt=""
+                                                        className="w-12 h-12 rounded-xl object-cover border-2 border-white/5 shadow-xl transition-transform group-hover/post:scale-105"
+                                                    />
+                                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-background animate-pulse" />
+                                                </div>
+                                                <div>
+                                                    <h5 className="font-display text-sm font-black text-white hover:text-primary transition-colors cursor-pointer uppercase tracking-wider italic">
+                                                        {post.username || user?.displayName || "Anonymous User"}
+                                                    </h5>
+                                                    <div className="flex items-center gap-3 mt-1">
+                                                        <span className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.15em] flex items-center gap-1.5">
+                                                            <div className="w-1 h-1 rounded-full bg-current opacity-30" />
+                                                            {formatPostTime(post.createdAt)}
+                                                        </span>
+                                                        {post.visibility && post.visibility !== "public" && (
+                                                            <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-muted-foreground/70">
+                                                                {post.visibility === "profile-only" ? "Local" : "Private"}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {isOwnProfile && post.userId === user?.uid && (
+                                                <div className="flex items-center gap-1 opacity-20 group-hover/post:opacity-100 transition-opacity">
+                                                    <button
+                                                        className="p-2 rounded-lg hover:bg-white/5 hover:text-primary transition-all active:scale-90"
+                                                        onClick={() => startEditingPost(post)}
+                                                        title="Edit Post"
+                                                    >
+                                                        <img src="/project-icons/Profile icons/edit.png" alt="" className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                                    </button>
+                                                    <button
+                                                        className="p-2 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-all active:scale-90"
+                                                        onClick={() => deletePost(post.id)}
+                                                        title="Delete Post"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="mb-6 leading-relaxed select-text">
+                                            {state.editingPostId === post.id ? (
+                                                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                                                    <textarea
+                                                        className="w-full bg-black/40 border border-primary/20 rounded-2xl p-4 text-sm font-medium outline-none focus:border-primary transition-all resize-none min-h-[100px]"
+                                                        value={state.editContent}
+                                                        onChange={(e) => setState(prev => ({ ...prev, editContent: e.target.value }))}
+                                                    />
+                                                    <div className="flex justify-end gap-3">
+                                                        <button
+                                                            className="px-4 py-2 rounded-xl bg-secondary text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all"
+                                                            onClick={cancelEditingPost}
+                                                            disabled={state.updatingPost}
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            className="px-4 py-2 rounded-xl bg-primary text-black text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95"
+                                                            onClick={() => updatePost(post.id)}
+                                                            disabled={state.updatingPost || !state.editContent.trim()}
+                                                        >
+                                                            {state.updatingPost ? "Saving..." : "Save Post"}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-sm font-medium text-white/90">
+                                                    <IconRenderer text={post.content} />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {(post.socialPreview || (post.postImages && post.postImages.length > 0)) && (
+                                            <div className="rounded-2xl border border-white/5 bg-black/20 overflow-hidden mb-6">
+                                                {post.socialPreview && (
+                                                    <div className="aspect-video w-full bg-black/40">
+                                                        {post.socialPreview.type === 'youtube' && (
+                                                            <iframe
+                                                                width="100%"
+                                                                height="100%"
+                                                                src={`https://www.youtube.com/embed/${post.socialPreview.id}`}
+                                                                title="YouTube player"
+                                                                frameBorder="0"
+                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                allowFullScreen
+                                                            />
+                                                        )}
+                                                        {post.socialPreview.type === 'tiktok' && (
+                                                            <iframe
+                                                                src={`https://www.tiktok.com/embed/v2/${post.socialPreview.id}`}
+                                                                style={{ width: '100%', height: '100%', border: 'none' }}
+                                                                scrolling="no"
+                                                                allowFullScreen
+                                                                title="TikTok player"
+                                                            />
+                                                        )}
+                                                        {post.socialPreview.type === 'instagram' && (
+                                                            <iframe
+                                                                src={`https://www.instagram.com/p/${post.socialPreview.id}/embed`}
+                                                                width="100%"
+                                                                height="100%"
+                                                                frameBorder="0"
+                                                                scrolling="no"
+                                                                allowTransparency="true"
+                                                                title="Instagram player"
+                                                            />
+                                                        )}
+                                                        {post.socialPreview.type === 'x' && (
+                                                            <iframe
+                                                                border="0"
+                                                                frameBorder="0"
+                                                                height="100%"
+                                                                width="100%"
+                                                                src={`https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&frame=false&hideCard=false&hideThread=false&id=${post.socialPreview.id}&lang=en&origin=${window.location.origin}&theme=dark`}
+                                                                title="X player"
+                                                            />
+                                                        )}
+                                                    </div>
                                                 )}
-                                                {isOwnProfile && post.userId === user?.uid && (
-                                                    <div className="post-mgmt-btns">
-                                                        <button
-                                                            className="mgmt-btn edit-btn"
-                                                            onClick={() => startEditingPost(post)}
-                                                            title="Edit Post"
-                                                        >
-                                                            <img src="/project-icons/Profile icons/edit.png" alt="Edit" />
-                                                        </button>
-                                                        <button
-                                                            className="mgmt-btn delete-btn"
-                                                            onClick={() => deletePost(post.id)}
-                                                            title="Delete Post"
-                                                        >
-                                                            <span>×</span>
-                                                        </button>
+
+                                                {post.postImages && post.postImages.length > 0 && (
+                                                    <div className={`grid gap-px bg-white/5 ${post.postImages.length > 1 ? 'grid-cols-2 aspect-video' : 'grid-cols-1'}`}>
+                                                        {post.postImages.map((img, idx) => (
+                                                            <div key={idx} className="relative group/media overflow-hidden">
+                                                                <img src={img} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover/media:scale-110" />
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/media:opacity-100 transition-opacity" />
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="post-content">
-                                        {state.editingPostId === post.id ? (
-                                            <div className="edit-post-container">
-                                                <textarea
-                                                    className="edit-post-textarea"
-                                                    value={state.editContent}
-                                                    onChange={(e) => setState(prev => ({ ...prev, editContent: e.target.value }))}
-                                                    rows={3}
-                                                />
-                                                <div className="edit-actions">
-                                                    <button
-                                                        className="edit-save-btn"
-                                                        onClick={() => updatePost(post.id)}
-                                                        disabled={state.updatingPost || !state.editContent.trim()}
-                                                    >
-                                                        {state.updatingPost ? "Saving..." : "Save"}
-                                                    </button>
-                                                    <button
-                                                        className="edit-cancel-btn"
-                                                        onClick={cancelEditingPost}
-                                                        disabled={state.updatingPost}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <IconRenderer text={post.content} />
                                         )}
-                                    </div>
 
-                                    {post.socialPreview && (
-                                        <div className="social-preview-container">
-                                            {post.socialPreview.type === 'youtube' && (
-                                                <div className="yt-embed-wrapper">
-                                                    <iframe
-                                                        width="100%"
-                                                        height="360"
-                                                        src={`https://www.youtube.com/embed/${post.socialPreview.id}`}
-                                                        title="YouTube video player"
-                                                        frameBorder="0"
-                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                        allowFullScreen
-                                                    ></iframe>
-                                                </div>
-                                            )}
-                                            {post.socialPreview.type === 'tiktok' && (
-                                                <div className="tt-embed-wrapper">
-                                                    <iframe
-                                                        src={`https://www.tiktok.com/embed/v2/${post.socialPreview.id}`}
-                                                        style={{ width: '100%', height: '100%', border: 'none' }}
-                                                        scrolling="no"
-                                                        allowFullScreen
-                                                        title="TikTok player"
-                                                    ></iframe>
-                                                </div>
-                                            )}
-                                            {post.socialPreview.type === 'instagram' && (
-                                                <div className="ig-embed-wrapper">
-                                                    <iframe
-                                                        src={`https://www.instagram.com/p/${post.socialPreview.id}/embed`}
-                                                        width="100%"
-                                                        height="600"
-                                                        frameBorder="0"
-                                                        scrolling="no"
-                                                        allowTransparency="true"
-                                                        title="Instagram player"
-                                                    ></iframe>
-                                                </div>
-                                            )}
-                                            {post.socialPreview.type === 'x' && (
-                                                <div className="x-embed-wrapper">
-                                                    <iframe
-                                                        border="0"
-                                                        frameBorder="0"
-                                                        height="500"
-                                                        width="100%"
-                                                        src={`https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&frame=false&hideCard=false&hideThread=false&id=${post.socialPreview.id}&lang=en&origin=${window.location.origin}&theme=dark`}
-                                                        title="X (Twitter) player"
-                                                    ></iframe>
-                                                </div>
-                                            )}
+                                        <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                            <button
+                                                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all active:scale-95 group/btn ${post.likes?.some(l => l.uid === user?.uid) ? 'bg-primary/20 text-primary border border-primary/20' : 'bg-white/2 hover:bg-white/5 text-muted-foreground border border-transparent'}`}
+                                                onClick={() => handleLike(post)}
+                                            >
+                                                <img
+                                                    src="/project-icons/Profile icons/thumbs-up.png"
+                                                    alt=""
+                                                    className={`w-4 h-4 transition-transform group-hover/btn:scale-125 object-contain ${post.likes?.some(l => l.uid === user?.uid) ? '' : 'opacity-50 group-hover/btn:opacity-100'}`}
+                                                />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">{post.likes?.length || 0}</span>
+                                            </button>
+
+                                            <button
+                                                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all active:scale-95 group/btn ${post.dislikes?.some(d => d.uid === user?.uid) ? 'bg-red-500/20 text-red-500 border border-red-500/20' : 'bg-white/2 hover:bg-white/5 text-muted-foreground border border-transparent'}`}
+                                                onClick={() => handleDislike(post)}
+                                            >
+                                                <img
+                                                    src="/project-icons/Profile icons/dislike.png"
+                                                    alt=""
+                                                    className={`w-4 h-4 transition-transform group-hover/btn:rotate-12 object-contain ${post.dislikes?.some(d => d.uid === user?.uid) ? '' : 'opacity-50 group-hover/btn:opacity-100'}`}
+                                                />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">{post.dislikes?.length || 0}</span>
+                                            </button>
+
+                                            <button
+                                                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all active:scale-95 group/btn flex-1 justify-center ${state.openCommentsPostId === post.id ? 'bg-primary/10 text-primary border border-primary/10' : 'bg-white/2 hover:bg-white/5 text-muted-foreground border border-transparent'}`}
+                                                onClick={() => setState(prev => ({
+                                                    ...prev,
+                                                    openCommentsPostId: prev.openCommentsPostId === post.id ? null : post.id
+                                                }))}
+                                            >
+                                                <img
+                                                    src="/project-icons/Profile icons/comments.png"
+                                                    alt=""
+                                                    className={`w-4 h-4 object-contain ${state.openCommentsPostId === post.id ? '' : 'opacity-50 group-hover/btn:opacity-100'}`}
+                                                />
+                                                <span className="text-[10px] font-black uppercase tracking-widest italic">Comments ({post.comments?.length || 0})</span>
+                                            </button>
                                         </div>
-                                    )}
-
-                                    {post.postImages && post.postImages.length > 0 && (
-                                        <div className={`post-media-content ${post.postImages.length > 1 ? 'multi-image' : 'single-image'}`}>
-                                            {post.postImages.map((img, idx) => (
-                                                <img key={idx} src={img} alt={`Post ${idx}`} className="post-uploaded-image" />
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {post.mediaUrls && post.mediaUrls.length > 0 && (
-                                        <div className="post-media">
-                                            {post.mediaUrls.map((url, index) => (
-                                                <a
-                                                    key={index}
-                                                    href={url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="media-link"
-                                                >
-                                                    {url}
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <div className="post-interactions">
-                                        <button
-                                            className={`interaction-btn count-btn ${post.likes?.some(l => l.uid === user?.uid) ? 'active liked' : ''}`}
-                                            onClick={() => handleLike(post)}
-                                        >
-                                            <img src="/project-icons/Profile icons/thumbs-up.png" alt="Like" className="interaction-icon" />
-                                            <span>{post.likes?.length || 0}</span>
-                                        </button>
-                                        <button
-                                            className={`interaction-btn count-btn ${post.dislikes?.some(d => d.uid === user?.uid) ? 'active disliked' : ''}`}
-                                            onClick={() => handleDislike(post)}
-                                        >
-                                            <img src="/project-icons/Profile icons/dislike.png" alt="Dislike" className="interaction-icon" />
-                                            <span>{post.dislikes?.length || 0}</span>
-                                        </button>
-                                        <button
-                                            className={`interaction-btn count-btn ${state.openCommentsPostId === post.id ? 'active' : ''}`}
-                                            onClick={() => setState(prev => ({
-                                                ...prev,
-                                                openCommentsPostId: prev.openCommentsPostId === post.id ? null : post.id
-                                            }))}
-                                        >
-                                            <img src="/project-icons/Profile icons/comments.png" alt="Comment" className="interaction-icon" />
-                                            <span>{post.comments?.length || 0}</span>
-                                        </button>
                                     </div>
                                 </div>
 
                                 {state.openCommentsPostId === post.id && (
-                                    <div className="post-comments-sidebar">
-                                        <div className="sidebar-header">
-                                            <h5>Comments</h5>
+                                    <div className="mt-6 border-t border-white/5 pt-6 flex flex-col gap-6 animate-in slide-in-from-top-4 duration-300">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1 h-3 bg-primary rounded-full" />
+                                                <h5 className="text-[10px] font-black uppercase tracking-widest italic text-primary/70">Comments</h5>
+                                            </div>
                                             <button
-                                                className="close-sidebar-btn"
+                                                className="p-1 px-3 rounded-lg bg-white/2 hover:bg-white/5 text-[9px] font-black uppercase tracking-widest text-muted-foreground transition-all"
                                                 onClick={() => setState(prev => ({ ...prev, openCommentsPostId: null }))}
                                             >
-                                                ×
+                                                Close
                                             </button>
                                         </div>
-                                        <div className="comments-list-container">
+
+                                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                                             {post.comments && post.comments.length > 0 ? (
-                                                <div className="comments-list">
+                                                <div className="space-y-4">
                                                     {post.comments.map((comment) => {
                                                         const isCommentOwner = user?.uid === comment.userId;
                                                         const isPostOwner = user?.uid === post.userId;
@@ -905,66 +945,63 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                         const canDelete = isCommentOwner || isPostOwner;
 
                                                         return (
-                                                            <div key={comment.id} className="comment-item">
-                                                                <img src={comment.userProfileImage} alt={comment.username} className="comment-avatar" />
-                                                                <div className="comment-body">
-                                                                    <div className="comment-header">
-                                                                        <span className="comment-author">{comment.username}</span>
-                                                                        <div className="comment-header-right">
-                                                                            <span className="comment-date">{formatPostTime(comment.createdAt)}</span>
-                                                                            {(canEdit || canDelete) && state.editingCommentId !== comment.id && (
-                                                                                <div className="comment-actions">
-                                                                                    {canEdit && (
-                                                                                        <button
-                                                                                            className="comment-action-btn edit-comment-btn"
-                                                                                            onClick={() => startEditingComment(comment)}
-                                                                                            title="Edit Comment"
-                                                                                        >
-                                                                                            <img src="/project-icons/Profile icons/edit.png" alt="Edit" />
-                                                                                        </button>
-                                                                                    )}
-                                                                                    {canDelete && (
-                                                                                        <button
-                                                                                            className="comment-action-btn delete-comment-btn"
-                                                                                            onClick={() => deleteComment(post.id, comment.id)}
-                                                                                            disabled={state.deletingCommentId === comment.id}
-                                                                                            title="Delete Comment"
-                                                                                        >
-                                                                                            <span>{state.deletingCommentId === comment.id ? "..." : "×"}</span>
-                                                                                        </button>
-                                                                                    )}
-                                                                                </div>
-                                                                            )}
+                                                            <div key={comment.id} className="group/comment flex items-start gap-3 bg-white/2 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                                                                <img src={comment.userProfileImage} alt="" className="w-8 h-8 rounded-lg object-cover border border-white/10" />
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center justify-between mb-1">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[10px] font-black uppercase tracking-wider text-white/80">{comment.username}</span>
+                                                                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/40">{formatPostTime(comment.createdAt)}</span>
                                                                         </div>
+                                                                        {(canEdit || canDelete) && state.editingCommentId !== comment.id && (
+                                                                            <div className="flex items-center gap-1 opacity-0 group-hover/comment:opacity-100 transition-opacity">
+                                                                                <button
+                                                                                    className="p-1.5 rounded-md hover:bg-white/5 hover:text-primary transition-all active:scale-90"
+                                                                                    onClick={() => startEditingComment(comment)}
+                                                                                >
+                                                                                    <img src="/project-icons/Profile icons/edit.png" alt="" className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                                                                </button>
+                                                                                {canDelete && (
+                                                                                    <button
+                                                                                        className="p-1.5 rounded-md hover:bg-red-500/10 hover:text-red-500 transition-all active:scale-90"
+                                                                                        onClick={() => deleteComment(post.id, comment.id)}
+                                                                                        disabled={state.deletingCommentId === comment.id}
+                                                                                    >
+                                                                                        <X className="w-3 h-3" />
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                     {state.editingCommentId === comment.id ? (
-                                                                        <div className="edit-comment-container">
+                                                                        <div className="space-y-2 py-1">
                                                                             <input
                                                                                 type="text"
-                                                                                className="edit-comment-input"
+                                                                                className="w-full bg-black/40 border border-primary/20 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-primary transition-all"
                                                                                 value={state.editCommentText}
                                                                                 onChange={(e) => setState(prev => ({ ...prev, editCommentText: e.target.value }))}
                                                                                 onKeyPress={(e) => e.key === 'Enter' && updateComment(post.id, comment.id)}
                                                                             />
-                                                                            <div className="edit-comment-actions">
+                                                                            <div className="flex justify-end gap-2">
                                                                                 <button
-                                                                                    className="edit-comment-save-btn"
+                                                                                    className="px-3 py-1 rounded-lg bg-secondary text-[8px] font-black uppercase tracking-widest hover:bg-white/5 transition-all"
+                                                                                    onClick={cancelEditingComment}
+                                                                                >
+                                                                                    Cancel
+                                                                                </button>
+                                                                                <button
+                                                                                    className="px-3 py-1 rounded-lg bg-primary text-black text-[8px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95"
                                                                                     onClick={() => updateComment(post.id, comment.id)}
                                                                                     disabled={state.updatingComment || !state.editCommentText.trim()}
                                                                                 >
-                                                                                    {state.updatingComment ? "..." : "Save"}
-                                                                                </button>
-                                                                                <button
-                                                                                    className="edit-comment-cancel-btn"
-                                                                                    onClick={cancelEditingComment}
-                                                                                    disabled={state.updatingComment}
-                                                                                >
-                                                                                    Cancel
+                                                                                    Save
                                                                                 </button>
                                                                             </div>
                                                                         </div>
                                                                     ) : (
-                                                                        <IconRenderer text={comment.text} className="comment-text" />
+                                                                        <div className="text-xs text-muted-foreground leading-relaxed">
+                                                                            <IconRenderer text={comment.text} />
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -972,58 +1009,52 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                     })}
                                                 </div>
                                             ) : (
-                                                <div className="no-comments">
-                                                    <p>No comments yet. Be the first!</p>
+                                                <div className="text-center py-8 opacity-20">
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.3em]">No comments yet...</p>
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="add-comment-container">
-                                            <div className="comment-input-wrapper" style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Write a comment..."
-                                                    className={`comment-input comment-input-${post.id}`}
-                                                    value={state.newCommentText[post.id] || ""}
-                                                    onChange={(e) => handleTextareaChange(e.target.value, 'comment', post.id)}
-                                                    onKeyDown={handleKeyDown}
-                                                    onKeyPress={(e) => e.key === 'Enter' && !state.showSuggestions && handleAddComment(post.id)}
-                                                    maxLength={250}
-                                                />
-                                                <span className="comment-char-limit" style={{
-                                                    fontSize: '0.7rem',
-                                                    color: '#666',
-                                                    alignSelf: 'flex-end',
-                                                    marginTop: '2px',
-                                                    marginRight: '4px'
-                                                }}>
-                                                    {(state.newCommentText[post.id] || "").length}/250
-                                                </span>
 
-                                                {state.showSuggestions && state.suggestionType === 'comment' && state.activeCommentId === post.id && (
-                                                    <div style={{
-                                                        position: 'absolute',
-                                                        bottom: 'calc(100% + 8px)',
-                                                        left: '0',
-                                                        top: 'auto',
-                                                        zIndex: 9999,
-                                                        width: '100%',
-                                                        minWidth: '200px'
-                                                    }}>
-                                                        <LoLSuggestions
-                                                            query={state.suggestionQuery}
-                                                            activeIndex={state.suggestionIndex}
-                                                            onSelect={insertSuggestion}
-                                                        />
+                                        <div className="relative pt-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative flex-1">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Write a comment..."
+                                                        className={`w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-xs font-medium outline-none focus:border-primary/30 transition-all placeholder:text-muted-foreground/20 comment-input-${post.id}`}
+                                                        value={state.newCommentText[post.id] || ""}
+                                                        onChange={(e) => handleTextareaChange(e.target.value, 'comment', post.id)}
+                                                        onKeyDown={handleKeyDown}
+                                                        onKeyPress={(e) => e.key === 'Enter' && !state.showSuggestions && handleAddComment(post.id)}
+                                                        maxLength={250}
+                                                    />
+
+                                                    <div className="absolute right-3 bottom-0.5 text-[7px] font-black text-white/10 uppercase tracking-widest">
+                                                        {(state.newCommentText[post.id] || "").length}/250
                                                     </div>
-                                                )}
+
+                                                    {state.showSuggestions && state.suggestionType === 'comment' && state.activeCommentId === post.id && (
+                                                        <div className="absolute bottom-full left-0 w-full mb-2 z-[9999] shadow-2xl animate-in fade-in slide-in-from-bottom-2">
+                                                            <LoLSuggestions
+                                                                query={state.suggestionQuery}
+                                                                activeIndex={state.suggestionIndex}
+                                                                onSelect={insertSuggestion}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    className="p-3 rounded-xl bg-primary text-black hover:bg-white transition-all active:scale-90 disabled:opacity-30 shadow-lg shadow-primary/5"
+                                                    onClick={() => handleAddComment(post.id)}
+                                                    disabled={!state.newCommentText[post.id]?.trim() || state.postingCommentId === post.id}
+                                                >
+                                                    {state.postingCommentId === post.id ? (
+                                                        <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                    ) : (
+                                                        <Send className="w-4 h-4" />
+                                                    )}
+                                                </button>
                                             </div>
-                                            <button
-                                                className="add-comment-btn"
-                                                onClick={() => handleAddComment(post.id)}
-                                                disabled={!state.newCommentText[post.id]?.trim() || state.postingCommentId === post.id}
-                                            >
-                                                {state.postingCommentId === post.id ? "..." : "Post"}
-                                            </button>
                                         </div>
                                     </div>
                                 )}
@@ -1032,6 +1063,39 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                     </div>
                 )}
             </div>
+            {state.showAuthPrompt && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setState(prev => ({ ...prev, showAuthPrompt: false }))}></div>
+                    <div className="max-w-md w-full glass-panel p-10 text-center relative z-10 animate-in zoom-in-95 duration-300 border-primary/30">
+                        <div className="w-20 h-20 bg-primary/10 rounded-3xl mx-auto mb-8 flex items-center justify-center border border-primary/20">
+                            <Lock className="w-10 h-10 text-primary" />
+                        </div>
+                        <h2 className="font-display text-3xl font-black tracking-tighter mb-4 italic text-white uppercase">Authentication Required</h2>
+                        <p className="text-muted-foreground mb-8 text-sm leading-relaxed">Please log in or register to interact with the Rifthub community feed.</p>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => window.location.href = "/login"}
+                                className="w-full bg-primary text-black font-black py-4 rounded-xl hover:bg-white transition-all active:scale-95 shadow-xl shadow-primary/20 uppercase tracking-widest text-xs"
+                            >
+                                Log In
+                            </button>
+                            <button
+                                onClick={() => window.location.href = "/register"}
+                                className="w-full bg-secondary/50 text-white border border-white/10 font-black py-4 rounded-xl hover:bg-white/10 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                            >
+                                Create Account
+                            </button>
+                            <button
+                                onClick={() => setState(prev => ({ ...prev, showAuthPrompt: false }))}
+                                className="w-full bg-transparent text-muted-foreground font-black py-2 rounded-xl hover:text-white transition-all text-[10px] uppercase tracking-widest"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

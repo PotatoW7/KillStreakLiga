@@ -13,7 +13,8 @@ import {
     serverTimestamp,
     orderBy
 } from 'firebase/firestore';
-import '../styles/componentsCSS/admin.css';
+
+
 
 function AdminPanel() {
     const [user, setUser] = useState(null);

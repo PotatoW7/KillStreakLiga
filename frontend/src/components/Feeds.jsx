@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
-import { collection, query, where, onSnapshot, getDoc, doc } from "firebase/firestore";
+import { collection, query, onSnapshot, getDoc, doc } from "firebase/firestore";
 import ProfilePosts from "./ProfilePosts";
-import "../styles/componentsCSS/Feeds.css";
+import { Award, TrendingUp, Clock, Search, ChevronDown, Users, Bell, Zap, Activity, Lock, ChevronRight } from "lucide-react";
 
 function Feeds() {
     const [user, setUser] = useState(null);
@@ -111,66 +111,67 @@ function Feeds() {
         post.username?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const getRankIcon = (tier) => {
-        if (!tier) return "/rank-icons/Rank=Unranked.png";
-        return `/rank-icons/Rank=${tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()}.png`;
-    };
-
-    if (!user) {
-        return (
-            <div className="feeds-page">
-                <div className="feeds-container single-col">
-                    <div className="auth-message">
-                        <h2>Welcome to Feeds</h2>
-                        <p>Join the community to share your highlights, find teammates, and stay updated.</p>
-                        <button onClick={() => window.location.href = "/"} className="login-btn">Log In to Participate</button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
-        <div className="feeds-page">
-            <div className="feeds-layout">
-                <main className="feeds-main">
-                    <div className="feeds-hero">
-                        <h1>Community Feed</h1>
-                        <p>Share your journey and connect with other summoners</p>
+        <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-12">
+            <div className="flex flex-col lg:flex-row gap-8">
+                <main className="flex-1 min-w-0 space-y-8">
+                    <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary/20 via-background to-background border border-white/5 p-10 md:p-16">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[120px] -mr-48 -mt-48 pointer-events-none" />
+                        <div className="relative z-10 max-w-2xl">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 mb-6 backdrop-blur-md">
+                                <Zap className="w-3 h-3 text-primary animate-pulse" />
+                                <span className="text-[10px] uppercase font-black tracking-[0.2em] text-primary">Live Community Feed</span>
+                            </div>
+                            <h1 className="font-display text-5xl md:text-7xl font-black tracking-tighter text-white mb-6 leading-none">
+                                COMMUNITY<br /><span className="text-primary italic">FEED</span>
+                            </h1>
+                            <p className="text-muted-foreground text-lg md:text-xl font-medium leading-relaxed">
+                                Curating community highlights, top discussions, and global RiftHub activity.
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="feed-controls">
-                        <div className="feed-tabs">
+                    <div className="sticky top-24 z-30 glass-panel rounded-2xl p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 shadow-2xl shadow-black/20">
+                        <div className="flex-1 flex p-1 bg-white/5 rounded-xl gap-1">
                             <button
-                                className={`feed-tab ${activeTab === 'recent' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('recent')}
+                                className={`flex-1 flex items-center justify-center gap-3 py-3 px-6 rounded-lg font-black text-[10px] uppercase tracking-[0.2em] transition-all ${activeTab === 'recent' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-muted-foreground hover:bg-white/5 hover:text-white'}`}
                             >
-                                Recent
+                                <Clock className="w-3.5 h-3.5" />
+                                Latest
                             </button>
                             <button
-                                className={`feed-tab ${activeTab === 'trending' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('trending')}
+                                className={`flex-1 flex items-center justify-center gap-3 py-3 px-6 rounded-lg font-black text-[10px] uppercase tracking-[0.2em] transition-all ${activeTab === 'trending' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-muted-foreground hover:bg-white/5 hover:text-white'}`}
                             >
-                                Top Posts
+                                <TrendingUp className="w-3.5 h-3.5" />
+                                Trending
                             </button>
                         </div>
-                        <div className="feed-search">
+
+                        <div className="relative group flex-1 md:max-w-xs">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Search posts or users..."
+                                placeholder="Search community posts..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-white/5 border border-white/5 hover:border-white/10 focus:border-primary/30 rounded-xl pl-12 pr-4 py-3.5 text-sm font-bold placeholder:text-muted-foreground/30 outline-none transition-all"
                             />
                         </div>
                     </div>
 
                     {loading ? (
-                        <div className="loading-posts">
-                            <div className="loader"></div>
-                            <p>Loading the latest updates...</p>
+                        <div className="flex flex-col items-center justify-center py-32 space-y-6">
+                            <div className="relative">
+                                <Activity className="w-12 h-12 text-primary animate-pulse" />
+                                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+                            </div>
+                            <p className="text-[10px] uppercase font-black tracking-[0.3em] text-primary/40 animate-pulse italic">Loading Community Feed...</p>
                         </div>
                     ) : (
-                        <div className="feed-content">
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
                             <ProfilePosts
                                 user={user}
                                 profileImage={profileImage}
@@ -183,39 +184,78 @@ function Feeds() {
                     )}
                 </main>
 
-                <aside className="feeds-sidebar">
-                    <div className="sidebar-section likes-leaderboard">
-                        <div className="section-header">
-                            <h3>Likes Leaderboard</h3>
-                            <div className="section-icon-container">
-                                <img src="/project-icons/Feeds icons/leaderboard.png" alt="" className="section-icon-img" />
+                <aside className="w-full lg:w-96 space-y-8">
+                    <div className="glass-panel rounded-[2rem] overflow-hidden">
+                        <div className="p-8 border-b border-white/5 bg-gradient-to-br from-primary/5 to-transparent">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-display text-2xl font-black tracking-tight text-white italic">TOP PERFORMERS</h3>
+                                <img src="/project-icons/Feeds icons/leaderboard.png" alt="" className="w-8 h-8 object-contain" />
                             </div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Highest Community Engagement</p>
                         </div>
-                        <p className="section-subtitle">Most engaged summoners</p>
-                        <div className="leaderboard-list">
+                        <div className="p-2 space-y-1">
                             {likesLeaderboard.map((leader, index) => (
-                                <div key={leader.userId} className="leader-card" onClick={() => window.location.href = `/profile/${leader.userId}`}>
-                                    <div className="leader-rank-box">
-                                        <span className={`rank-num rank-${index + 1}`}>#{index + 1}</span>
-                                    </div>
-                                    <img src={leader.profileImage} alt="" className="leader-avatar" />
-                                    <div className="leader-info">
-                                        <span className="leader-name">{leader.username}</span>
-                                        <div className="leader-stats">
-                                            <span className="like-count">{leader.totalLikes}</span>
-                                            <span className="like-label">Likes Received</span>
+                                <button
+                                    key={leader.userId}
+                                    onClick={() => window.location.href = `/profile/${leader.userId}`}
+                                    className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 group transition-all text-left"
+                                >
+                                    <div className="relative">
+                                        <div className={`w-12 h-12 rounded-xl border-2 overflow-hidden transition-all group-hover:scale-105 ${index === 0 ? 'border-primary shadow-[0_0_15px_rgba(234,179,8,0.3)]' : 'border-white/10'}`}>
+                                            <img src={leader.profileImage} alt="" className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="absolute -top-2 -left-2 w-7 h-7 flex items-center justify-center">
+                                            {index === 0 && <img src="/project-icons/Feeds icons/medal first.png" alt="" className="w-full h-full object-contain drop-shadow-lg" />}
+                                            {index === 1 && <img src="/project-icons/Feeds icons/medal second.png" alt="" className="w-full h-full object-contain drop-shadow-lg" />}
+                                            {index === 2 && <img src="/project-icons/Feeds icons/medal third.png" alt="" className="w-full h-full object-contain drop-shadow-lg" />}
+                                            {index > 2 && (
+                                                <div className="w-6 h-6 rounded-lg bg-secondary border border-white/10 text-white flex items-center justify-center text-[10px] font-black shadow-lg">
+                                                    #{index + 1}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="leader-medal">
-                                        {index === 0 && <img src="/project-icons/Feeds icons/medal first.png" alt="First" className="medal-icon-img" />}
-                                        {index === 1 && <img src="/project-icons/Feeds icons/medal second.png" alt="Second" className="medal-icon-img" />}
-                                        {index === 2 && <img src="/project-icons/Feeds icons/medal third.png" alt="Third" className="medal-icon-img" />}
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="font-black text-sm text-white group-hover:text-primary transition-colors truncate">
+                                            {leader.username}
+                                        </h4>
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                            <TrendingUp className="w-3 h-3 text-primary/50" />
+                                            <span className="text-[10px] font-black text-primary/50 uppercase tracking-widest">{leader.totalLikes} Points</span>
+                                        </div>
                                     </div>
-                                </div>
+                                    <ChevronRight className="w-4 h-4 text-white/5 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                                </button>
                             ))}
                             {likesLeaderboard.length === 0 && (
-                                <p className="no-data">No interactions yet.</p>
+                                <div className="p-10 text-center space-y-4">
+                                    <Activity className="w-8 h-8 text-white/5 mx-auto" />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/10 italic">No community activity detected</p>
+                                </div>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Community Stats or similar if needed */}
+                    <div className="glass-panel rounded-[2rem] p-8 border border-primary/10">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+                                <Users className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-white uppercase tracking-widest leading-none mb-1">Community Stats</h4>
+                                <p className="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em]">Activity</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-white/2 rounded-2xl border border-white/5">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Global Posts</p>
+                                <p className="text-xl font-display font-black text-white italic">{posts.length}</p>
+                            </div>
+                            <div className="p-4 bg-white/2 rounded-2xl border border-white/5">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Active Members</p>
+                                <p className="text-xl font-display font-black text-white italic">{likesLeaderboard.length}</p>
+                            </div>
                         </div>
                     </div>
                 </aside>

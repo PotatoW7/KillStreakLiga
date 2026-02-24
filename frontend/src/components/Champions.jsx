@@ -10,7 +10,7 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { fetchDDragon } from '../utils/fetchDDragon';
-import '../styles/componentsCSS/champions.css';
+
 
 const ROLE_LABELS = {
     TOP: 'Top',

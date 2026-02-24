@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import '../styles/componentsCSS/coaching.css';
+import { auth, db } from '../firebase';
 
 function CoachRules() {
     return (
