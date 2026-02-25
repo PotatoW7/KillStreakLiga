@@ -49,7 +49,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
     });
 
     const postImageInputRef = useRef(null);
-    const commentsRef = useRef(null); // Ref for auto-scrolling to comments
+    const commentsRef = useRef(null);
     const editPostInputRef = useRef(null);
 
     useEffect(() => {
@@ -70,8 +70,6 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [state.showSuggestions]);
-
-    // Add effect to listen for sub-collection comments when a post is opened
     useEffect(() => {
         if (!state.openCommentsPostId) return;
 
@@ -86,8 +84,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                 const data = doc.data();
                 return {
                     ...data,
-                    id: doc.id, // Ensure we use the actual Firebase Document ID
-                    localId: data.id // Keep the internal ID if needed
+                    id: doc.id,
+                    localId: data.id
                 };
             });
             setState(prev => ({
@@ -472,9 +470,6 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
             };
 
             await addDoc(collection(db, "posts", postId, "comments"), newComment);
-
-            // Increment the comment count on the post document for the feed list view
-            // NOTE: You must update your Firestore rules to allow this field!
             try {
                 await updateDoc(postRef, {
                     commentCount: increment(1)
@@ -512,10 +507,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
 
             if (isSubComment) {
                 console.log("Deleting from sub-collection...");
-                // 1. Delete from sub-collection
                 await deleteDoc(doc(db, "posts", postId, "comments", commentId));
-
-                // Only decrement if count > 0 to prevent negative numbers
                 console.log("Updating post commentCount...");
                 if (currentCount > 0) {
                     await updateDoc(postRef, {
@@ -524,12 +516,10 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                 }
             } else {
                 console.log("Deleting from legacy array...");
-                // 2. Handle legacy array comment
                 const commentToDelete = post?.comments?.find(c => c.id === commentId);
                 if (commentToDelete) {
                     await updateDoc(postRef, {
                         comments: arrayRemove(commentToDelete),
-                        // Only decrement if we actually found and are removing a comment
                         commentCount: currentCount > 0 ? increment(-1) : 0
                     });
                 } else {
@@ -545,10 +535,6 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
             setState(prev => ({ ...prev, deletingCommentId: null }));
         }
     };
-
-    // Need to fix deleteComment to work properly with Firebase arrayRemove
-    // For now let's just finish the UI parts
-
     const startEditingComment = (comment) => {
         setState(prev => ({
             ...prev,
@@ -580,14 +566,12 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                     updatedAt: serverTimestamp()
                 });
             } else {
-                // Legacy array update (requires removing old and adding new)
                 const postRef = doc(db, "posts", postId);
                 const post = posts.find(p => p.id === postId);
                 const oldComment = post?.comments?.find(c => c.id === commentId);
 
                 if (oldComment) {
                     const updatedComment = { ...oldComment, text: state.editCommentText.trim(), updatedAt: new Date().toISOString() };
-                    // Array update is tricky in Firestore - usually requires transactional get/set or delete/add
                     await updateDoc(postRef, {
                         comments: arrayRemove(oldComment)
                     });
@@ -724,7 +708,11 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                 onClick={() => postImageInputRef.current.click()}
                                 title="Attach Media"
                             >
-                                <ImageIcon />
+                                <img
+                                    src="/project-icons/Friends and Chat icons/addimage.png"
+                                    alt=""
+                                    className="post-add-image-icon"
+                                />
                                 <span className="btn-label-text">Add Image</span>
                             </button>
                             <input
@@ -960,7 +948,6 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                 <div className="comment-list-scroll custom-scrollbar">
                                                     {((post.comments || []).length > 0 || (state.subComments[post.id] || []).length > 0) ? (
                                                         <>
-                                                            {/* Combine old array comments and new sub-collection comments */}
                                                             {[...(post.comments || []), ...(state.subComments[post.id] || [])]
                                                                 .sort((a, b) => {
                                                                     const timeA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);

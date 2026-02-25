@@ -265,12 +265,10 @@ function Coaching() {
 
     return (
         <div className="coaching-page">
-            {/* Background Decor */}
             <div className="coaching-bg-decor-1" />
             <div className="coaching-bg-decor-2" />
 
             <div className="coaching-container">
-                {/* Header Section */}
                 <div className="page-header-row">
                     <div className="header-title-group">
                         <div className="title-with-accent">
@@ -280,13 +278,6 @@ function Coaching() {
                             </h1>
                         </div>
                         <div className="header-status-info">
-                            <div className="online-indicator">
-                                <span className="online-ping">
-                                    <span className="online-ping-animate" />
-                                    <span className="online-ping-dot" />
-                                </span>
-                                <span className="online-status-text">Online</span>
-                            </div>
                             <div className="header-divider-v" />
                             <p className="dashboard-subtitle">Coaching Dashboard</p>
                         </div>
@@ -307,14 +298,12 @@ function Coaching() {
                                 to="/become-coach"
                                 className="apply-coach-btn"
                             >
-                                <span className="u-relative u-z-10">Apply as a Coach</span>
+                                <span className="u-relative u-z-10">Become a Coach</span>
                                 <div className="btn-hover-overlay" />
                             </Link>
                         )}
                     </div>
                 </div>
-
-                {/* Rules Banner */}
                 <div className="rules-banner-panel">
                     <div className="rules-banner-panel-glow" />
                     <div className="rules-banner-content-row">
@@ -336,8 +325,6 @@ function Coaching() {
                         </Link>
                     </div>
                 </div>
-
-                {/* Create Session Form */}
                 {showCreateForm && userRole === 'coach' && (
                     <div className="session-creation-panel glass-panel">
                         <div className="coach-bg-decor-1" style={{ width: '16rem', height: '16rem', marginRight: '-8rem', marginTop: '-8rem' }} />
@@ -450,8 +437,6 @@ function Coaching() {
                         </form>
                     </div>
                 )}
-
-                {/* Tabs */}
                 <div className="coaching-tabs-nav">
                     <button
                         className={`coaching-tab ${activeTab === 'sessions' ? 'active' : 'inactive'}`}
@@ -469,17 +454,9 @@ function Coaching() {
                         <img src="/project-icons/Coaching icons/available coaches.png" alt="" className="tab-icon" />
                         <span className="u-relative u-z-10">Available Coaches</span>
                     </button>
-                    <div className="u-flex-1" />
-                    <div className="live-updates-badge">
-                        <div className="badge-pulse-dot" />
-                        <span className="badge-status-text">Live Updates Enabled</span>
-                    </div>
                 </div>
-
-                {/* Sessions View */}
                 {activeTab === 'sessions' && (
                     <div className="view-sessions-section">
-                        {/* Filters */}
                         <div className="coaching-filters-bar glass-panel">
                             <div className="filter-select-wrap group">
                                 <div className="filter-search-icon">
@@ -559,8 +536,6 @@ function Coaching() {
                         </div>
                     </div>
                 )}
-
-                {/* Coaches View */}
                 {activeTab === 'coaches' && (
                     <div className="coaches-grid">
                         {coaches.map(coach => (
@@ -578,18 +553,12 @@ function SessionCard({
     editFormData, setEditFormData, handleUpdate, handleDelete,
     handleEdit, handleCancelEdit, submitting, specialtyOptions
 }) {
-    const tierOrder = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'EMERALD', 'DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER'];
-    const getHighestRank = (rankedData) => {
+    const getRankByQueue = (rankedData, queueType) => {
         if (!rankedData || rankedData.length === 0) return null;
-        let highest = rankedData[0];
-        for (const queue of rankedData) {
-            if (tierOrder.indexOf(queue.tier) > tierOrder.indexOf(highest.tier)) {
-                highest = queue;
-            }
-        }
-        return highest;
+        return rankedData.find(q => q.queueType === queueType) || null;
     };
-    const rank = getHighestRank(session.coachRankedData);
+    const soloRank = getRankByQueue(session.coachRankedData, 'RANKED_SOLO_5x5');
+    const flexRank = getRankByQueue(session.coachRankedData, 'RANKED_FLEX_SR');
     const getRankIcon = (tier) => tier ? `/rank-icons/Rank=${tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()}.png` : null;
 
     if (isEditing) {
@@ -684,11 +653,6 @@ function SessionCard({
                                 alt="Coach"
                                 className="coach-pfp"
                             />
-                            {rank && (
-                                <div className="coach-rank-mini">
-                                    <img src={getRankIcon(rank.tier)} alt={rank.tier} className="rank-icon-img" />
-                                </div>
-                            )}
                         </div>
                     )}
                     <div className="coach-meta">
@@ -700,15 +664,26 @@ function SessionCard({
                             <div className="focus-dot" />
                             <span className="focus-label">{session.specialty} Focus</span>
                         </div>
+                        <div className="session-ranks-row">
+                            {soloRank && (
+                                <div className="session-rank-item">
+                                    <img src={getRankIcon(soloRank.tier)} alt={soloRank.tier} className="session-rank-icon" />
+                                    <span className="session-rank-label">Solo/Duo</span>
+                                    <span className="session-rank-tier">{soloRank.tier} {soloRank.rank}</span>
+                                </div>
+                            )}
+                            {flexRank && (
+                                <div className="session-rank-item">
+                                    <img src={getRankIcon(flexRank.tier)} alt={flexRank.tier} className="session-rank-icon" />
+                                    <span className="session-rank-label">Flex</span>
+                                    <span className="session-rank-tier">{flexRank.tier} {flexRank.rank}</span>
+                                </div>
+                            )}
+                            {!soloRank && !flexRank && (
+                                <span className="session-rank-unranked">Unranked</span>
+                            )}
+                        </div>
                     </div>
-                </div>
-
-                <div className="card-pricing">
-                    <div className="price-row">
-                        <span className="price-currency">$</span>
-                        <span className="price-val">{session.price}</span>
-                    </div>
-                    <span className="price-unit">per hour</span>
                 </div>
             </div>
 
@@ -762,18 +737,12 @@ function SessionCard({
 }
 
 function CoachCard({ coach }) {
-    const tierOrder = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'EMERALD', 'DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER'];
-    const getHighestRank = (rankedData) => {
+    const getRankByQueue = (rankedData, queueType) => {
         if (!rankedData || rankedData.length === 0) return null;
-        let highest = rankedData[0];
-        for (const queue of rankedData) {
-            if (tierOrder.indexOf(queue.tier) > tierOrder.indexOf(highest.tier)) {
-                highest = queue;
-            }
-        }
-        return highest;
+        return rankedData.find(q => q.queueType === queueType) || null;
     };
-    const rank = getHighestRank(coach.rankedData);
+    const soloRank = getRankByQueue(coach.rankedData, 'RANKED_SOLO_5x5');
+    const flexRank = getRankByQueue(coach.rankedData, 'RANKED_FLEX_SR');
     const getRankIcon = (tier) => tier ? `/rank-icons/Rank=${tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()}.png` : null;
 
     return (
@@ -793,12 +762,29 @@ function CoachCard({ coach }) {
                         <div className="pfp-placeholder italic">👤</div>
                     )}
                 </div>
-                {rank && (
-                    <div className="coach-rank-badge">
-                        <img src={getRankIcon(rank.tier)} alt={rank.tier} className="rank-badge-icon" />
-                        <span className="rank-badge-tier">{rank.tier}</span>
-                    </div>
-                )}
+                <div className="coach-dual-rank">
+                    {soloRank && (
+                        <div className="coach-rank-entry">
+                            <img src={getRankIcon(soloRank.tier)} alt={soloRank.tier} className="rank-badge-icon" />
+                            <div className="rank-entry-text">
+                                <span className="rank-entry-queue">Solo/Duo</span>
+                                <span className="rank-entry-tier">{soloRank.tier} {soloRank.rank}</span>
+                            </div>
+                        </div>
+                    )}
+                    {flexRank && (
+                        <div className="coach-rank-entry">
+                            <img src={getRankIcon(flexRank.tier)} alt={flexRank.tier} className="rank-badge-icon" />
+                            <div className="rank-entry-text">
+                                <span className="rank-entry-queue">Flex</span>
+                                <span className="rank-entry-tier">{flexRank.tier} {flexRank.rank}</span>
+                            </div>
+                        </div>
+                    )}
+                    {!soloRank && !flexRank && (
+                        <span className="rank-entry-unranked">Unranked</span>
+                    )}
+                </div>
             </div>
 
             <div className="coach-card-info-header">
@@ -819,15 +805,7 @@ function CoachCard({ coach }) {
                     ))}
                 </div>
 
-                <div className="card-divider-h" />
 
-                <div className="coach-rate-info">
-                    <span className="rate-label-text">Hourly Retribution</span>
-                    <div className="rate-val-text">
-                        <span className="rate-symbol">$</span>
-                        {coach.coachProfile?.hourlyRate || '0'}
-                    </div>
-                </div>
             </div>
 
             <Link

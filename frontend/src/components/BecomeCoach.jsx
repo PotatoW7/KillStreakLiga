@@ -169,12 +169,10 @@ function BecomeCoach() {
 
     return (
         <div className="become-coach-page">
-            {/* Background Decor */}
             <div className="coach-bg-decor-1" />
             <div className="coach-bg-decor-2" />
 
             <div className="become-coach-container animate-base">
-                {/* Header Section */}
                 <div className="coach-app-header">
                     <div className="status-badge-container">
                         <span className="status-ping">
@@ -190,8 +188,6 @@ function BecomeCoach() {
                         Apply to Coach
                     </p>
                 </div>
-
-                {/* Rules Banner */}
                 <div className="coach-rules-banner glass-panel">
                     <div className="banner-glow-bg" />
                     <div className="banner-content">
@@ -208,8 +204,6 @@ function BecomeCoach() {
                         </Link>
                     </div>
                 </div>
-
-                {/* Requirements Checklist */}
                 <div className="coach-checklist-panel glass-panel">
                     <div className="checklist-header">
                         <div className="section-accent-line" />
@@ -323,7 +317,10 @@ function BecomeCoach() {
                                 <textarea
                                     id="experience"
                                     value={form.experience}
-                                    onChange={(e) => setForm({ ...form, experience: e.target.value })}
+                                    onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        setForm(prev => ({ ...prev, experience: newValue }));
+                                    }}
                                     placeholder="Detail your achievements, leadership, and coaching style..."
                                     className="form-textarea"
                                     required
@@ -357,7 +354,13 @@ function BecomeCoach() {
                                             type="button"
                                             key={type}
                                             className={`availability-btn ${form.availabilityType === type ? 'active' : 'inactive'}`}
-                                            onClick={() => setForm({ ...form, availabilityType: type, availability: type === 'custom' ? '' : type })}
+                                            onClick={() => {
+                                                setForm(prev => ({
+                                                    ...prev,
+                                                    availabilityType: type,
+                                                    availability: type === 'custom' ? prev.availability : type
+                                                }));
+                                            }}
                                         >
                                             {type}
                                         </button>
@@ -369,7 +372,10 @@ function BecomeCoach() {
                                             type="text"
                                             id="availability"
                                             value={form.availability}
-                                            onChange={(e) => setForm({ ...form, availability: e.target.value })}
+                                            onChange={(e) => {
+                                                const newValue = e.target.value;
+                                                setForm(prev => ({ ...prev, availability: newValue }));
+                                            }}
                                             placeholder="e.g., Weekdays 6PM-10PM EST"
                                             className="custom-availability-input"
                                             required
@@ -385,7 +391,10 @@ function BecomeCoach() {
                                 <textarea
                                     id="whyCoach"
                                     value={form.whyCoach}
-                                    onChange={(e) => setForm({ ...form, whyCoach: e.target.value })}
+                                    onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        setForm(prev => ({ ...prev, whyCoach: newValue }));
+                                    }}
                                     placeholder="Briefly share why you want to coach..."
                                     className="form-textarea"
                                     style={{ minHeight: '120px' }}

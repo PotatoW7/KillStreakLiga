@@ -24,7 +24,7 @@ const Legal = () => {
                         <div className="legal-text">
                             <p></p>
                             <p className="legal-info-card" style={{ fontStyle: 'italic' }}>
-                                Rifthub.lol is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+                                RiftHub.lol is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
                             </p>
                         </div>
                     </section>
@@ -45,7 +45,7 @@ const Legal = () => {
                             <h2 className="legal-section-title">Data Transmission</h2>
                         </div>
                         <p className="legal-text">
-                            Rifthub.lol utilizes the Riot Games Global API. We maintain strict compliance with Riot's policies regarding data usage and intellectual property rights. Information retrieved through this interface is intended for personal, non-commercial use to optimize user knowledge and skill development.
+                            RiftHub.lol utilizes the Riot Games Global API. We maintain strict compliance with Riot's policies regarding data usage and intellectual property rights. Information retrieved through this interface is intended for personal, non-commercial use to optimize user knowledge and skill development.
                         </p>
                     </section>
                 </div>

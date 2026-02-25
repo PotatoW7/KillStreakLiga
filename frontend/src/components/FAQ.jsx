@@ -53,7 +53,7 @@ const FAQ = () => {
                     <div>
                         <div className="legal-page-title">
                             <div className="legal-title-bar" style={{ width: '0.5rem' }} />
-                            <h1 className="legal-title" style={{ fontSize: '2.25rem' }}>Logic Base</h1>
+                            <h1 className="legal-title" style={{ fontSize: '2.25rem' }}>FAQ</h1>
                         </div>
                     </div>
 
@@ -63,9 +63,8 @@ const FAQ = () => {
                                 <span className="faq-number">01.</span> What is Rifthub?
                             </h2>
                             <p className="faq-answer">
-                                Rifthub is an advanced neural analytics and social synchronization platform for League of Legends aspirants.
-                                We provide high-fidelity telemetry for your summoner nodes, comprehensive match histories,
-                                and a secure marketplace to connect with elite tactical coaches.
+                                RiftHub is an advanced analytics and social synchronization platform for the League of Legends community.
+                                We provide detailed information on your summoner account and others, comprehensive match histories, a secure marketplace to connect with elite tactical coaches, and social features such as chat and activity feeds to engage with the community.
                             </p>
                         </section>
 
@@ -74,8 +73,7 @@ const FAQ = () => {
                                 <span className="faq-number">02.</span> Is it free?
                             </h2>
                             <p className="faq-answer">
-                                Affirmative. Accessing neural telemetry, viewing historical combat records, and utilizing our analytical tools
-                                requires no resource credits. We do not charge for access to data retrieved via the Riot Games interface.
+                                RiftHub is free to use. You can view match histories, analyze gameplay, and use all our tools at no cost. The only paid features are available on our coaching page.
                             </p>
                         </section>
 
@@ -84,8 +82,7 @@ const FAQ = () => {
                                 <span className="faq-number">03.</span> Is it official?
                             </h2>
                             <p className="faq-answer">
-                                Negative. Rifthub.lol is an independent entity. We are not endorsed by Riot Games
-                                and do not reflect the views or directives of Riot Games or its authorized operators.
+                                RiftHub.lol is entirely independent. We are not endorsed by Riot Games and do not reflect their views or policies
                             </p>
                         </section>
 
@@ -94,9 +91,7 @@ const FAQ = () => {
                                 <span className="faq-number">04.</span> How does training work?
                             </h2>
                             <p className="faq-answer">
-                                Tactical instructors list their services on the marketplace. Aspirants can analyze and book
-                                training protocols to enhance their combat efficiency. Rifthub facilitates the synchronization;
-                                specific training parameters are handled between instructor and student.
+                                Tactical instructors offer their services on our marketplace. Players can browse, analyze, and book training sessions to improve their gameplay. RiftHub handles scheduling and coordination, while the specific training plan is managed directly between the instructor and the student.
                             </p>
                         </section>
 
@@ -105,8 +100,7 @@ const FAQ = () => {
                                 <span className="faq-number">05.</span> Signal accuracy?
                             </h2>
                             <p className="faq-answer">
-                                We intercept telemetry directly from official Riot Games endpoints. While we strive for absolute
-                                synchronization, minor signal delays may occur during interface maintenance or system updates.
+                                We retrieve data directly from Riot Games’ official endpoints. While we aim for real-time updates, minor delays may occur during system maintenance or updates.
                             </p>
                         </section>
 
@@ -115,9 +109,7 @@ const FAQ = () => {
                                 <span className="faq-number">06.</span> Authentication?
                             </h2>
                             <p className="faq-answer">
-                                Basic telemetry lookup and combat records do not require authentication. However,
-                                node registration allows you to persist your profile, synchronize with the community
-                                feed, and initiate training protocols.
+                                Accessing match data and basic combat records doesn’t require authentication. Registering an account lets you save your profile, sync with the community feed, and book training sessions.
                             </p>
                         </section>
                     </div>

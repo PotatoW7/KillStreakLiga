@@ -27,7 +27,7 @@ import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
 
 import { auth, db, storage } from "./firebase";
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where } from "firebase/firestore";
 import "./styles/index.css";
 
 const OWNER_EMAIL = "mainprofile@gmail.com";
@@ -57,6 +57,8 @@ function App() {
   const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
   const [profileImage, setProfileImage] = useState(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [globalFriends, setGlobalFriends] = useState([]);
+  const [unreadCounts, setUnreadCounts] = useState({});
   const profileDropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -81,6 +83,60 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // Listen to Global Friends List
+  useEffect(() => {
+    if (!user) {
+      setGlobalFriends([]);
+      return;
+    }
+
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setGlobalFriends(data.friends || []);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Listen to Global Unread Messages
+  useEffect(() => {
+    if (!user || globalFriends.length === 0) {
+      setUnreadCounts({});
+      setTotalUnreadMessages(0);
+      return;
+    }
+
+    const unsubscribes = new Map();
+
+    globalFriends.forEach(friend => {
+      const chatId = [user.uid, friend.id].sort().join('_');
+      const messagesRef = collection(db, 'chats', chatId, 'messages');
+      const q = query(messagesRef, where('read', '==', false));
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unreadCount = snapshot.docs.filter(doc => doc.data().senderId !== user.uid).length;
+        setUnreadCounts(prev => {
+          if (prev[friend.id] === unreadCount) return prev;
+          return { ...prev, [friend.id]: unreadCount };
+        });
+      });
+
+      unsubscribes.set(friend.id, unsubscribe);
+    });
+
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [user, globalFriends.map(f => f.id).join(',')]);
+
+  useEffect(() => {
+    const total = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
+    setTotalUnreadMessages(total);
+  }, [unreadCounts]);
 
   // Removed presence logic
 
@@ -176,9 +232,7 @@ function App() {
       <header className="app-header">
         <div className="header-inner">
           <Link className="logo-link" to="/">
-            <div className="logo-icon-box">
-              <div className="logo-diamond" />
-            </div>
+            <img src="/rifthub.png" alt="RiftHub Logo" className="logo-image" />
             <span className="logo-text">RIFTHUB</span>
           </Link>
 
@@ -323,7 +377,7 @@ function App() {
         {user && (
           <>
             <button
-              className={`social-chat-trigger ${showSocial && socialMode === 'chat' ? 'active' : ''}`}
+              className={`social-chat-trigger ${showSocial && socialMode === 'chat' ? 'active' : ''} ${showSocial ? 'hidden' : ''}`}
               onClick={() => {
                 if (showSocial && socialMode === 'chat') {
                   setShowSocial(false);
@@ -370,7 +424,7 @@ function App() {
                   !selectedFriend ? (
                     <FriendsList
                       onSelectFriend={handleSelectFriend}
-                      onUnreadCountChange={setTotalUnreadMessages}
+                      unreadCounts={unreadCounts}
                     />
                   ) : (
                     <Chat

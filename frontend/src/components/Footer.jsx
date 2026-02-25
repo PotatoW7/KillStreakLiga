@@ -11,7 +11,8 @@ const Footer = () => {
                     <div className="footer-brand">
                         <div className="footer-brand-inner">
                             <div className="footer-logo">
-                                RIFTHUB<span className="accent">.LOL</span>
+                                <img src="/rifthub.png" alt="RiftHub Logo" className="footer-logo-image" />
+                                <span className="footer-logo-text">RIFTHUB<span className="accent">.LOL</span></span>
                             </div>
                         </div>
                         <p className="footer-disclaimer">

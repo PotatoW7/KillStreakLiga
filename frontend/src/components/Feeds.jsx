@@ -8,11 +8,9 @@ import { Award, TrendingUp, Clock, Search, ChevronDown, Users, Bell, Zap, Activi
 const normalizeProfileIcon = (url) => {
     if (!url) return url;
     if (typeof url !== 'string') return url;
-    // Replace legacy icon 588 with 29 and update version to 14.3.1
     if (url.includes('profileicon/588.png')) {
         return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
     }
-    // Update old version in any ddragon URL to 14.3.1 for consistency
     if (url.includes('ddragon.leagueoflegends.com/cdn/13.20.1/')) {
         return url.replace('13.20.1', '14.3.1');
     }
@@ -79,8 +77,6 @@ function Feeds() {
                 .filter(u => u.totalLikes > 0)
                 .sort((a, b) => b.totalLikes - a.totalLikes)
                 .slice(0, 5);
-
-            // Enrich all post authors with live data
             const uniqueAuthorIds = [...new Set(filteredPosts.map(p => p.userId).filter(Boolean))];
             const enrichPostsAndLeaderboard = async () => {
                 const liveMap = {};
@@ -111,7 +107,6 @@ function Feeds() {
                                 ...entry,
                                 username: userData.username || entry.username,
                                 profileImage: normalizeProfileIcon(userData.profileImage) || entry.profileImage
-                                // Note: normalizeProfileIcon handles the 588 -> 29 update
                             };
                         }
                     } catch (err) {

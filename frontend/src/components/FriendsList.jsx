@@ -5,7 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
-function FriendsList({ onSelectFriend, onUnreadCountChange }) {
+function FriendsList({ onSelectFriend, unreadCounts }) {
   const [friends, setFriends] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [sentFriendRequests, setSentFriendRequests] = useState([]);
@@ -13,7 +13,6 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState({});
   const [friendsTabView, setFriendsTabView] = useState('all');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const navigate = useNavigate();
@@ -91,44 +90,6 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!auth.currentUser || friends.length === 0) return;
-
-    const unsubscribeFunctions = [];
-
-    friends.forEach(friend => {
-      const chatId = [auth.currentUser.uid, friend.id].sort().join('_');
-      const messagesRef = collection(db, 'chats', chatId, 'messages');
-      const q = query(messagesRef, orderBy('timestamp', 'asc'));
-
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const unread = messages.filter(msg =>
-          msg.senderId !== auth.currentUser.uid && !msg.read
-        ).length;
-
-        setUnreadCounts(prev => ({
-          ...prev,
-          [friend.id]: unread
-        }));
-      });
-
-      unsubscribeFunctions.push(unsubscribe);
-    });
-
-    return () => {
-      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
-    };
-  }, [friends]);
-
-  // Removed obsolete periodic refresh (RTDB provides instant updates)
-
-  useEffect(() => {
-    const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
-    if (onUnreadCountChange) {
-      onUnreadCountChange(totalUnread);
-    }
-  }, [unreadCounts, onUnreadCountChange]);
 
   const searchUsers = async () => {
     if (!searchUsername.trim()) {

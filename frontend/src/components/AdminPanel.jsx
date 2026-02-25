@@ -443,73 +443,110 @@ function AdminPanel() {
                                 </div>
                             ) : (
                                 <div className="requests-grid">
-                                    {coachApplications.map(app => {
-                                        const rank = getHighestRank(app.rankedData);
-                                        return (
-                                            <div key={app.id} className="request-card coach-request">
-                                                <div className="request-header">
+                                    {coachApplications.map(app => (
+                                        <div key={app.id} className="request-card coach-request horizontal high-density">
+                                            <div className="card-column side-info">
+                                                <div className="user-profile-section">
+                                                    <div className="coach-avatar-box">
+                                                        <img
+                                                            src={app.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                            alt=""
+                                                            className="coach-avatar"
+                                                        />
+                                                    </div>
                                                     <div className="user-info">
-                                                        <h3>{app.username}</h3>
+                                                        <h3 className="u-mb-1">{app.username}</h3>
                                                         {app.riotAccount && (
-                                                            <span className="riot-id">
-                                                                {app.riotAccount.gameName}#{app.riotAccount.tagLine}
-                                                            </span>
+                                                            <div className="riot-id-wrap">
+                                                                <div className="riot-id">
+                                                                    {app.riotAccount.gameName}#{app.riotAccount.tagLine}
+                                                                </div>
+                                                                <button
+                                                                    className="copy-btn-sm"
+                                                                    title="Copy Riot ID"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        navigator.clipboard.writeText(`${app.riotAccount.gameName}#${app.riotAccount.tagLine}`);
+                                                                    }}
+                                                                >
+                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 17.75a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0zM8 17.75V4.25h11.25V17.75m-11.25 0h11.25m-11.25 0c0-1.243 1.007-2.25 2.25-2.25h6.75c1.243 0 2.25 1.007 2.25 2.25" /></svg>
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    {rank && (
-                                                        <div className="rank-display">
-                                                            <img src={getRankIcon(rank.tier)} alt={rank.tier} className="rank-icon" />
-                                                            <span>{rank.tier} {rank.rank}</span>
-                                                        </div>
-                                                    )}
                                                 </div>
 
-                                                <div className="request-details">
-                                                    <div className="detail-item">
-                                                        <label>Experience:</label>
-                                                        <p>{app.coachApplication?.experience || 'No experience provided'}</p>
+                                                <div className="side-details-group">
+                                                    <div className="detail-item compact">
+                                                        <label>Ranks</label>
+                                                        <div className="ranks-list compact">
+                                                            {app.rankedData && app.rankedData.length > 0 ? (
+                                                                app.rankedData.map((rank, idx) => (
+                                                                    <div key={idx} className="rank-badge-sm">
+                                                                        <img src={getRankIcon(rank.tier)} alt={rank.tier} />
+                                                                        <div className="rank-info">
+                                                                            <span className="queue-type">{rank.queueType === 'RANKED_SOLO_5x5' ? 'Solo' : 'Flex'}</span>
+                                                                            <span className="rank-text">{rank.tier} {rank.rank}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <span className="unranked-tag">Unranked</span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div className="detail-item">
-                                                        <label>Specialties:</label>
+
+                                                    <div className="detail-item compact u-mt-2">
+                                                        <label>Specialties</label>
                                                         <div className="specialty-tags">
                                                             {app.coachApplication?.specialties?.map(s => (
                                                                 <span key={s} className="specialty-tag">{s}</span>
                                                             ))}
                                                         </div>
                                                     </div>
-                                                    <div className="detail-item">
-                                                        <label>Availability:</label>
-                                                        <p>{app.coachApplication?.availability || 'Not specified'}</p>
-                                                    </div>
-                                                    <div className="detail-item">
-                                                        <label>Motivation:</label>
-                                                        <p>{app.coachApplication?.whyCoach || 'Not provided'}</p>
-                                                    </div>
-                                                    <div className="detail-item">
-                                                        <label>Submitted:</label>
-                                                        <p>{formatDate(app.coachApplication?.submittedAt)}</p>
+
+                                                    <div className="detail-item compact u-mt-2">
+                                                        <label>Availability</label>
+                                                        <p className="availability-text">{app.coachApplication?.availability || 'Not specified'}</p>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                <div className="request-actions">
+                                            <div className="card-column main-content">
+                                                <div className="detail-item compact">
+                                                    <label>Experience</label>
+                                                    <p className="experience-text">{app.coachApplication?.experience || 'No experience provided'}</p>
+                                                </div>
+                                                <div className="detail-item compact u-mt-3">
+                                                    <label>Motivation</label>
+                                                    <p className="motivation-text">{app.coachApplication?.whyCoach || 'Not provided'}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="card-column actions-side">
+                                                <div className="action-buttons-wrap">
                                                     <button
                                                         className="approve-btn"
                                                         onClick={() => handleApproveCoach(app.id)}
                                                         disabled={processingId === app.id}
                                                     >
-                                                        {processingId === app.id ? 'Processing...' : '✅ Approve'}
+                                                        {processingId === app.id ? '...' : 'Approve Application'}
                                                     </button>
                                                     <button
                                                         className="reject-btn"
                                                         onClick={() => setShowRejectModal({ type: 'coach', id: app.id })}
                                                         disabled={processingId === app.id}
                                                     >
-                                                        ❌ Reject
+                                                        Reject
                                                     </button>
                                                 </div>
+                                                <div className="submission-meta-bottom">
+                                                    <label>Submitted On</label>
+                                                    <span>{formatDate(app.coachApplication?.submittedAt)}</span>
+                                                </div>
                                             </div>
-                                        );
-                                    })}
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -532,7 +569,9 @@ function AdminPanel() {
                             onChange={(e) => setRejectionReason(e.target.value)}
                             placeholder="Enter rejection reason..."
                             rows={4}
+                            maxLength={500}
                         />
+                        <span className="char-counter">{rejectionReason.length}/500</span>
                         <div className="modal-actions">
                             <button
                                 className="confirm-reject-btn"

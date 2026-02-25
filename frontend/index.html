@@ -10,14 +10,22 @@
       img.src = '/rifthub.png';
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const size = 64;
+        const size = 128;
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
-        const zoomFactor = 0.55;
-        const sSize = img.width * zoomFactor;
-        const sOffset = (img.width - sSize) / 2;
-        ctx.drawImage(img, sOffset, sOffset, sSize, sSize, 0, 0, size, size);
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        const horizontalSlice = 0.32;
+        const verticalSlice = 0.75;
+
+        const sWidth = img.width * horizontalSlice;
+        const sHeight = img.height * verticalSlice;
+        const sx = (img.width - sWidth) / 2;
+        const sy = (img.height - sHeight) / 2;
+        ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, size, size);
+
         const link = document.getElementById('favicon');
         link.href = canvas.toDataURL('image/png');
       };

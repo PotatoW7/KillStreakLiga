@@ -49,6 +49,18 @@
 }
 
 .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.footer-logo-image {
+    height: 4rem;
+    width: auto;
+    object-fit: contain;
+}
+
+.footer-logo-text {
     font-family: var(--font-display);
     font-weight: 900;
     font-size: 1.875rem;
@@ -56,7 +68,7 @@
     color: white;
 }
 
-.footer-logo .accent {
+.footer-logo-text .accent {
     color: var(--color-primary);
     font-style: italic;
 }

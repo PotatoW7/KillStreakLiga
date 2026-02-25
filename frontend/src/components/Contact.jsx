@@ -21,9 +21,8 @@ const Contact = () => {
                         </div>
 
                         <div style={{ marginLeft: '1.25rem', maxWidth: '42rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            <p className="legal-text" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Having issues or need help? Send us an email and our team will get back to you within
-                                <span style={{ color: 'var(--color-primary)', fontStyle: 'italic', fontWeight: 700 }}> 24 hours</span>.
+                            <p className="legal-text" style={{ textTransform: 'none', letterSpacing: '0.05em' }}>
+                                Having issues or need help? Send us an email and our team will get back to you as soon as possible.
                             </p>
 
                             <div className="legal-contact-card" style={{ background: 'rgba(0,0,0,0.4)' }}>
@@ -65,7 +64,7 @@ const Contact = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

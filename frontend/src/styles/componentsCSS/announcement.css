@@ -213,6 +213,12 @@
     font-style: italic;
 }
 
+.announce-request-meta-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .announce-request-desc {
     font-size: 0.6875rem;
     font-weight: 500;
@@ -267,6 +273,85 @@
 
 .announce-btn-decline-sm:active {
     transform: scale(0.95);
+}
+
+.announce-btn-manage-sm {
+    padding: 0 1rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    color: #06b6d4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-xl);
+    cursor: pointer;
+    font-size: 0.5625rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+.announce-btn-manage-sm:hover {
+    background: #06b6d4;
+    color: white;
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+}
+
+.announce-btn-manage-sm:active {
+    transform: scale(0.95);
+}
+
+.role-mini-display-card {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.role-mini-display-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.announce-role-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    background: rgba(234, 180, 8, 0.08);
+    border: 1px solid rgba(234, 180, 8, 0.15);
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.announce-role-badge:hover {
+    background: rgba(234, 180, 8, 0.12);
+    border-color: rgba(234, 180, 8, 0.3);
+    box-shadow: 0 0 10px rgba(234, 180, 8, 0.1);
+}
+
+.announce-role-badge img {
+    width: 1.125rem;
+    height: 1.125rem;
+    object-fit: contain;
+}
+
+.role-mini-display-card img {
+    width: 1.5rem;
+    height: 1.5rem;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
 }
 
 .announce-btn-accept-sm {

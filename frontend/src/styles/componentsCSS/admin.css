@@ -10,7 +10,7 @@
 
 .admin-panel-container,
 .admin-application-container {
-    max-width: 64rem;
+    max-width: 90rem;
     margin: 0 auto;
 }
 
@@ -102,8 +102,8 @@
 
 /* Grid & Cards */
 .requests-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
 }
 
@@ -127,10 +127,21 @@
     margin-bottom: 4px;
 }
 
-.user-info .email,
-.user-info .riot-id {
+.user-info .email {
     font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.4);
+}
+
+.user-info .riot-id {
+    display: inline-flex;
+    padding: 0.125rem 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: var(--color-primary);
+    font-weight: 800;
+    margin-top: 0.25rem;
 }
 
 .detail-item {
@@ -144,12 +155,261 @@
     text-transform: uppercase;
     color: var(--color-primary);
     margin-bottom: 0.5rem;
+    letter-spacing: 0.1em;
+    font-style: italic;
 }
 
 .detail-item p {
     font-size: 0.875rem;
     color: rgba(255, 255, 255, 0.8);
     line-height: 1.6;
+    white-space: normal;
+    word-break: break-all;
+    overflow-wrap: break-word;
+}
+
+/* Horizontal Layout Specs */
+.request-card.coach-request.horizontal {
+    display: flex;
+    gap: 2rem;
+    padding: 0.75rem 2.5rem;
+    align-items: stretch;
+}
+
+.card-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-column.side-info {
+    flex: 0 0 280px;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    padding-right: 1.5rem;
+}
+
+.card-column.main-content {
+    flex: 1;
+}
+
+.card-column.actions-side {
+    flex: 0 0 200px;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    padding-left: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* User Profile Section */
+.user-profile-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.coach-avatar-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 2px solid rgba(234, 179, 8, 0.2);
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.1);
+}
+
+.coach-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Riot ID + Copy */
+.riot-id-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.copy-btn-sm {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.4);
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.copy-btn-sm:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.copy-btn-sm svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Compact Content */
+.details-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.detail-item.compact {
+    margin-bottom: 0.75rem;
+}
+
+.specialty-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.specialty-tag {
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    font-size: 0.6rem;
+    color: var(--color-primary);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.experience-text,
+.motivation-text,
+.availability-text {
+    white-space: pre-wrap;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+}
+
+.side-details-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.action-buttons-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.submission-meta-bottom {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.submission-meta-bottom label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.3);
+    font-weight: 900;
+}
+
+.submission-meta-bottom span {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.u-mt-3 {
+    margin-top: 1.5rem;
+}
+
+/* Action Orientation */
+.action-buttons-v {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.submission-time {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.submission-time label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.3);
+    font-weight: 900;
+}
+
+.submission-time span {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Utility Header */
+.u-mb-1 {
+    margin-bottom: 0.25rem;
+}
+
+.u-mt-2 {
+    margin-top: 1rem;
+}
+
+.ranks-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.rank-badge-sm {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.rank-badge-sm:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.rank-badge-sm img {
+    width: 1.5rem;
+    height: 1.5rem;
+    object-fit: contain;
+}
+
+.rank-badge-sm .rank-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.rank-badge-sm .queue-type {
+    font-size: 0.5rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+}
+
+.rank-badge-sm .rank-text {
+    font-size: 0.6875rem;
+    color: white;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 
 /* Actions */
@@ -273,4 +533,118 @@
     background: rgba(34, 211, 238, 0.1);
     border: 1px solid rgba(34, 211, 238, 0.2);
     color: #22d3ee;
+}
+
+/* ── Reject Modal ── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: rgba(22, 27, 34, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.25rem;
+    padding: 2rem 2.5rem;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-content h3 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.modal-content>p {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 1.25rem;
+}
+
+.cooldown-warning {
+    font-size: 0.75rem;
+    color: #facc15;
+    background: rgba(234, 179, 8, 0.08);
+    border: 1px solid rgba(234, 179, 8, 0.15);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.modal-content textarea {
+    width: 100%;
+    min-height: 100px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    color: white;
+    font-size: 0.85rem;
+    outline: none;
+    resize: none;
+    transition: border-color 0.2s;
+    margin-bottom: 1.5rem;
+}
+
+.modal-content textarea:focus {
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.char-counter {
+    display: block;
+    text-align: right;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.3);
+    margin-top: -1.25rem;
+    margin-bottom: 1rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.confirm-reject-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.confirm-reject-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+}
+
+.cancel-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
 }

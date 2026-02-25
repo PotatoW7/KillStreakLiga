@@ -57,8 +57,8 @@ const PrivacyPolicy = () => {
                                 <h2 className="legal-section-title">1. Introduction</h2>
                             </div>
                             <div className="legal-text">
-                                <p>Welcome to <span className="highlight">Rifthub.lol</span>. Your privacy is of paramount importance to us. This Privacy Policy outlines the types of information we collect, how we use it, and the security measures to ensure your personal data remains protected and compliant with industry standards.</p>
-                                <p style={{ marginTop: '1rem' }}>Use of Rifthub.lol acknowledges consent to the data practices described in this policy.</p>
+                                <p>Welcome to <span className="highlight">RiftHub.lol</span>. Your privacy is of paramount importance to us. This Privacy Policy outlines the types of information we collect, how we use it, and the security measures to ensure your personal data remains protected and compliant with industry standards.</p>
+                                <p style={{ marginTop: '1rem' }}>Use of RiftHub.lol acknowledges consent to the data practices described in this policy.</p>
                             </div>
                         </section>
 
@@ -97,7 +97,7 @@ const PrivacyPolicy = () => {
                                 <h2 className="legal-section-title">3. Riot API Integration</h2>
                             </div>
                             <div className="legal-text">
-                                <p>Rifthub.lol utilizes the official Riot Games API to retrieve and display League of Legends player data, match history, and game information.</p>
+                                <p>RiftHub.lol utilizes the official Riot Games API to retrieve and display League of Legends player data, match history, and game information.</p>
                                 <div className="legal-notice" style={{ marginTop: '1rem' }}>
                                     <p className="legal-notice-label">Service Notice:</p>
                                     <p>All data retrieved via this integration is accessed through official Riot Games channels. We do not charge for access. Use of this data is strictly informational, intended for performance analysis and community interaction.</p>

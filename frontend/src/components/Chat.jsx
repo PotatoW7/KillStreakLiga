@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import IconRenderer, { LoLSuggestions } from './IconRenderer';
 
@@ -75,7 +75,7 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
   };
 
   const markMessagesAsRead = async (msgs) => {
-    if (document.hidden || !document.hasFocus() || !isSocialOpen) return;
+    if (!isSocialOpen || !selectedFriend) return;
 
     const unreadMessages = msgs.filter(
       (msg) => msg.senderId !== auth.currentUser.uid && !msg.read
@@ -83,12 +83,18 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
 
     if (unreadMessages.length === 0) return;
 
-    for (const msg of unreadMessages) {
-      const messageRef = doc(db, 'chats', chatId, 'messages', msg.id);
-      await updateDoc(messageRef, {
-        read: true,
-        readAt: serverTimestamp(),
+    try {
+      const batch = writeBatch(db);
+      unreadMessages.forEach(msg => {
+        const messageRef = doc(db, 'chats', chatId, 'messages', msg.id);
+        batch.update(messageRef, {
+          read: true,
+          readAt: serverTimestamp(),
+        });
       });
+      await batch.commit();
+    } catch (err) {
+      console.error('Error marking messages as read:', err);
     }
   };
 
@@ -516,9 +522,6 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
               >
                 {friendProfile?.username}
               </h3>
-              <span className="chat-header-status offline">
-                Offline
-              </span>
             </div>
           </div>
         </div>
@@ -652,7 +655,7 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
           style={{ display: 'none' }}
         />
         <button
-          onClick={triggerFileInput}
+          onClick={() => fileInputRef.current.click()}
           disabled={uploading}
           className="chat-upload-btn"
           title="Upload Image (20MB Max)"
@@ -660,7 +663,11 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
           {uploading ? (
             <div className="lg-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
           ) : (
-            <span className="emoji-icon">📎</span>
+            <img
+              src="/project-icons/Friends and Chat icons/addimage.png"
+              alt="Add"
+              className="chat-add-image-icon"
+            />
           )}
         </button>
 
@@ -684,7 +691,8 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
             onKeyDown={handleKeyDown}
             disabled={uploading}
             placeholder="Type a message..."
-            className="chat-textarea custom-scrollbar"
+            className="chat-textarea"
+            style={{ overflow: 'hidden' }}
             rows={1}
             onInput={(e) => {
               e.target.style.height = 'auto';

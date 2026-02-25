@@ -730,12 +730,6 @@ function Profile() {
             )}
           </div>
 
-          {!state.isOwnProfile && state.user && (
-            <button className="profile-follow-btn">
-              <img src="/project-icons/Profile icons/follow icon.png" alt="" />
-              Follow
-            </button>
-          )}
         </div>
 
         <div className="profile-main-panel glass-panel">

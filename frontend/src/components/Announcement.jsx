@@ -1,16 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { useNavigate } from 'react-router-dom';
+import { Copy, PlusSquare, Users, Edit3, Trash2, ShieldCheck, Filter, ChevronDown, X, Clock, Swords, Check, UserPlus } from 'lucide-react';
 import { db, auth } from "../firebase";
 import {
   collection, query, where, onSnapshot, doc, updateDoc,
-  arrayUnion, getDoc, serverTimestamp
+  arrayUnion, getDoc, serverTimestamp, writeBatch, arrayRemove
 } from "firebase/firestore";
 
 function Announcement({ notificationCount, setNotificationCount, isEmbedded = false, _parentHandleManage = null }) {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [gameRequests, setGameRequests] = useState([]);
   const [showManageModal, setShowManageModal] = useState(false);
+  const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        setFriends(userData.friends || []);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const isAlreadyFriend = (userId) => {
+    return friends.some(f => f.id === userId);
+  };
   const panelRef = useRef(null);
   const bellRef = useRef(null);
 
@@ -278,8 +298,13 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
     { id: 'jungle', name: 'Jungle', icon: '/lane-icons/jg icon.png' },
     { id: 'mid', name: 'Mid', icon: '/lane-icons/mid lane.png' },
     { id: 'adc', name: 'ADC', icon: '/lane-icons/adc lane.png' },
-    { id: 'support', name: 'Support', icon: '/lane-icons/sup icon.png' }
   ];
+
+  const getRoleImage = (roleId) => {
+    if (!roleId) return '/lane-icons/Fill icon.png';
+    const role = roles.find(r => r.id === roleId.toLowerCase());
+    return role ? role.icon : '/lane-icons/Fill icon.png';
+  };
 
   const rankIconsMap = {
     'UNRANKED': 'Rank=Unranked.png',
@@ -350,169 +375,161 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
     return roleIcons[role?.toLowerCase()] || '/lane-icons/Fill icon.png';
   };
 
-  const getRoleImage = (role) => {
-    const roleObj = roles.find(r => r.id === role?.toLowerCase());
-    return roleObj ? roleObj.icon : '/lane-icons/Fill icon.png';
-  };
 
-
-  if (isEmbedded) {
-    return (
-      <div className="announce-embed">
-        <div className="announce-embed-list">
-          {loading ? (
-            <div className="announce-loading">
-              <div className="announce-spinner" />
-              <p className="announce-loading-text">Processing Data...</p>
-            </div>
-          ) : gameRequests.length === 0 ? (
-            <div className="announce-empty">
-              <div className="announce-empty-icon-box">
-                <img src="/project-icons/Friends and Chat icons/bell.png" alt="Empty" className="announce-empty-icon" />
-              </div>
-              <div>
-                <p className="announce-empty-title">No notifications yet</p>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div className="announce-pending-header">
-                <p className="announce-pending-label">Pending game requests ({gameRequests.length})</p>
-              </div>
-              {gameRequests.map(request => (
-                <div key={request.id} className="announce-request-card glass-panel">
-                  <div className="announce-request-hover-overlay" />
-                  <div className="announce-request-inner">
-                    <div className="announce-request-top">
-                      <div className="announce-request-player-info">
-                        <div className="announce-request-avatar-box">
-                          <img
-                            src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
-                            alt=""
-                            className="announce-request-avatar"
-                            onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
-                          />
-                        </div>
-                        <div>
-                          <div className="announce-request-name-row">
-                            <span className="announce-request-name-bar" />
-                            <h5
-                              className="announce-request-name cursor-pointer hover:text-primary transition-colors"
-                              onClick={() => navigate(`/profile/${request.userId}`)}
-                            >
-                              {request.displayName}
-                            </h5>
-                          </div>
-                          <div className="u-flex u-items-center u-gap-2">
-                            <p className="announce-request-subtitle">Wants to join your game</p>
-                            <div className="role-focus-tag" style={{ border: 'none', background: 'rgba(234, 180, 8, 0.05)', padding: '0.125rem 0.375rem' }}>
-                              <img src={getRoleImage(request.role || 'fill')} alt="" className="icon-xs" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <span className="announce-request-queue-badge">{getQueueTypeName(request.gameQueueType)}</span>
-                    </div>
-
-                    {request.gameDescription && (
-                      <p className="announce-request-desc">
-                        "{request.gameDescription}"
-                      </p>
-                    )}
-
-                    <div className="announce-request-footer">
-                      <span className="announce-request-time">{formatTimeAgo(request.appliedAt)}</span>
-                      <div className="announce-request-actions">
-                        <button
-                          onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                          className="announce-btn-decline-sm"
-                          title="Purge Request"
-                        >
-                          ✕
-                        </button>
-                        <button
-                          onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                          className="announce-btn-accept-sm"
-                          title="Authorize Sync"
-                        >
-                          ✓
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-      </div>
-    );
-  }
 
   return (
     <>
-      <div style={{ display: 'none' }}></div>
-      {showManageModal && ReactDOM.createPortal(
-        <div className="announce-modal-overlay">
-          <div className="announce-modal-backdrop" onClick={handleCloseModal} />
-          <div className="announce-modal glass-panel">
-            <div className="announce-modal-header">
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div className="announce-modal-title-bar" />
-                  <h3 className="announce-modal-title">System Log Analyst</h3>
-                </div>
-                <p className="announce-modal-subtitle">Active Requests</p>
+      {isEmbedded ? (
+        <div className="announce-embed">
+          <div className="announce-embed-list">
+            {loading ? (
+              <div className="announce-loading">
+                <div className="announce-spinner" />
+                <p className="announce-loading-text">Processing Data...</p>
               </div>
-              <button
-                onClick={handleCloseModal}
-                className="announce-modal-close"
-              >
-                <span>✕</span>
+            ) : gameRequests.length === 0 ? (
+              <div className="announce-empty">
+                <div className="announce-empty-icon-box">
+                  <img src="/project-icons/Friends and Chat icons/bell.png" alt="Empty" className="announce-empty-icon" />
+                </div>
+                <div>
+                  <p className="announce-empty-title">No notifications yet</p>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="announce-pending-header">
+                  <p className="announce-pending-label">Pending game requests ({gameRequests.length})</p>
+                </div>
+                {gameRequests.map(request => (
+                  <div key={request.id} className="announce-request-card glass-panel">
+                    <div className="announce-request-hover-overlay" />
+                    <div className="announce-request-inner">
+                      <div className="announce-request-top">
+                        <div className="announce-request-player-info">
+                          <div className="announce-request-avatar-box">
+                            <img
+                              src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                              alt=""
+                              className="announce-request-avatar"
+                              onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
+                            />
+                          </div>
+                          <div>
+                            <div className="announce-request-name-row">
+                              <span className="announce-request-name-bar" />
+                              <h5
+                                className="announce-request-name cursor-pointer hover:text-primary transition-colors"
+                                onClick={() => navigate(`/profile/${request.userId}`)}
+                              >
+                                {request.displayName}
+                              </h5>
+                            </div>
+                            <div className="u-flex u-items-center u-gap-2">
+                              <p className="announce-request-subtitle">Wants to join your game</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="announce-request-meta-badges">
+                          <span className="announce-request-queue-badge">{getQueueTypeName(request.gameQueueType)}</span>
+                          <div className="announce-role-badge" title={`Role focus: ${roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name}`}>
+                            <img src={getRoleImage(request.role || 'fill')} alt="" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {request.gameDescription && (
+                        <p className="announce-request-desc">
+                          "{request.gameDescription}"
+                        </p>
+                      )}
+
+                      <div className="announce-request-footer">
+                        <span className="announce-request-time">{formatTimeAgo(request.appliedAt)}</span>
+                        <div className="announce-request-actions">
+                          <button
+                            onClick={handleManageRequests}
+                            className="announce-btn-manage-sm"
+                            title="Detailed Analytics"
+                          >
+                            MANAGE REQUESTS
+                          </button>
+                          <button
+                            onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                            className="announce-btn-decline-sm"
+                            title="Purge Request"
+                          >
+                            ✕
+                          </button>
+                          <button
+                            onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                            className="announce-btn-accept-sm"
+                            title="Authorize Sync"
+                          >
+                            ✓
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'none' }}></div>
+      )}
+
+      {showManageModal && ReactDOM.createPortal(
+        <div className="lobby-modal-overlay">
+          <div className="lobby-modal-card" style={{ maxWidth: '48rem' }} onClick={e => e.stopPropagation()}>
+            <div className="post-panel-header panel-padding u-border-b">
+              <div className="status-icon-wrap primary">
+                <Users className="icon-md" />
+              </div>
+              <h3 className="post-panel-title">Incoming Requests</h3>
+              <button onClick={handleCloseModal} className="icon-only-btn u-ml-auto">
+                <X className="icon-md" />
               </button>
             </div>
 
-            <div className="announce-modal-content custom-scrollbar">
+            <div className="panel-padding u-max-h-modal u-overflow-y-auto u-bg-black-10">
               {gameRequests.length === 0 ? (
                 <div className="text-center u-py-20">
                   <p className="empty-requests-message">NO ACTIVE APPLICANTS YET</p>
                 </div>
               ) : (
-                <div className="announce-modal-grid">
+                <div className="lobbies-stack">
                   {gameRequests.map(request => {
                     const soloQueue = getQueueData(request.rankedData, 'RANKED_SOLO_5x5');
                     const rankText = soloQueue ? formatRankDisplay(soloQueue) : 'Unranked';
                     const rankIcon = getRankIcon(soloQueue?.tier);
 
                     return (
-                      <div key={request.id} className="announce-modal-card glass-panel">
-                        <div className="announce-modal-card-hover-overlay" />
+                      <div key={request.id} className="lobby-card">
+                        <div className="author-main-info u-flex u-items-center u-gap-4" style={{ width: '100%' }}>
+                          <div className="author-pfp-circle icon-xxl">
+                            <img
+                              src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                              alt=""
+                              className="author-pfp-img"
+                              onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
+                            />
+                          </div>
 
-                        <div className="announce-modal-card-inner">
-                          <div className="announce-modal-player u-flex u-items-center u-gap-4">
-                            <div className="announce-modal-avatar-wrapper">
-                              <div className="announce-modal-avatar-glow" />
-                              <img
-                                src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
-                                alt={request.displayName}
-                                className="announce-modal-avatar"
-                                onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
-                              />
-                            </div>
-
-                            <div className="u-flex u-flex-1 u-items-center u-justify-between u-gap-6">
-                              <div className="player-identity-group">
-                                <h4
-                                  className="announce-modal-player-name cursor-pointer hover:text-primary transition-colors u-mb-1"
-                                  onClick={() => navigate(`/profile/${request.userId}`)}
-                                >
-                                  {request.displayName}
-                                </h4>
+                          <div className="u-flex u-flex-1 u-items-center u-justify-between u-gap-6">
+                            <div className="player-identity-group u-flex-1">
+                              <h4
+                                className="author-name cursor-pointer hover:text-primary transition-colors u-mb-1"
+                                style={{ whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible', textOverflow: 'clip' }}
+                                onClick={() => navigate(`/profile/${request.userId}`)}
+                              >
+                                {request.displayName}
+                              </h4>
+                              <div className="u-flex u-flex-col u-items-start u-gap-1">
                                 <div className="u-flex u-items-center u-gap-2">
-                                  <span className="riot-id-text">
-                                    {request.riotAccount}
-                                  </span>
+                                  <div className="riot-id-text" style={{ whiteSpace: 'normal', wordBreak: 'break-all' }}>{request.riotAccount}</div>
                                   <button
                                     className="icon-only-btn-xs"
                                     onClick={() => {
@@ -524,62 +541,68 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                                     <Copy className="icon-2xs" />
                                   </button>
                                 </div>
-                              </div>
-
-                              <div className="rank-summaries u-flex u-gap-3" style={{ width: 'auto', flexDirection: 'row' }}>
-                                <div className="rank-mini-card compact">
-                                  <img src={rankIcon} alt="" className="rank-mini-icon" />
-                                  <div className="rank-mini-details">
-                                    <div className="rank-tier-text">{rankText}</div>
-                                  </div>
-                                </div>
-                                {getQueueData(request.rankedData, 'RANKED_FLEX_SR') && (
-                                  <div className="rank-mini-card compact">
-                                    <img
-                                      src={getRankIcon(getQueueData(request.rankedData, 'RANKED_FLEX_SR')?.tier)}
-                                      alt=""
-                                      className="rank-mini-icon"
-                                    />
-                                    <div className="rank-mini-details">
-                                      <div className="rank-tier-text">{formatRankDisplay(getQueueData(request.rankedData, 'RANKED_FLEX_SR'))}</div>
-                                    </div>
-                                  </div>
+                                {isAlreadyFriend(request.userId) && (
+                                  <span className="comm-tag voice u-mt-1">FRIEND</span>
                                 )}
                               </div>
                             </div>
-                          </div>
 
-                          <div className="announce-modal-details-row u-mt-4 u-flex u-gap-4 u-items-center">
-                            <div className="role-mini-display-card" title={`Role: ${roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name}`}>
-                              <img src={getRoleImage(request.role || 'fill')} alt="Role" />
-                            </div>
-                            <div className="u-flex-1">
-                              <div className="u-flex-between u-items-center u-mb-2">
-                                <span className="announce-modal-tag queue">{getQueueTypeName(request.gameQueueType)}</span>
-                                <span className="announce-modal-time-label">Sent {formatTimeAgo(request.appliedAt)}</span>
+                            <div className="rank-summaries u-flex u-gap-3" style={{ width: 'auto', flexDirection: 'row' }}>
+                              <div className="rank-mini-card compact">
+                                <img src={rankIcon} alt="" className="rank-mini-icon" />
+                                <div className="rank-mini-details">
+                                  <div className="rank-tier-text">{rankText}</div>
+                                </div>
                               </div>
-                              {request.message && (
-                                <div className="announce-modal-message-box">
-                                  <p className="announce-modal-message-text">"{request.message}"</p>
+                              {getQueueData(request.rankedData, 'RANKED_FLEX_SR') && (
+                                <div className="rank-mini-card compact">
+                                  <img
+                                    src={getRankIcon(getQueueData(request.rankedData, 'RANKED_FLEX_SR')?.tier)}
+                                    alt=""
+                                    className="rank-mini-icon"
+                                  />
+                                  <div className="rank-mini-details">
+                                    <div className="rank-tier-text">{formatRankDisplay(getQueueData(request.rankedData, 'RANKED_FLEX_SR'))}</div>
+                                  </div>
                                 </div>
                               )}
                             </div>
                           </div>
                         </div>
 
-                        <div className="announce-modal-actions compact-actions u-mt-4">
-                          <button
-                            onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                            className="announce-btn-decline-compact"
-                          >
-                            DECLINE
-                          </button>
-                          <button
-                            onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                            className="announce-btn-accept-compact"
-                          >
-                            ACCEPT
-                          </button>
+                        <div className="lobby-details-row u-mt-4 u-flex u-gap-4 u-items-center">
+                          <div className="role-mini-display-card" title={`Selected Role: ${roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name}`}>
+                            <img src={getRoleImage(request.role)} alt="" />
+                          </div>
+                          <div className="u-flex-1">
+                            <div className="u-flex-between u-items-center u-mb-2">
+                              <span className="queue-type-tag">{getQueueTypeName(request.gameQueueType)}</span>
+                              <span className="time-ago-wrapper">Received {formatTimeAgo(request.appliedAt)}</span>
+                            </div>
+                            {request.message && (
+                              <div className="lobby-description-inner">
+                                "{request.message}"
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="lobby-card-actions-row compact-actions">
+                          <div className="main-actions u-ml-auto">
+                            <button
+                              className="btn-discard"
+                              onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                            >
+                              DECLINE
+                            </button>
+                            <button
+                              className="btn-publish"
+                              onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                              disabled={isAlreadyFriend(request.userId)}
+                            >
+                              {isAlreadyFriend(request.userId) ? 'ACCEPTED' : 'ACCEPT'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -588,12 +611,12 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
               )}
             </div>
 
-            <div className="announce-modal-footer">
+            <div className="post-panel-footer panel-padding">
               <button
+                className="post-lobby-btn u-w-full u-flex-center"
                 onClick={handleCloseModal}
-                className="announce-modal-close-btn"
               >
-                Close Logs
+                Return to Hub
               </button>
             </div>
           </div>
