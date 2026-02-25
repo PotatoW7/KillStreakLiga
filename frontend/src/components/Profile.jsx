@@ -79,10 +79,10 @@ const RankedInfo = ({ rankedData }) => {
           <span>{queue.wins} Wins</span>
           <span>{queue.losses} Losses</span>
         </div>
-        <div className="rank-progress-bg" title={`${winRate}% Win Rate`}>
+        <div className="rank-progress-bg" title={`${queue.leaguePoints} LP`}>
           <div
             className="rank-progress-fill"
-            style={{ width: `${winRate}%` }}
+            style={{ width: `${Math.min(100, queue.leaguePoints)}%` }}
           />
         </div>
       </div>

@@ -294,10 +294,10 @@ function Summoner() {
           <span>{rankData.wins} Wins</span>
           <span>{rankData.losses} Losses</span>
         </div>
-        <div className="summoner-rank-bar-track">
+        <div className="summoner-rank-bar-track" title={`${rankData.leaguePoints} LP`}>
           <div
             className="summoner-rank-bar-fill"
-            style={{ width: `${winRate}%` }}
+            style={{ width: `${Math.min(100, rankData.leaguePoints)}%` }}
           />
         </div>
       </div>
