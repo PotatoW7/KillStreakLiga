@@ -1045,7 +1045,7 @@ function Profile() {
                   )}
                   {state.linkSuccess && (
                     <div className="form-success-msg animate-bounce">
-                      Riot Account Linked
+                      {state.linkSuccess}
                     </div>
                   )}
 
