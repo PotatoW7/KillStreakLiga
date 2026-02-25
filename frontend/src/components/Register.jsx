@@ -76,6 +76,7 @@ function Register() {
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, {
         username: form.username.trim(),
+        usernameLowercase: form.username.trim().toLowerCase(),
         email: form.email.trim().toLowerCase(),
         createdAt: new Date(),
         friends: [],

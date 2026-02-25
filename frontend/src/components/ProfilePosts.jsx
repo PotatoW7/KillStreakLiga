@@ -32,7 +32,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         activeCommentId: null,
         suggestionCoords: { top: 0, left: 0 },
         showAuthPrompt: false,
-        subComments: {} // New state to hold sub-collection comments by postId
+        subComments: {},
+        isDragging: false
     });
 
     const postImageInputRef = useRef(null);
@@ -69,10 +70,14 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         );
 
         const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
-            const comments = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            const comments = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    ...data,
+                    id: doc.id, // Ensure we use the actual Firebase Document ID
+                    localId: data.id // Keep the internal ID if needed
+                };
+            });
             setState(prev => ({
                 ...prev,
                 subComments: { ...prev.subComments, [postId]: comments }
@@ -82,12 +87,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         return () => unsubscribe();
     }, [state.openCommentsPostId]);
 
-    // Auto-scroll to comments when opened
-    useEffect(() => {
-        if (state.openCommentsPostId && commentsRef.current) {
-            commentsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }, [state.openCommentsPostId]);
+
 
     const getSocialPreview = (content) => {
         const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/(?:v\/|e(?:mbed)\/|shorts\/|watch\?v=)|youtu\.be\/|youtube-nocookie\.com\/(?:v|e(?:mbed)\/))([a-zA-Z0-9_-]{11})/;
@@ -238,6 +238,32 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         }
     };
 
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!state.isDragging) setState(prev => ({ ...prev, isDragging: true }));
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setState(prev => ({ ...prev, isDragging: false }));
+    };
+
+    const handleDrop = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setState(prev => ({ ...prev, isDragging: false }));
+
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            const imagePromises = imageFiles.map(file => fileToBase64(file));
+            const base64Images = await Promise.all(imagePromises);
+            setState(prev => ({ ...prev, newPostImages: [...prev.newPostImages, ...base64Images] }));
+        }
+    };
+
     const createPost = async () => {
         if (!user) {
             setState(prev => ({ ...prev, showAuthPrompt: true }));
@@ -356,13 +382,13 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         const userId = user.uid;
 
         const userData = {
-            uid: userId,
+            userId: userId,
             username: user.displayName || "Anonymous User",
             profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
         };
 
-        const existingLike = post.likes?.find(l => l.uid === userId);
-        const existingDislike = post.dislikes?.find(d => d.uid === userId);
+        const existingLike = post.likes?.find(l => (l.userId === userId || l.uid === userId));
+        const existingDislike = post.dislikes?.find(d => (d.userId === userId || d.uid === userId));
 
         try {
             if (existingLike) {
@@ -389,13 +415,13 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         const userId = user.uid;
 
         const userData = {
-            uid: userId,
+            userId: userId,
             username: user.displayName || "Anonymous User",
             profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
         };
 
-        const existingLike = post.likes?.find(l => l.uid === userId);
-        const existingDislike = post.dislikes?.find(d => d.uid === userId);
+        const existingLike = post.likes?.find(l => (l.userId === userId || l.uid === userId));
+        const existingDislike = post.dislikes?.find(d => (d.userId === userId || d.uid === userId));
 
         try {
             if (existingDislike) {
@@ -460,6 +486,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
     const deleteComment = async (postId, commentId) => {
         if (!window.confirm("Delete this comment?")) return;
 
+        console.log("Starting deletion for comment:", commentId, "in post:", postId);
+
         try {
             setState(prev => ({ ...prev, deletingCommentId: commentId }));
 
@@ -468,17 +496,22 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
             const post = posts.find(p => p.id === postId);
             const currentCount = post?.commentCount || 0;
 
+            console.log("Detection - isSubComment:", isSubComment);
+
             if (isSubComment) {
+                console.log("Deleting from sub-collection...");
                 // 1. Delete from sub-collection
                 await deleteDoc(doc(db, "posts", postId, "comments", commentId));
 
                 // Only decrement if count > 0 to prevent negative numbers
+                console.log("Updating post commentCount...");
                 if (currentCount > 0) {
                     await updateDoc(postRef, {
                         commentCount: increment(-1)
                     });
                 }
             } else {
+                console.log("Deleting from legacy array...");
                 // 2. Handle legacy array comment
                 const commentToDelete = post?.comments?.find(c => c.id === commentId);
                 if (commentToDelete) {
@@ -487,13 +520,16 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                         // Only decrement if we actually found and are removing a comment
                         commentCount: currentCount > 0 ? increment(-1) : 0
                     });
+                } else {
+                    console.warn("Comment not found in legacy array.");
                 }
             }
 
+            console.log("Deletion successful.");
             setState(prev => ({ ...prev, deletingCommentId: null }));
         } catch (error) {
-            console.error("Error deleting comment:", error);
-            alert("Failed to delete comment. You might not have permission or the comment was already removed.");
+            console.error("Detailed Deletion Error:", error);
+            alert(`Failed to delete comment: ${error.message || "Unknown error"}`);
             setState(prev => ({ ...prev, deletingCommentId: null }));
         }
     };
@@ -592,31 +628,52 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         if (!timestamp) return "Just now";
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
         const now = new Date();
-        const diffInSeconds = Math.floor((now - date) / 1000);
+        const diffInSeconds = Math.max(0, Math.floor((now - date) / 1000));
 
         if (diffInSeconds < 60) return "Just now";
-        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-        return date.toLocaleDateString();
+        if (diffInSeconds < 3600) {
+            const mins = Math.floor(diffInSeconds / 60);
+            return `${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
+        }
+        if (diffInSeconds < 86400) {
+            const hours = Math.floor(diffInSeconds / 3600);
+            return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+        }
+        if (diffInSeconds < 2592000) {
+            const days = Math.floor(diffInSeconds / 86400);
+            return `${days} ${days === 1 ? 'day' : 'days'}`;
+        }
+        if (diffInSeconds < 31536000) {
+            const months = Math.floor(diffInSeconds / 2592000);
+            return `${months} ${months === 1 ? 'month' : 'months'}`;
+        }
+        const years = Math.floor(diffInSeconds / 31536000);
+        return `${years} ${years === 1 ? 'year' : 'years'}`;
     };
 
     return (
         <div className={`profile-posts-container ${isFeedsPage ? 'feeds-layout-variant' : ''}`}>
-            {!isFeedsPage && isOwnProfile && (
-                <div className="post-creator-box glass-panel">
+            {isOwnProfile && (
+                <div className={`post-creator-box glass-panel ${state.showSuggestions && state.suggestionType === 'post' ? 'has-active-suggestions' : ''}`}>
                     <div className="creator-header">
                         <div className="creator-title-bar" />
                         <h4 className="creator-title">Share something...</h4>
                         {state.postSuccess && <span className="success-message-text">Post was created!</span>}
                     </div>
 
-                    <div className="post-textarea-wrapper">
+                    <div
+                        className={`post-textarea-wrapper ${state.isDragging ? 'dragging' : ''} ${state.showSuggestions && state.suggestionType === 'post' ? 'has-active-suggestions' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
                         <textarea
                             className="post-textarea"
-                            placeholder="What's happening in the Rift? (Type :name: for icons)"
+                            placeholder="What's happening in the Rift? (Type :name: for icons, or drag images here)"
                             value={state.newPostContent}
                             onChange={(e) => handleTextareaChange(e.target.value, 'post')}
                             onKeyDown={handleKeyDown}
+                            maxLength={500}
                         />
 
                         {state.showSuggestions && state.suggestionType === 'post' && (
@@ -649,22 +706,14 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                     )}
 
                     <div className="creator-actions-row">
-                        <div className="creator-left-tools">
-                            <div className="visibility-select-wrapper">
-                                <select
-                                    className="visibility-select"
-                                    value={state.postVisibility}
-                                    onChange={(e) => setState(prev => ({ ...prev, postVisibility: e.target.value }))}
-                                >
-                                    <option value="public">Global Feed</option>
-                                    <option value="profile-only">Profile Only</option>
-                                    <option value="private">Private (Only Me)</option>
-                                </select>
-                                <ChevronDown className="visibility-icon" />
-                            </div>
-
-                            <button className="attach-media-btn" onClick={() => postImageInputRef.current.click()}>
+                        <div className="creator-right-tools">
+                            <button
+                                className="attach-media-btn"
+                                onClick={() => postImageInputRef.current.click()}
+                                title="Attach Media"
+                            >
                                 <ImageIcon />
+                                <span className="btn-label-text">Add Image</span>
                             </button>
                             <input
                                 type="file"
@@ -674,15 +723,15 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                 accept="image/*"
                                 onChange={handleImageUpload}
                             />
-                        </div>
 
-                        <button
-                            className="submit-post-btn"
-                            disabled={state.creatingPost || !state.newPostContent.trim()}
-                            onClick={createPost}
-                        >
-                            {state.creatingPost ? "Drafting..." : "Publish Post"}
-                        </button>
+                            <button
+                                className="submit-post-btn"
+                                disabled={state.creatingPost || !state.newPostContent.trim()}
+                                onClick={createPost}
+                            >
+                                {state.creatingPost ? "Drafting..." : "Publish Post"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -702,7 +751,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                 ) : (
                     <div className="post-cards-stack">
                         {posts.map(post => (
-                            <div key={post.id} className="post-card-outer">
+                            <div key={post.id} className={`post-card-outer animate-fade-in ${state.showSuggestions && state.activeCommentId === post.id ? 'has-active-suggestions' : ''}`}>
                                 <div className={`post-card-inner ${state.openCommentsPostId === post.id ? 'active-comments' : ''}`}>
                                     <div className="post-columns">
                                         <div className="post-main-content">
@@ -714,28 +763,21 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                                 src={post.userProfileImage || profileImage}
                                                                 alt=""
                                                                 className="author-avatar"
+                                                                onClick={() => post.userId && (window.location.href = `/profile/${post.userId}`)}
                                                             />
-                                                            <div className="online-indicator-dot" />
-                                                            <div>
-                                                                <h5 className="author-name-text">
-                                                                    {post.username || "Anonymous User"}
-                                                                </h5>
-                                                                <div className="post-time-row">
-                                                                    <span className="post-timestamp">
-                                                                        <div className="timestamp-dot" />
-                                                                        {formatPostTime(post.createdAt)}
-                                                                    </span>
-                                                                    {post.visibility && post.visibility !== "public" && (
-                                                                        <span className="post-visibility-pill">
-                                                                            {post.visibility === "profile-only" ? "Local" : "Private"}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
+                                                        </div>
+                                                        <h5 className="author-name-text" onClick={() => post.userId && (window.location.href = `/profile/${post.userId}`)}>
+                                                            {post.username || "Anonymous User"}
+                                                        </h5>
+                                                        <div className="post-time-row">
+                                                            <span className="post-timestamp">
+                                                                <span className="timestamp-dot">•</span>
+                                                                {formatPostTime(post.createdAt)}
+                                                            </span>
                                                         </div>
                                                     </div>
 
-                                                    {isOwnProfile && post.userId === user?.uid && (
+                                                    {isOwnProfile && (post.userId === user?.uid || post.uid === user?.uid) && (
                                                         <div className="post-actions-menu">
                                                             <button
                                                                 className="action-btn"
@@ -850,7 +892,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
 
                                                 <div className="engagement-row">
                                                     <button
-                                                        className={`engagement-btn ${post.likes?.some(l => l.uid === user?.uid) ? 'active-like' : ''}`}
+                                                        className={`engagement-btn ${post.likes?.some(l => (l.userId === user?.uid || l.uid === user?.uid)) ? 'active-like' : ''}`}
                                                         onClick={() => handleLike(post)}
                                                     >
                                                         <img
@@ -861,7 +903,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                     </button>
 
                                                     <button
-                                                        className={`engagement-btn ${post.dislikes?.some(d => d.uid === user?.uid) ? 'active-dislike' : ''}`}
+                                                        className={`engagement-btn ${post.dislikes?.some(d => (d.userId === user?.uid || d.uid === user?.uid)) ? 'active-dislike' : ''}`}
                                                         onClick={() => handleDislike(post)}
                                                     >
                                                         <img
@@ -914,8 +956,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                                     return timeA - timeB;
                                                                 })
                                                                 .map((comment) => {
-                                                                    const isCommentOwner = user?.uid === comment.userId;
-                                                                    const isPostOwner = user?.uid === post.userId;
+                                                                    const isCommentOwner = user?.uid === comment.userId || user?.uid === comment.uid;
+                                                                    const isPostOwner = user?.uid === post.userId || user?.uid === post.uid;
                                                                     const canEdit = isCommentOwner;
                                                                     const canDelete = isCommentOwner || isPostOwner;
 
@@ -950,13 +992,19 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                                                 </div>
                                                                                 {state.editingCommentId === comment.id ? (
                                                                                     <div className="comment-edit-wrapper">
-                                                                                        <input
-                                                                                            type="text"
-                                                                                            className="comment-edit-input"
-                                                                                            value={state.editCommentText}
-                                                                                            onChange={(e) => setState(prev => ({ ...prev, editCommentText: e.target.value }))}
-                                                                                            onKeyPress={(e) => e.key === 'Enter' && updateComment(post.id, comment.id)}
-                                                                                        />
+                                                                                        <div className="comment-edit-relative">
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                className="comment-edit-input"
+                                                                                                value={state.editCommentText}
+                                                                                                onChange={(e) => setState(prev => ({ ...prev, editCommentText: e.target.value }))}
+                                                                                                onKeyPress={(e) => e.key === 'Enter' && updateComment(post.id, comment.id)}
+                                                                                                maxLength={250}
+                                                                                            />
+                                                                                            <div className="comment-edit-char-counter">
+                                                                                                {state.editCommentText.length}/250
+                                                                                            </div>
+                                                                                        </div>
                                                                                         <div className="comment-edit-actions">
                                                                                             <button
                                                                                                 className="cancel-edit-btn"
@@ -992,7 +1040,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
 
                                                 <div className="new-comment-input-row">
                                                     <div className="comment-input-field-wrapper">
-                                                        <div className="comment-input-relative">
+                                                        <div className={`comment-input-relative ${state.showSuggestions && state.suggestionType === 'comment' && state.activeCommentId === post.id ? 'has-active-suggestions' : ''}`}>
                                                             <input
                                                                 type="text"
                                                                 placeholder="Write a comment..."

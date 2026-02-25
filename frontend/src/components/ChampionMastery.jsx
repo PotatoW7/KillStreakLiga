@@ -6,7 +6,7 @@ export default function ChampionMastery({ masteryData, champIdToName, version })
   );
 
   return (
-    <div className="mastery-list">
+    <div className="mastery-list-horizontal">
       {masteryData.slice(0, 5).map(entry => {
         const champName = champIdToName[entry.championId] || `ID ${entry.championId}`;
         const champIcon = `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`;

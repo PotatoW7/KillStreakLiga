@@ -26,8 +26,8 @@ import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
 
-import { auth, db } from "./firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { auth, db, storage } from "./firebase";
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import "./styles/index.css";
 
 const OWNER_EMAIL = "mainprofile@gmail.com";
@@ -74,16 +74,19 @@ function App() {
         } catch (error) {
           console.error("Error fetching profile image:", error);
         }
-      } else {
-        setUserRole('user');
       }
       setUser(firebaseUser);
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
 
-  const initializeUserInFirestore = async (user) => {
+  // Removed presence logic
+
+  // Removed obsolete heartbeat
+
+  async function initializeUserInFirestore(user) {
     const userRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userRef);
     const isOwner = user.email?.toLowerCase() === OWNER_EMAIL;
@@ -91,6 +94,7 @@ function App() {
     if (!userDoc.exists()) {
       const newUserData = {
         username: isOwner ? "Owner" : user.displayName,
+        usernameLowercase: (isOwner ? "Owner" : (user.displayName || "anonymous")).toLowerCase(),
         email: user.email,
         createdAt: new Date(),
         friends: [],
@@ -109,6 +113,7 @@ function App() {
       return newUserData.role;
     } else {
       const existingData = userDoc.data();
+
       if (isOwner && existingData.role !== 'owner') {
         await setDoc(userRef, { role: 'owner', username: 'Owner' }, { merge: true });
         await setDoc(doc(db, "owners", user.uid), {
@@ -118,9 +123,14 @@ function App() {
         }, { merge: true });
         return 'owner';
       }
+      if (!existingData.usernameLowercase) {
+        await updateDoc(userRef, {
+          usernameLowercase: (existingData.username || user.displayName || "anonymous").toLowerCase()
+        });
+      }
       return existingData.role || 'user';
     }
-  };
+  }
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -177,14 +187,13 @@ function App() {
               <NavLink to="/feeds">Feed</NavLink>
               {!user ? (
                 <>
-                  <NavLink to="/summoner">Summoner</NavLink>
+                  <NavLink to="/summoner">Summoner Lookup</NavLink>
                   <NavLink to="/coaching">Coaching</NavLink>
                   <Link to="/login" className="login-btn-desktop">LOGIN</Link>
                 </>
               ) : (
                 <>
-                  <NavLink to="/summoner">Summoner</NavLink>
-                  <NavLink to="/live-game">Live Game</NavLink>
+                  <NavLink to="/summoner">Summoner Lookup</NavLink>
                   <NavLink to="/queue">Queue</NavLink>
                   <NavLink to="/coaching">Coaching</NavLink>
                   {(userRole === 'admin' || userRole === 'owner' || userRole === 'coach') && (
@@ -236,7 +245,6 @@ function App() {
                       alt="Profile"
                       className="profile-avatar"
                     />
-                    <div className="online-indicator" />
                   </button>
                   {profileDropdownOpen && (
                     <div className="profile-dropdown glass-panel">
@@ -245,7 +253,7 @@ function App() {
                         className="profile-dropdown-item"
                       >
                         <div className="dropdown-item-dot" />
-                        Access Profile
+                        View Profile
                       </button>
                       <div className="dropdown-divider" />
                       <button
@@ -253,7 +261,7 @@ function App() {
                         className="profile-dropdown-item danger"
                       >
                         <div className="dropdown-item-dot danger" />
-                        Terminate Link
+                        Logout
                       </button>
                     </div>
                   )}
@@ -344,8 +352,6 @@ function App() {
                     {socialMode === 'chat' ? 'Community Chat' : 'Notifications'}
                   </h4>
                   <div className="social-panel-status">
-                    <div className="social-panel-status-bar" />
-                    <p className="social-panel-status-text">Online Sync: Active</p>
                   </div>
                 </div>
                 <button
@@ -370,6 +376,7 @@ function App() {
                     <Chat
                       selectedFriend={selectedFriend}
                       onBack={handleBackToFriends}
+                      isSocialOpen={showSocial}
                     />
                   )
                 ) : (

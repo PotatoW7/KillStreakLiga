@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
-import { useNavigate } from 'react-router-dom';
+import { auth, db } from '../firebase';
 import IconRenderer, { LoLSuggestions } from './IconRenderer';
 
-function Chat({ selectedFriend, onBack }) {
+function Chat({ selectedFriend, onBack, isSocialOpen }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -23,6 +23,8 @@ function Chat({ selectedFriend, onBack }) {
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [suggestionCoords, setSuggestionCoords] = useState({ top: 0, left: 0 });
   const [activeVideo, setActiveVideo] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const prevMessageCountRef = useRef(0);
 
   const messagesEndRef = useRef(null);
   const chatMessagesRef = useRef(null);
@@ -73,9 +75,13 @@ function Chat({ selectedFriend, onBack }) {
   };
 
   const markMessagesAsRead = async (msgs) => {
+    if (document.hidden || !document.hasFocus() || !isSocialOpen) return;
+
     const unreadMessages = msgs.filter(
       (msg) => msg.senderId !== auth.currentUser.uid && !msg.read
     );
+
+    if (unreadMessages.length === 0) return;
 
     for (const msg of unreadMessages) {
       const messageRef = doc(db, 'chats', chatId, 'messages', msg.id);
@@ -88,10 +94,11 @@ function Chat({ selectedFriend, onBack }) {
 
   useEffect(() => {
     if (selectedFriend) {
-      setFriendProfile({
+      setFriendProfile(prev => ({
+        ...prev,
         profileImage: selectedFriend.profileImage || null,
         username: selectedFriend.username || 'Unknown User',
-      });
+      }));
     }
   }, [selectedFriend]);
 
@@ -116,8 +123,8 @@ function Chat({ selectedFriend, onBack }) {
         const friendData = docSnap.data();
         setFriendProfile((prev) => ({
           ...prev,
-          profileImage: friendData.profileImage || prev.profileImage,
-          username: friendData.username || prev.username,
+          profileImage: friendData.profileImage || null,
+          username: friendData.username || 'Unknown User',
         }));
 
         setSenderProfiles((prev) => ({
@@ -128,19 +135,31 @@ function Chat({ selectedFriend, onBack }) {
     });
     unsubscribeFunctions.push(unsubscribeFriend);
 
-    return () => unsubscribeFunctions.forEach((unsub) => unsub());
-  }, [selectedFriend.id]);
-
-  useEffect(() => {
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeMsgs = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setMessages(msgs);
       markMessagesAsRead(msgs);
     });
-    return () => unsubscribe();
-  }, [chatId]);
+    unsubscribeFunctions.push(unsubscribeMsgs);
+
+    return () => unsubscribeFunctions.forEach((unsub) => unsub());
+  }, [selectedFriend.id, chatId, isSocialOpen]);
+
+  useEffect(() => {
+    const handleActivity = () => {
+      if (messages.length > 0) markMessagesAsRead(messages);
+    };
+
+    window.addEventListener('focus', handleActivity);
+    document.addEventListener('visibilitychange', handleActivity);
+
+    return () => {
+      window.removeEventListener('focus', handleActivity);
+      document.removeEventListener('visibilitychange', handleActivity);
+    };
+  }, [messages, chatId]);
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null);
@@ -149,7 +168,12 @@ function Chat({ selectedFriend, onBack }) {
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    const currentCount = messages.length;
+    if (currentCount > prevMessageCountRef.current) {
+      // Only scroll when a new message arrives, not on deletion
+      scrollToBottom();
+    }
+    prevMessageCountRef.current = currentCount;
   }, [messages]);
 
   const handleSend = async () => {
@@ -161,7 +185,7 @@ function Chat({ selectedFriend, onBack }) {
     await addDoc(messagesRef, {
       text: newMessage,
       senderId: auth.currentUser.uid,
-      senderName: auth.currentUser.displayName,
+      senderName: auth.currentUser.displayName || 'Anonymous',
       timestamp: serverTimestamp(),
       read: false,
       type: 'text',
@@ -464,6 +488,8 @@ function Chat({ selectedFriend, onBack }) {
     return 'https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png';
   };
 
+
+
   return (
     <div className="chat-container">
       <div className="chat-bg-overlay" />
@@ -482,7 +508,6 @@ function Chat({ selectedFriend, onBack }) {
                 alt={friendProfile?.username}
                 className="chat-friend-avatar"
               />
-              <div className="chat-online-dot" />
             </div>
             <div className="chat-header-text">
               <h3
@@ -491,15 +516,13 @@ function Chat({ selectedFriend, onBack }) {
               >
                 {friendProfile?.username}
               </h3>
-              <span className="chat-header-status">Online</span>
+              <span className="chat-header-status offline">
+                Offline
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="chat-header-badge">
-          <div className="chat-badge-dot" />
-          <span className="chat-badge-text">Live Content</span>
-        </div>
       </div>
 
       {/* Message Stream */}

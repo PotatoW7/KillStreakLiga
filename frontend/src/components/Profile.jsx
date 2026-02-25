@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { auth, db } from "../firebase";
+import { auth, db, rtdb } from "../firebase";
+import { ref, onValue } from "firebase/database";
 import {
   sendEmailVerification,
   deleteUser,
@@ -159,6 +160,7 @@ function Profile() {
   const menuRef = useRef(null);
   const hamburgerRef = useRef(null);
   const accountInfoModalRef = useRef(null);
+
 
   const fetchRankedDataAndUpdate = async (account, userId, isManualUpdate = false) => {
     if (!account || !userId) return;
@@ -933,7 +935,7 @@ function Profile() {
                       }}
                     />
                     <div className="riot-banner-level">
-                      Lvl {state.linkedAccount.summonerLevel}
+                      {state.linkedAccount.summonerLevel}
                     </div>
                   </div>
 

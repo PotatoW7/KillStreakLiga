@@ -283,6 +283,14 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     setHoveredItem(null);
   };
 
+  const handleSpellEnter = (spellId, event) => {
+    const spell = spellIdToData?.[spellId];
+    if (spell) {
+      setHoveredItem(spell);
+      setTooltipPos({ x: event.clientX, y: event.clientY });
+    }
+  };
+
   const renderPlayerRow = (p, isCurrent, queueId) => {
     const key = `${p.puuid}-${p.championName}`;
     const normalItems = p.items.slice(0, 6).filter((id) => id > 0);
@@ -296,15 +304,14 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
             className="mh-player-champ-icon"
             onError={(e) => (e.target.src = "/placeholder-champ.png")}
           />
-          <div className="mh-player-champ-level">
-            {p.champLevel}
-          </div>
         </div>
 
         <div className="mh-player-spells">
-          <img src={getSummonerSpellPath(p.summoner1Id)} className="mh-spell-icon" onMouseEnter={(e) => handleItemEnter(p.summoner1Id, e)} onMouseLeave={handleItemLeave} />
-          <img src={getSummonerSpellPath(p.summoner2Id)} className="mh-spell-icon" onMouseEnter={(e) => handleItemEnter(p.summoner2Id, e)} onMouseLeave={handleItemLeave} />
+          <img src={getSummonerSpellPath(p.summoner1Id)} className="mh-spell-icon" onMouseEnter={(e) => handleSpellEnter(p.summoner1Id, e)} onMouseMove={handleItemMove} onMouseLeave={handleItemLeave} />
+          <img src={getSummonerSpellPath(p.summoner2Id)} className="mh-spell-icon" onMouseEnter={(e) => handleSpellEnter(p.summoner2Id, e)} onMouseMove={handleItemMove} onMouseLeave={handleItemLeave} />
         </div>
+
+        {queueId === 1700 ? renderPlayerAugments(p) : renderPlayerRunes(p, key)}
 
         <div className="mh-player-info">
           <div
@@ -404,9 +411,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
                   className={`mh-champ-icon ${isWin ? "win" : "loss"}`}
                   onError={(e) => (e.target.src = "/placeholder-champ.png")}
                 />
-                <div className="mh-champ-level">
-                  {player.champLevel}
-                </div>
               </div>
               <div>
                 <div className={`mh-result-text ${isWin ? "win" : "loss"}`}>

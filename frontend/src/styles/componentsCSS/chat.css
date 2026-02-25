@@ -123,10 +123,14 @@
 .chat-header-status {
     font-size: 0.625rem;
     font-weight: 900;
-    color: var(--color-primary);
+    color: rgba(255, 255, 255, 0.4);
     text-transform: uppercase;
     letter-spacing: 0.2em;
     font-style: italic;
+}
+
+.chat-header-status.online {
+    color: var(--color-primary);
 }
 
 .chat-header-badge {

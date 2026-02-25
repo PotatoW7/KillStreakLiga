@@ -19,6 +19,9 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     margin-bottom: 2rem;
     backdrop-filter: blur(12px);
+    position: relative;
+    z-index: 10;
+    overflow: visible;
 }
 
 .mh-filter-group {
@@ -725,4 +728,144 @@
     text-align: center;
     color: var(--color-muted-foreground);
     padding: 2rem 0;
+}
+
+/* ===== RUNES ===== */
+
+.runes-container {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Compact state — one keystone icon */
+.runes-compact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rune-icon {
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: help;
+}
+
+.rune-icon.keystone {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid hsl(var(--primary) / 0.5);
+    box-shadow: 0 0 6px hsl(var(--primary) / 0.3);
+}
+
+.rune-icon.keystone:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.5);
+}
+
+.rune-icon.primary-rune {
+    width: 1.1rem;
+    height: 1.1rem;
+    opacity: 0.85;
+}
+
+.rune-icon.primary-rune:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.rune-icon.secondary-rune {
+    width: 1rem;
+    height: 1rem;
+    opacity: 0.7;
+}
+
+.rune-icon.secondary-rune:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Expanded rune panel */
+.runes-full {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    background: hsl(var(--background) / 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.625rem;
+    padding: 0.5rem 0.625rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    z-index: 20;
+    position: relative;
+    min-width: 5rem;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.rune-style-icon {
+    width: 1rem;
+    height: 1rem;
+    opacity: 0.6;
+    border-radius: 50%;
+}
+
+.primary-runes {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding-left: 0.25rem;
+    border-left: 2px solid hsl(var(--primary) / 0.4);
+}
+
+.secondary-runes {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding-left: 0.25rem;
+    border-left: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Stat shards row */
+.stat-shards {
+    display: flex;
+    gap: 0.25rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    margin-top: 0.125rem;
+}
+
+.stat-shard {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 50%;
+    opacity: 0.55;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: help;
+    transition: opacity 0.2s;
+}
+
+.stat-shard:hover {
+    opacity: 1;
+}
+
+/* Augments */
+.augments-list {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.rune-icon.augment-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 0.25rem;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    box-shadow: 0 0 4px rgba(255, 215, 0, 0.15);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.rune-icon.augment-icon:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.35);
 }

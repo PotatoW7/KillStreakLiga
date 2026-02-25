@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { auth, db } from "../firebase";
+import { auth, db, rtdb } from "../firebase";
 import { collection, query, onSnapshot, getDoc, doc } from "firebase/firestore";
+import { ref, onValue } from "firebase/database";
 import ProfilePosts from "./ProfilePosts";
 import { Award, TrendingUp, Clock, Search, ChevronDown, Users, Bell, Zap, Activity, Lock, ChevronRight } from "lucide-react";
 
@@ -95,8 +96,8 @@ function Feeds() {
             } else {
                 filteredPosts.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
             }
-
             setPosts(filteredPosts);
+
             setLoading(false);
         }, (error) => {
             console.error("Error fetching public posts:", error);
@@ -105,6 +106,7 @@ function Feeds() {
 
         return () => unsubscribe();
     }, [activeTab]);
+
 
     const filteredPostsBySearch = posts.filter(post =>
         post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -138,20 +140,17 @@ function Feeds() {
                                 onClick={() => setActiveTab('recent')}
                                 className={`feeds-tab ${activeTab === 'recent' ? 'active' : ''}`}
                             >
-                                <Clock className="feeds-tab-icon" />
                                 Latest
                             </button>
                             <button
                                 onClick={() => setActiveTab('trending')}
                                 className={`feeds-tab ${activeTab === 'trending' ? 'active' : ''}`}
                             >
-                                <TrendingUp className="feeds-tab-icon" />
                                 Trending
                             </button>
                         </div>
 
                         <div className="feeds-search-wrapper">
-                            <Search className="feeds-search-icon" />
                             <input
                                 type="text"
                                 placeholder="Search community posts..."
@@ -236,27 +235,6 @@ function Feeds() {
                         </div>
                     </div>
 
-                    <div className="feeds-stats-card glass-panel">
-                        <div className="feeds-stats-header">
-                            <div className="feeds-stats-icon-box">
-                                <Users className="feeds-stats-icon" />
-                            </div>
-                            <div>
-                                <h4 className="feeds-stats-title">Community Stats</h4>
-                                <p className="feeds-stats-subtitle">Activity</p>
-                            </div>
-                        </div>
-                        <div className="feeds-stats-grid">
-                            <div className="feeds-stat-box">
-                                <p className="feeds-stat-label">Global Posts</p>
-                                <p className="feeds-stat-value">{posts.length}</p>
-                            </div>
-                            <div className="feeds-stat-box">
-                                <p className="feeds-stat-label">Active Members</p>
-                                <p className="feeds-stat-value">{likesLeaderboard.length}</p>
-                            </div>
-                        </div>
-                    </div>
                 </aside>
             </div>
         </div>

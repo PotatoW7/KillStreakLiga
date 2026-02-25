@@ -12,13 +12,14 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
   const [searchUsername, setSearchUsername] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [friendsTabView, setFriendsTabView] = useState('all');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!auth.currentUser) return;
-
     const userRef = doc(db, 'users', auth.currentUser.uid);
     const friendUnsubscribes = new Map();
 
@@ -36,7 +37,13 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
           }
         });
 
-        setFriends(uniqueFriends);
+        setFriends(prev => {
+          const freshFriends = uniqueFriends.map(f => {
+            const existing = prev.find(p => p.id === f.id);
+            return f;
+          });
+          return freshFriends;
+        });
         setPendingRequests(data.pendingRequests || []);
         setSentFriendRequests(data.sentFriendRequests || []);
 
@@ -51,20 +58,28 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
 
         uniqueFriends.forEach(friend => {
           if (!friendUnsubscribes.has(friend.id)) {
+            // Also listen to Firestore for profile image / username changes
             const friendRef = doc(db, 'users', friend.id);
-            const unsub = onSnapshot(friendRef, (friendDoc) => {
+            const firestoreUnsub = onSnapshot(friendRef, (friendDoc) => {
               if (friendDoc.exists()) {
                 const friendData = friendDoc.data();
                 setFriends(prevFriends =>
                   prevFriends.map(f =>
                     f.id === friend.id
-                      ? { ...f, profileImage: friendData.profileImage, username: friendData.username || f.username }
+                      ? {
+                        ...f,
+                        profileImage: friendData.profileImage,
+                        username: friendData.username || f.username
+                      }
                       : f
                   )
                 );
               }
             });
-            friendUnsubscribes.set(friend.id, unsub);
+
+            friendUnsubscribes.set(friend.id, () => {
+              firestoreUnsub();
+            });
           }
         });
       }
@@ -106,6 +121,8 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
     };
   }, [friends]);
 
+  // Removed obsolete periodic refresh (RTDB provides instant updates)
+
   useEffect(() => {
     const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
     if (onUnreadCountChange) {
@@ -120,23 +137,36 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
     }
 
     setSearchLoading(true);
+    setHasSearched(true);
     try {
       const usersRef = collection(db, 'users');
-      const q = query(
-        usersRef,
-        where('username', '>=', searchUsername),
-        where('username', '<=', searchUsername + '\uf8ff')
-      );
-      const querySnapshot = await getDocs(q);
+      const searchTerm = searchUsername.toLowerCase().trim();
+      const rawSearchTerm = searchUsername.trim();
 
-      const results = [];
-      querySnapshot.forEach((docSnap) => {
-        if (docSnap.id !== auth.currentUser.uid) {
+      // Perform two queries in parallel: one case-insensitive (new field) and one fallback (original field)
+      const q1 = query(
+        usersRef,
+        where('usernameLowercase', '>=', searchTerm),
+        where('usernameLowercase', '<=', searchTerm + '\uf8ff')
+      );
+
+      const q2 = query(
+        usersRef,
+        where('username', '>=', rawSearchTerm),
+        where('username', '<=', rawSearchTerm + '\uf8ff')
+      );
+
+      const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+
+      const resultsMap = new Map();
+
+      const processDoc = (docSnap) => {
+        if (docSnap.id !== auth.currentUser.uid && !resultsMap.has(docSnap.id)) {
           const userData = docSnap.data();
           const isAlreadyFriend = friends.some(friend => friend.id === docSnap.id);
           const hasPendingRequest = sentFriendRequests.some(req => req.to === docSnap.id);
 
-          results.push({
+          resultsMap.set(docSnap.id, {
             id: docSnap.id,
             username: userData.username || 'Anonymous',
             email: userData.email,
@@ -145,9 +175,12 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
             hasPendingRequest
           });
         }
-      });
+      };
 
-      setSearchResults(results);
+      snap1.forEach(processDoc);
+      snap2.forEach(processDoc);
+
+      setSearchResults(Array.from(resultsMap.values()));
     } catch (error) {
       console.error('Search error:', error);
       alert('Error searching users: ' + error.message);
@@ -404,7 +437,10 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
             type="text"
             placeholder="Search Users..."
             value={searchUsername}
-            onChange={(e) => setSearchUsername(e.target.value)}
+            onChange={(e) => {
+              setSearchUsername(e.target.value);
+              if (hasSearched) setHasSearched(false);
+            }}
             onKeyDown={(e) => e.key === 'Enter' && searchUsers()}
             className="fl-search-input"
           />
@@ -451,6 +487,12 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {hasSearched && searchResults.length === 0 && !searchLoading && (
+        <div className="fl-no-results glass-panel">
+          <p>No users found matching "{searchUsername}"</p>
         </div>
       )}
 
@@ -556,53 +598,53 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
               </div>
             ) : (
               <div className="fl-friends-grid">
-                {friends.map(friend => (
-                  <div
-                    key={friend.id}
-                    className={`fl-friend-card glass-panel ${unreadCounts[friend.id] > 0 ? 'unread' : ''}`}
-                  >
-                    <div className="fl-card-bg-glow" />
+                {friends.map(friend => {
+                  return (
                     <div
-                      className="fl-friend-info-group"
-                      onClick={() => onSelectFriend({
-                        id: friend.id,
-                        username: friend.username,
-                        profileImage: friend.profileImage || null
-                      })}
+                      key={friend.id}
+                      className={`fl-friend-card glass-panel ${unreadCounts[friend.id] > 0 ? 'unread' : ''}`}
                     >
-                      <div className="relative">
-                        <div className="fl-avatar-glow" />
-                        <img
-                          src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
-                          alt={friend.username}
-                          className="fl-friend-avatar"
-                          onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"; }}
-                        />
-                        <div className="fl-online-indicator" />
-                      </div>
-                      <div className="fl-friend-text">
-                        <span className="fl-friend-username">{friend.username}</span>
-                        <span className="fl-online-label">Online</span>
-                      </div>
-                      {unreadCounts[friend.id] > 0 && (
-                        <div className="fl-unread-badge">
-                          {unreadCounts[friend.id]}
+                      <div className="fl-card-bg-glow" />
+                      <div
+                        className="fl-friend-info-group"
+                        onClick={() => onSelectFriend({
+                          id: friend.id,
+                          username: friend.username,
+                          profileImage: friend.profileImage || null
+                        })}
+                      >
+                        <div className="fl-avatar-container" onClick={() => navigate(`/profile/${friend.id}`)}>
+                          <div className="fl-avatar-glow" />
+                          <img
+                            src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                            alt={friend.username}
+                            className="fl-friend-avatar"
+                            onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"; }}
+                          />
                         </div>
-                      )}
-                    </div>
+                        <div className="fl-friend-text">
+                          <span className="fl-friend-username">{friend.username}</span>
+                        </div>
+                        {unreadCounts[friend.id] > 0 && (
+                          <div className="fl-unread-badge">
+                            {unreadCounts[friend.id]}
+                          </div>
+                        )}
+                      </div>
 
-                    <button
-                      className="fl-unfriend-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        unfriend(friend.id, friend.username);
-                      }}
-                      title="Unfriend"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        className="fl-unfriend-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          unfriend(friend.id, friend.username);
+                        }}
+                        title="Unfriend"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

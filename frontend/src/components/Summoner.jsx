@@ -7,7 +7,8 @@ import ChampionMastery from "./ChampionMastery";
 import { fetchDDragon } from "../utils/fetchDDragon";
 
 function Summoner() {
-  const [riotId, setRiotId] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // Separate state for search input
+  const [displayRiotId, setDisplayRiotId] = useState(""); // Separate state for displayed summoner name
   const [region, setRegion] = useState("euw1");
   const [mode, setMode] = useState("all");
   const [data, setData] = useState(null);
@@ -33,7 +34,8 @@ function Summoner() {
     const regionParam = searchParams.get('region');
 
     if (search && regionParam) {
-      setRiotId(search);
+      setSearchInput(search); // Set search input
+      setDisplayRiotId(search); // Set display name
       setRegion(regionParam);
       searchPlayer(search, regionParam);
     }
@@ -42,7 +44,8 @@ function Summoner() {
   useEffect(() => {
     const handleSearchPlayer = (event) => {
       const { riotId, region } = event.detail;
-      setRiotId(riotId);
+      setSearchInput(riotId); // Set search input
+      setDisplayRiotId(riotId); // Set display name
       setRegion(region);
       searchPlayer(riotId, region);
     };
@@ -86,7 +89,7 @@ function Summoner() {
     setElapsedTime(0);
     if (timerRef.current) clearInterval(timerRef.current);
     setMatches([]);
-    setRiotId(playerRiotId);
+    setDisplayRiotId(playerRiotId); // Set display name when searching
     setRegion(playerRegion);
 
     const [gameName, tagLine] = playerRiotId.split("#");
@@ -146,7 +149,8 @@ function Summoner() {
   };
 
   const handleRecentSearchClick = (recentRiotId, recentRegion) => {
-    setRiotId(recentRiotId);
+    setSearchInput(recentRiotId); // Set search input
+    setDisplayRiotId(recentRiotId); // Set display name
     setRegion(recentRegion);
     searchPlayer(recentRiotId, recentRegion);
   };
@@ -179,7 +183,7 @@ function Summoner() {
   };
 
   const getSummonerInfo = async () => {
-    await searchPlayer(riotId, region);
+    await searchPlayer(searchInput, region); // Use searchInput for searching
   };
 
   const handleKeyPress = (e) => {
@@ -308,8 +312,8 @@ function Summoner() {
           <div className="summoner-search-bar glass-panel">
             <input
               type="text"
-              value={riotId}
-              onChange={(e) => setRiotId(e.target.value)}
+              value={searchInput} // Use searchInput state
+              onChange={(e) => setSearchInput(e.target.value)} // Update only searchInput
               onKeyPress={handleKeyPress}
               placeholder="Faker#KR1"
               className="summoner-search-input"
@@ -344,6 +348,42 @@ function Summoner() {
               <Search className="icon-sm" />
             </button>
           </div>
+
+          {recentSearches.length > 0 && (
+            <div className="recent-searches-box glass-panel">
+              <div className="recent-header">
+                <span className="recent-title">History</span>
+                <button
+                  onClick={clearRecentSearches}
+                  className="recent-clear-btn"
+                >
+                  Clear All
+                </button>
+              </div>
+              <div className="recent-pills">
+                {recentSearches.map((search, index) => (
+                  <div key={index} className="recent-pill">
+                    <div
+                      className="recent-pill-content"
+                      onClick={() => handleRecentSearchClick(search.riotId, search.region)}
+                    >
+                      <span className="recent-pill-name">{search.riotId.split('#')[0]}</span>
+                      <span className="recent-pill-tag">#{search.riotId.split('#')[1]}</span>
+                    </div>
+                    <button
+                      className="recent-pill-remove"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeRecentSearch(index);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -375,15 +415,13 @@ function Summoner() {
 
             <div className="summoner-info">
               <h1 className="summoner-name">
-                <span>{riotId.split('#')[0]}</span>
-                <span className="summoner-tag">#{riotId.split('#')[1] || data.tagLine || region.toUpperCase()}</span>
+                {displayRiotId.split('#')[0]}
+                <span className={`summoner-tag ${(displayRiotId.split('#')[1] || data.tagLine || region.toUpperCase()).length > 3 ? 'long-tag' : ''}`}>
+                  #{displayRiotId.split('#')[1] || data.tagLine || region.toUpperCase()}
+                </span>
               </h1>
 
               <div className="summoner-badges">
-                <div className="summoner-badge primary">
-                  <Trophy className="icon-sm" />
-                  <span>Master Tier</span>
-                </div>
                 {liveGame?.inGame && (
                   <div className="summoner-badge live">
                     <Activity className="icon-sm" />
@@ -419,86 +457,85 @@ function Summoner() {
             </div>
           </div>
 
-          <div className="summoner-content-grid">
-            <div className="summoner-sidebar">
-              <div className="summoner-mastery-section glass-panel">
-                <h4 className="summoner-section-title">
-                  <div className="summoner-section-bar" />
-                  Champion Mastery
-                </h4>
-                <ChampionMastery masteryData={data.mastery} champIdToName={champIdToName} version={version} />
-              </div>
+          {/* Mastery section - no margin bottom to collide with profile */}
+          {data.mastery && data.mastery.length > 0 && (
+            <div className="summoner-mastery-strip glass-panel" style={{ marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+              <h4 className="summoner-section-title">
+                <div className="summoner-section-bar" />
+                Champion Mastery
+              </h4>
+              <ChampionMastery masteryData={data.mastery} champIdToName={champIdToName} version={version} />
             </div>
+          )}
 
-            <div className="summoner-match-section">
-              {liveGame?.inGame && (
-                <div
-                  className="summoner-live-banner"
-                  onClick={handleLiveGameClick}
-                >
-                  <div className="summoner-live-glow" />
+          <div className="summoner-match-section">
+            {liveGame?.inGame && (
+              <div
+                className="summoner-live-banner"
+                onClick={handleLiveGameClick}
+              >
+                <div className="summoner-live-glow" />
 
-                  <div className="summoner-live-badge" style={{ flexShrink: 0 }}>
-                    LIVE GAME
-                  </div>
+                <div className="summoner-live-badge" style={{ flexShrink: 0 }}>
+                  LIVE GAME
+                </div>
 
-                  <div className="summoner-live-details">
-                    {(() => {
-                      const currentPlayer = getLiveGameChampion();
-                      if (currentPlayer && champIdToName[currentPlayer.championId]) {
-                        const champName = champIdToName[currentPlayer.championId];
-                        return (
-                          <>
-                            <img
-                              src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
-                              alt={champName}
-                              className="summoner-live-champ-icon"
-                            />
-                            <div>
-                              <div className="summoner-live-status">Match In Progress</div>
-                              <div className="summoner-live-mode">
-                                {champName} <span className="separator">-</span> {getGameModeName(liveGame.gameMode, liveGame.gameQueueConfigId)}
-                              </div>
+                <div className="summoner-live-details">
+                  {(() => {
+                    const currentPlayer = getLiveGameChampion();
+                    if (currentPlayer && champIdToName[currentPlayer.championId]) {
+                      const champName = champIdToName[currentPlayer.championId];
+                      return (
+                        <>
+                          <img
+                            src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
+                            alt={champName}
+                            className="summoner-live-champ-icon"
+                          />
+                          <div>
+                            <div className="summoner-live-status">Match In Progress</div>
+                            <div className="summoner-live-mode">
+                              {champName} <span className="separator">-</span> {getGameModeName(liveGame.gameMode, liveGame.gameQueueConfigId)}
                             </div>
-                          </>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-
-                  <div className="summoner-live-timer">
-                    <div className="summoner-live-time">{formatElapsedTime(elapsedTime)}</div>
-                    <div className="summoner-live-label">Duration</div>
-                  </div>
+                          </div>
+                        </>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
-              )}
 
-              <div className="summoner-match-header">
-                <h2 className="summoner-match-title">Match History</h2>
-                <div className="summoner-match-label">
-                  <div className="summoner-match-dot" />
-                  <div className="summoner-match-label-text">Recent History</div>
+                <div className="summoner-live-timer">
+                  <div className="summoner-live-time">{formatElapsedTime(elapsedTime)}</div>
+                  <div className="summoner-live-label">Duration</div>
                 </div>
               </div>
+            )}
 
-              {matchLoading ? (
-                <div className="summoner-match-loading glass-panel">
-                  <div className="summoner-match-spinner" />
-                  <p className="summoner-match-loading-text">Loading Match History...</p>
-                </div>
-              ) : (
-                <MatchHistory
-                  matches={matches}
-                  champIdToName={champIdToName}
-                  champNameToId={champNameToId}
-                  itemsData={itemsData}
-                  version={version}
-                  puuid={data.puuid}
-                  onPlayerClick={searchPlayer}
-                />
-              )}
+            <div className="summoner-match-header">
+              <h2 className="summoner-match-title">Match History</h2>
+              <div className="summoner-match-label">
+                <div className="summoner-match-dot" />
+                <div className="summoner-match-label-text">Recent History</div>
+              </div>
             </div>
+
+            {matchLoading ? (
+              <div className="summoner-match-loading glass-panel">
+                <div className="summoner-match-spinner" />
+                <p className="summoner-match-loading-text">Loading Match History...</p>
+              </div>
+            ) : (
+              <MatchHistory
+                matches={matches}
+                champIdToName={champIdToName}
+                champNameToId={champNameToId}
+                itemsData={itemsData}
+                version={version}
+                puuid={data.puuid}
+                onPlayerClick={searchPlayer}
+              />
+            )}
           </div>
         </>
       )}

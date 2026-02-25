@@ -30,7 +30,6 @@
     color: white;
     outline: none;
     transition: all var(--transition-base);
-    text-transform: uppercase;
     letter-spacing: 0.1em;
     font-style: italic;
 }
@@ -144,7 +143,6 @@
     font-weight: 900;
     font-size: 0.75rem;
     color: white;
-    text-transform: uppercase;
     font-style: italic;
     letter-spacing: -0.025em;
 }
@@ -189,6 +187,25 @@
     background: var(--color-primary);
     color: black;
     border-color: var(--color-primary);
+}
+
+/* No Results State */
+.fl-no-results {
+    margin: 1rem 1.5rem;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.fl-no-results p {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-style: italic;
 }
 
 /* Tabs */
@@ -556,22 +573,32 @@
     border-color: hsl(var(--primary) / 0.4);
 }
 
-.fl-online-indicator {
-    position: absolute;
-    bottom: -0.25rem;
-    right: -0.25rem;
-    width: 0.875rem;
-    height: 0.875rem;
-    background: #22c55e;
-    border: 2px solid #000;
-    border-radius: 9999px;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
-}
+/* Online indicators removed from avatar */
 
 .fl-friend-text {
     display: flex;
     flex-direction: column;
-    gap: 0.125rem;
+    gap: 0.25rem;
+}
+
+.fl-status-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fl-status-dot {
+    position: absolute;
+    bottom: -0.125rem;
+    right: -0.125rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    background: #22c55e;
+    border-radius: 9999px;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+    flex-shrink: 0;
+    border: 2px solid #000;
+    z-index: 20;
 }
 
 .fl-friend-username {
@@ -579,7 +606,6 @@
     font-weight: 900;
     font-size: 0.875rem;
     color: white;
-    text-transform: uppercase;
     font-style: italic;
     letter-spacing: -0.025em;
     transition: color var(--transition-base);
@@ -597,6 +623,10 @@
     letter-spacing: 0.2em;
     font-style: italic;
     transition: color var(--transition-base);
+}
+
+.fl-online-label.online {
+    color: var(--color-primary);
 }
 
 .fl-friend-card:hover .fl-online-label {
