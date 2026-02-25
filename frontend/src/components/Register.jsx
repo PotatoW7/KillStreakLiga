@@ -81,7 +81,8 @@ function Register() {
         createdAt: new Date(),
         friends: [],
         pendingRequests: [],
-        emailVerificationSent: false
+        emailVerificationSent: false,
+        profileImage: "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"
       });
 
       navigate("/profile");

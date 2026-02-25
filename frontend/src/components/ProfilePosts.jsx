@@ -9,7 +9,19 @@ import IconRenderer, { LoLSuggestions } from "./IconRenderer";
 import { X, ChevronDown, Lock, Send, Image as ImageIcon } from "lucide-react";
 import "../styles/componentsCSS/ProfilePosts.css";
 
-function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCreated, isFeedsPage }) {
+const normalizeProfileIcon = (url) => {
+    if (!url) return url;
+    if (typeof url !== 'string') return url;
+    if (url.includes('profileicon/588.png')) {
+        return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
+    }
+    if (url.includes('ddragon.leagueoflegends.com/cdn/13.20.1/')) {
+        return url.replace('13.20.1', '14.3.1');
+    }
+    return url;
+};
+
+function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCreated, isFeedsPage, liveProfileImages = {} }) {
     const [state, setState] = useState({
         newPostContent: "",
         newPostImages: [],
@@ -278,7 +290,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
             const postData = {
                 userId: user.uid,
                 username: user.displayName || "Anonymous User",
-                userProfileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png",
+                userProfileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png",
                 content: state.newPostContent.trim(),
                 createdAt: serverTimestamp(),
                 likes: [],
@@ -384,7 +396,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         const userData = {
             userId: userId,
             username: user.displayName || "Anonymous User",
-            profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
+            profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"
         };
 
         const existingLike = post.likes?.find(l => (l.userId === userId || l.uid === userId));
@@ -417,7 +429,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         const userData = {
             userId: userId,
             username: user.displayName || "Anonymous User",
-            profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
+            profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"
         };
 
         const existingLike = post.likes?.find(l => (l.userId === userId || l.uid === userId));
@@ -454,7 +466,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                 id: Date.now().toString(),
                 userId: user.uid,
                 username: user.displayName || "Anonymous User",
-                userProfileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png",
+                userProfileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png",
                 text: commentText,
                 createdAt: new Date().toISOString()
             };
@@ -760,7 +772,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                     <div className="post-author-block">
                                                         <div className="author-avatar-wrapper">
                                                             <img
-                                                                src={post.userProfileImage || profileImage}
+                                                                src={liveProfileImages[post.userId] || normalizeProfileIcon(post.userProfileImage || profileImage)}
                                                                 alt=""
                                                                 className="author-avatar"
                                                                 onClick={() => post.userId && (window.location.href = `/profile/${post.userId}`)}
@@ -963,7 +975,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
 
                                                                     return (
                                                                         <div key={comment.id} className="comment-item-card">
-                                                                            <img src={comment.userProfileImage} alt="" className="comment-avatar" />
+                                                                            <img src={liveProfileImages[comment.userId] || normalizeProfileIcon(comment.userProfileImage)} alt="" className="comment-avatar" />
                                                                             <div className="comment-content-block">
                                                                                 <div className="comment-meta-row">
                                                                                     <div className="comment-author-info">

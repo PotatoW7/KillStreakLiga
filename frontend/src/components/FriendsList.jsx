@@ -465,10 +465,10 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
               <div key={user.id} className="fl-result-card">
                 <div className="fl-user-info">
                   <img
-                    src={user.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                    src={user.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
                     alt={user.username}
                     className="fl-user-avatar"
-                    onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"; }}
+                    onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
                   />
                   <span className="fl-user-name">{user.username}</span>
                 </div>
@@ -529,7 +529,7 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
                     <div className="fl-request-user">
                       <div className="fl-avatar-container" onClick={() => navigate(`/profile/${req.from}`)}>
                         <img
-                          src={req.fromProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                          src={req.fromProfileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
                           alt={req.fromUsername}
                           className="fl-request-avatar"
                         />
@@ -557,7 +557,7 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
                     <div className="fl-request-user">
                       <div className="fl-avatar-container" onClick={() => navigate(`/profile/${req.to}`)}>
                         <img
-                          src={req.toProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                          src={req.toProfileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
                           alt={req.toUsername}
                           className="fl-request-avatar"
                         />
@@ -616,10 +616,10 @@ function FriendsList({ onSelectFriend, onUnreadCountChange }) {
                         <div className="fl-avatar-container" onClick={() => navigate(`/profile/${friend.id}`)}>
                           <div className="fl-avatar-glow" />
                           <img
-                            src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                            src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
                             alt={friend.username}
                             className="fl-friend-avatar"
-                            onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"; }}
+                            onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
                           />
                         </div>
                         <div className="fl-friend-text">

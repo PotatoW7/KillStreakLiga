@@ -483,9 +483,9 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
     if (senderId === auth.currentUser.uid)
       return (
         auth.currentUser.photoURL ||
-        'https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png'
+        'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png'
       );
-    return 'https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png';
+    return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
   };
 
 
@@ -504,7 +504,7 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
             <div className="chat-avatar-wrapper">
               <div className="chat-avatar-glow" />
               <img
-                src={friendProfile?.profileImage || 'https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png'}
+                src={friendProfile?.profileImage || 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png'}
                 alt={friendProfile?.username}
                 className="chat-friend-avatar"
               />

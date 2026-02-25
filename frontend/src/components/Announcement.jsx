@@ -6,7 +6,7 @@ import {
   arrayUnion, getDoc, serverTimestamp
 } from "firebase/firestore";
 
-function Announcement({ notificationCount, setNotificationCount, isEmbedded = false }) {
+function Announcement({ notificationCount, setNotificationCount, isEmbedded = false, _parentHandleManage = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [gameRequests, setGameRequests] = useState([]);
   const [showManageModal, setShowManageModal] = useState(false);
@@ -76,7 +76,11 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
   };
 
   const handleManageRequests = () => {
-    setShowManageModal(true);
+    if (_parentHandleManage) {
+      _parentHandleManage();
+    } else {
+      setShowManageModal(true);
+    }
     setIsOpen(false);
   };
 
@@ -367,8 +371,7 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                 <img src="/project-icons/Friends and Chat icons/bell.png" alt="Empty" className="announce-empty-icon" />
               </div>
               <div>
-                <p className="announce-empty-title">Node Status: Nominal</p>
-                <p className="announce-empty-desc">System logs are currently clear. No active neural requests detected.</p>
+                <p className="announce-empty-title">No notifications yet</p>
               </div>
             </div>
           ) : (
@@ -381,12 +384,32 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                   <div className="announce-request-hover-overlay" />
                   <div className="announce-request-inner">
                     <div className="announce-request-top">
-                      <div>
-                        <div className="announce-request-name-row">
-                          <span className="announce-request-name-bar" />
-                          <h5 className="announce-request-name">{request.displayName}</h5>
+                      <div className="announce-request-player-info">
+                        <div className="announce-request-avatar-box">
+                          <img
+                            src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                            alt=""
+                            className="announce-request-avatar"
+                            onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
+                          />
                         </div>
-                        <p className="announce-request-subtitle">Wants to synchronize</p>
+                        <div>
+                          <div className="announce-request-name-row">
+                            <span className="announce-request-name-bar" />
+                            <h5
+                              className="announce-request-name cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => navigate(`/profile/${request.userId}`)}
+                            >
+                              {request.displayName}
+                            </h5>
+                          </div>
+                          <div className="u-flex u-items-center u-gap-2">
+                            <p className="announce-request-subtitle">Wants to join your game</p>
+                            <div className="role-focus-tag" style={{ border: 'none', background: 'rgba(234, 180, 8, 0.05)', padding: '0.125rem 0.375rem' }}>
+                              <img src={getRoleImage(request.role || 'fill')} alt="" className="icon-xs" />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                       <span className="announce-request-queue-badge">{getQueueTypeName(request.gameQueueType)}</span>
                     </div>
@@ -423,17 +446,6 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
           )}
         </div>
 
-        {gameRequests.length > 0 && (
-          <div className="announce-manage-footer">
-            <button
-              onClick={handleManageRequests}
-              className="announce-manage-btn"
-            >
-              Manage All Requests
-              <span className="arrow">→</span>
-            </button>
-          </div>
-        )}
       </div>
     );
   }
@@ -463,12 +475,8 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
 
             <div className="announce-modal-content custom-scrollbar">
               {gameRequests.length === 0 ? (
-                <div className="announce-modal-empty">
-                  <div className="announce-modal-empty-icon-box">
-                    <img src="/project-icons/Friends and Chat icons/bell.png" alt="Empty" className="announce-modal-empty-icon" />
-                  </div>
-                  <h4 className="announce-modal-empty-title">Logs Decrypted: Null</h4>
-                  <p className="announce-modal-empty-desc">No synchronization requests found in existing data stream.</p>
+                <div className="text-center u-py-20">
+                  <p className="empty-requests-message">NO ACTIVE APPLICANTS YET</p>
                 </div>
               ) : (
                 <div className="announce-modal-grid">
@@ -482,59 +490,95 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                         <div className="announce-modal-card-hover-overlay" />
 
                         <div className="announce-modal-card-inner">
-                          <div className="announce-modal-player">
+                          <div className="announce-modal-player u-flex u-items-center u-gap-4">
                             <div className="announce-modal-avatar-wrapper">
                               <div className="announce-modal-avatar-glow" />
                               <img
-                                src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                                src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
                                 alt={request.displayName}
                                 className="announce-modal-avatar"
-                                onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"; }}
+                                onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
                               />
                             </div>
-                            <div>
-                              <h4 className="announce-modal-player-name">{request.displayName}</h4>
-                              <div className="announce-modal-rank-row">
-                                <img src={rankIcon} alt={rankText} className="announce-modal-rank-icon" />
-                                <span className="announce-modal-rank-text">{rankText}</span>
+
+                            <div className="u-flex u-flex-1 u-items-center u-justify-between u-gap-6">
+                              <div className="player-identity-group">
+                                <h4
+                                  className="announce-modal-player-name cursor-pointer hover:text-primary transition-colors u-mb-1"
+                                  onClick={() => navigate(`/profile/${request.userId}`)}
+                                >
+                                  {request.displayName}
+                                </h4>
+                                <div className="u-flex u-items-center u-gap-2">
+                                  <span className="riot-id-text">
+                                    {request.riotAccount}
+                                  </span>
+                                  <button
+                                    className="icon-only-btn-xs"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(request.riotAccount);
+                                      alert('Riot ID copied to clipboard');
+                                    }}
+                                    title="Copy Riot ID"
+                                  >
+                                    <Copy className="icon-2xs" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="rank-summaries u-flex u-gap-3" style={{ width: 'auto', flexDirection: 'row' }}>
+                                <div className="rank-mini-card compact">
+                                  <img src={rankIcon} alt="" className="rank-mini-icon" />
+                                  <div className="rank-mini-details">
+                                    <div className="rank-tier-text">{rankText}</div>
+                                  </div>
+                                </div>
+                                {getQueueData(request.rankedData, 'RANKED_FLEX_SR') && (
+                                  <div className="rank-mini-card compact">
+                                    <img
+                                      src={getRankIcon(getQueueData(request.rankedData, 'RANKED_FLEX_SR')?.tier)}
+                                      alt=""
+                                      className="rank-mini-icon"
+                                    />
+                                    <div className="rank-mini-details">
+                                      <div className="rank-tier-text">{formatRankDisplay(getQueueData(request.rankedData, 'RANKED_FLEX_SR'))}</div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <div className="announce-modal-tags">
-                              <span className="announce-modal-tag queue">{getQueueTypeName(request.gameQueueType)}</span>
-                              <div className="announce-modal-tag role">
-                                <img src={getRoleImage(request.role || 'fill')} alt="Role" />
-                                <span>{roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name || 'Fill'}</span>
-                              </div>
+                          <div className="announce-modal-details-row u-mt-4 u-flex u-gap-4 u-items-center">
+                            <div className="role-mini-display-card" title={`Role: ${roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name}`}>
+                              <img src={getRoleImage(request.role || 'fill')} alt="Role" />
                             </div>
-
-                            {request.message && (
-                              <div className="announce-modal-message">
-                                <span className="announce-modal-message-label">Message</span>
-                                <p className="announce-modal-message-text">"{request.message}"</p>
+                            <div className="u-flex-1">
+                              <div className="u-flex-between u-items-center u-mb-2">
+                                <span className="announce-modal-tag queue">{getQueueTypeName(request.gameQueueType)}</span>
+                                <span className="announce-modal-time-label">Sent {formatTimeAgo(request.appliedAt)}</span>
                               </div>
-                            )}
-                          </div>
-
-                          <div className="announce-modal-time">
-                            <span>Sent {formatTimeAgo(request.appliedAt)}</span>
+                              {request.message && (
+                                <div className="announce-modal-message-box">
+                                  <p className="announce-modal-message-text">"{request.message}"</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="announce-modal-actions">
+                        <div className="announce-modal-actions compact-actions u-mt-4">
                           <button
                             onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                            className="announce-btn-decline"
+                            className="announce-btn-decline-compact"
                           >
-                            Decline
+                            DECLINE
                           </button>
                           <button
                             onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                            className="announce-btn-accept"
+                            className="announce-btn-accept-compact"
                           >
-                            Accept
+                            ACCEPT
                           </button>
                         </div>
                       </div>
@@ -549,7 +593,7 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
                 onClick={handleCloseModal}
                 className="announce-modal-close-btn"
               >
-                Close
+                Close Logs
               </button>
             </div>
           </div>

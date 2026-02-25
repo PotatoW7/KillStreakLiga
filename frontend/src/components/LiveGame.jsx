@@ -44,7 +44,7 @@ function LiveGame() {
                     console.warn('Could not load champion roles from Firestore');
                 }
 
-                const res = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/spectator/${region}/${puuid}`);
+                const res = await fetch(`/summoner-info/spectator/${region}/${puuid}`);
                 if (!res.ok) throw new Error('Error: Failed to fetch live game data');
 
                 const data = await res.json();

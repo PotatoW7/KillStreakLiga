@@ -241,7 +241,7 @@ function App() {
                     className="profile-btn"
                   >
                     <img
-                      src={profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
+                      src={profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
                       alt="Profile"
                       className="profile-avatar"
                     />

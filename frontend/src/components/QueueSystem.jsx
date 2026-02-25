@@ -7,8 +7,20 @@ import {
   updateDoc, arrayUnion, arrayRemove, getDocs, writeBatch
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Users, Swords, Filter, Clock, ShieldCheck, Star, Trash2, Edit3, UserPlus, Check, X, Copy, ExternalLink, ChevronDown, PlusSquare, Search } from 'lucide-react';
+import { MessageSquare, Users, Swords, Filter, Clock, ShieldCheck, Star, Trash2, Edit3, UserPlus, Check, X, Copy, ExternalLink, ChevronDown, PlusSquare } from 'lucide-react';
 import '../styles/componentsCSS/queue-system.css';
+
+const normalizeProfileIcon = (url) => {
+  if (!url) return url;
+  if (typeof url !== 'string') return url;
+  if (url.includes('profileicon/588.png')) {
+    return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
+  }
+  if (url.includes('ddragon.leagueoflegends.com/cdn/13.20.1/')) {
+    return url.replace('13.20.1', '14.3.1');
+  }
+  return url;
+};
 
 function QueueSystem() {
   const [isPostingGame, setIsPostingGame] = useState(false);
@@ -19,6 +31,7 @@ function QueueSystem() {
   const [userFriends, setUserFriends] = useState([]);
   const [sentFriendRequests, setSentFriendRequests] = useState([]);
   const [processingRequests, setProcessingRequests] = useState(new Set());
+  const [selectedJoinRole, setSelectedJoinRole] = useState('fill');
 
   const navigate = useNavigate();
 
@@ -50,7 +63,13 @@ function QueueSystem() {
   });
 
   const rankDropdownRef = useRef(null);
+  const queueDropdownRef = useRef(null);
+  const regionDropdownRef = useRef(null);
+  const postQueueDropdownRef = useRef(null);
   const [showRankDropdown, setShowRankDropdown] = useState(false);
+  const [showQueueDropdown, setShowQueueDropdown] = useState(false);
+  const [showRegionDropdown, setShowRegionDropdown] = useState(false);
+  const [showPostQueueDropdown, setShowPostQueueDropdown] = useState(false);
 
   const roles = [
     { id: 'fill', name: 'Fill', icon: '/lane-icons/Fill icon.png' },
@@ -182,6 +201,15 @@ function QueueSystem() {
       if (rankDropdownRef.current && !rankDropdownRef.current.contains(event.target)) {
         setShowRankDropdown(false);
       }
+      if (queueDropdownRef.current && !queueDropdownRef.current.contains(event.target)) {
+        setShowQueueDropdown(false);
+      }
+      if (regionDropdownRef.current && !regionDropdownRef.current.contains(event.target)) {
+        setShowRegionDropdown(false);
+      }
+      if (postQueueDropdownRef.current && !postQueueDropdownRef.current.contains(event.target)) {
+        setShowPostQueueDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -311,7 +339,7 @@ function QueueSystem() {
 
         if (userData.riotAccount && userData.riotAccount.gameName && userData.riotAccount.tagLine) {
           try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
+            const response = await fetch(`/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
             if (response.ok) {
               const summonerData = await response.json();
               const rankedData = summonerData.ranked || [];
@@ -601,20 +629,18 @@ function QueueSystem() {
   };
 
   const getProfileImage = (game) => {
-    if (game.userProfileImage) {
-      if (typeof game.userProfileImage === 'string' && game.userProfileImage.startsWith('data:image')) {
-        return game.userProfileImage;
-      }
-    }
-
+    // 1. Prioritize live cache (Normalized)
     if (game.userId && playerProfiles[game.userId]?.profileImage) {
-      const image = playerProfiles[game.userId].profileImage;
-      if (image && typeof image === 'string' && image.startsWith('data:image')) {
-        return image;
-      }
+      return normalizeProfileIcon(playerProfiles[game.userId].profileImage);
     }
 
-    return null;
+    // 2. Fallback to snapshotted image (Normalized)
+    if (game.userProfileImage) {
+      return normalizeProfileIcon(game.userProfileImage);
+    }
+
+    // 3. Absolute fallback
+    return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
   };
 
   const getQueueData = (rankedData, queueType) => {
@@ -651,7 +677,7 @@ function QueueSystem() {
   };
 
   const getRankIcon = (tier) => {
-    if (!tier) return '/rank-icons/unranked.png';
+    if (!tier) return '/rank-icons/Rank=Unranked.png';
     const tierUpper = tier.toUpperCase();
 
     const fileName = rankIconsMap[tierUpper];
@@ -886,7 +912,7 @@ function QueueSystem() {
         appliedAt: new Date().toISOString(),
         status: 'pending',
         message: message.trim(),
-        role: userProfile?.preferredRole || 'fill',
+        role: selectedJoinRole,
         rankedData: userProfile?.rankedData || []
       };
 
@@ -1206,6 +1232,147 @@ function QueueSystem() {
     return getDisplayRegion(game.userRiotAccountObject.region);
   };
 
+  const renderGameForm = (isEditMode) => {
+    return (
+      <div className={isEditMode ? "" : "post-lobby-panel"}>
+        {!isEditMode && (
+          <div className="post-panel-header">
+            <div className="status-icon-wrap primary">
+              <PlusSquare className="icon-md" />
+            </div>
+            <h3 className="post-panel-title">Post a New Game</h3>
+          </div>
+        )}
+
+        <div className="post-form-grid">
+          {/* Role Choice */}
+          <div className="form-field-group">
+            <label className="form-field-label">My Role</label>
+            <div className="role-filter-row">
+              {roles.map(role => (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() => setGameData(prev => ({ ...prev, role: role.id }))}
+                  className={`role-btn ${gameData.role === role.id ? 'active' : ''}`}
+                  title={role.name}
+                >
+                  <img src={role.icon} alt={role.name} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Queue Type */}
+          <div className="form-field-group">
+            <label className="form-field-label">Queue System</label>
+            <div className="filter-select-wrapper" ref={postQueueDropdownRef}>
+              <button
+                type="button"
+                className="filter-custom-select u-flex-between filter-btn-queue"
+                onClick={() => setShowPostQueueDropdown(!showPostQueueDropdown)}
+              >
+                <div className="u-flex-center u-gap-3">
+                  <span className="queue-icon-dot"></span>
+                  <span className="font-medium">
+                    {queueTypes.find(q => q.id === gameData.queueType)?.name || 'Select Queue'}
+                  </span>
+                </div>
+                <ChevronDown className={`icon-sm transition-transform duration-300 ${showPostQueueDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showPostQueueDropdown && (
+                <div className="filter-dropdown-menu filter-dropdown-queue">
+                  {queueTypes.filter(q => q.id !== 'all').map(queue => (
+                    <button
+                      key={queue.id}
+                      type="button"
+                      className={`dropdown-item ${gameData.queueType === queue.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setGameData(prev => ({ ...prev, queueType: queue.id }));
+                        setShowPostQueueDropdown(false);
+                      }}
+                    >
+                      <span className="queue-dot-small"></span>
+                      <span className="font-medium">{queue.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Communication */}
+          <div className="form-field-group">
+            <label className="form-field-label">Communication</label>
+            <div className="comm-type-grid">
+              {communicationTypes.map(comm => (
+                <button
+                  key={comm.id}
+                  type="button"
+                  onClick={() => handleCommunicationSelect(comm.id)}
+                  className={`comm-btn ${gameData.communication === comm.id ? 'active' : ''}`}
+                >
+                  {comm.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Searching Role */}
+          <div className="form-field-group">
+            <label className="form-field-label">Searching For</label>
+            <div className="role-filter-row">
+              {roles.map(role => (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() => setGameData(prev => ({ ...prev, preferredDuoRole: role.id }))}
+                  className={`role-btn ${gameData.preferredDuoRole === role.id ? 'active' : ''}`}
+                  title={role.name}
+                >
+                  <img src={role.icon} alt={role.name} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="form-field-group" style={{ gridColumn: '1 / -1' }}>
+            <label className="form-field-label">Description (Optional)</label>
+            <textarea
+              name="description"
+              value={gameData.description}
+              onChange={(e) => {
+                handleInputChange(e);
+                handleTextareaResize(e);
+              }}
+              placeholder="Tell your potential duo something about yourself or your goals..."
+              className="post-form-textarea"
+              maxLength={200}
+            />
+          </div>
+        </div>
+
+        <div className="post-panel-footer">
+          <button
+            type="button"
+            className="btn-discard"
+            onClick={isEditMode ? handleCancelEdit : () => setIsPostingGame(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn-publish"
+            onClick={isEditMode ? handleUpdateGame : handlePostGame}
+          >
+            {isEditMode ? 'Update Lobby' : 'Publish Lobby'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
 
 
   if (!auth.currentUser) {
@@ -1247,15 +1414,13 @@ function QueueSystem() {
             {isPostingGame ? 'Cancel Post' : 'Post a Game'}
           </button>
 
-          {myGameRequests.length > 0 && (
-            <button
-              className="manage-requests-btn"
-              onClick={handleManageRequests}
-            >
-              <Users className="icon-md" />
-              Manage Requests ({myGameRequests.length})
-            </button>
-          )}
+          <button
+            className="manage-requests-btn"
+            onClick={handleManageRequests}
+          >
+            <Users className="icon-md" />
+            Manage Requests ({myGameRequests.length})
+          </button>
         </div>
       </div>
 
@@ -1326,38 +1491,61 @@ function QueueSystem() {
           {/* Queue Type Filter */}
           <div className="filter-group">
             <label className="filter-label">Queue System</label>
-            <div className="filter-select-wrapper">
-              <select
-                value={filters.queueType}
-                onChange={(e) => handleFilterChange('queueType', e.target.value)}
-                className="filter-custom-select"
+            <div className="filter-select-wrapper" ref={queueDropdownRef}>
+              <button
+                className="filter-custom-select u-flex-between filter-btn-queue"
+                onClick={() => setShowQueueDropdown(!showQueueDropdown)}
               >
-                {queueTypes.map(queue => (
-                  <option key={queue.id} value={queue.id} className="select-option">{queue.name}</option>
-                ))}
-              </select>
-              <div className="select-arrow-icon">
-                <ChevronDown className="icon-md" />
-              </div>
+                <div className="u-flex-center u-gap-3">
+                  <span className="queue-icon-dot"></span>
+                  <span className="font-medium">{queueTypes.find(q => q.id === filters.queueType)?.name}</span>
+                </div>
+                <ChevronDown className={`icon-sm transition-transform duration-300 ${showQueueDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showQueueDropdown && (
+                <div className="filter-dropdown-menu filter-dropdown-queue">
+                  {queueTypes.map(queue => (
+                    <button
+                      key={queue.id}
+                      className={`dropdown-item ${filters.queueType === queue.id ? 'active' : ''}`}
+                      onClick={() => { handleFilterChange('queueType', queue.id); setShowQueueDropdown(false); }}
+                    >
+                      <span className="queue-dot-small"></span>
+                      <span className="font-medium">{queue.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Region Filter */}
           <div className="filter-group">
             <label className="filter-label">Server Region</label>
-            <div className="filter-select-wrapper">
-              <select
-                value={filters.region}
-                onChange={(e) => handleFilterChange('region', e.target.value)}
-                className="filter-custom-select"
+            <div className="filter-select-wrapper" ref={regionDropdownRef}>
+              <button
+                className="filter-custom-select u-flex-between filter-btn-region"
+                onClick={() => setShowRegionDropdown(!showRegionDropdown)}
               >
-                {regions.map(region => (
-                  <option key={region.id} value={region.id} className="select-option">{region.name}</option>
-                ))}
-              </select>
-              <div className="select-arrow-icon">
-                <ChevronDown className="icon-md" />
-              </div>
+                <div className="u-flex-center u-gap-3">
+                  <span className="region-icon-dot"></span>
+                  <span className="font-medium">{regions.find(r => r.id === filters.region)?.name}</span>
+                </div>
+                <ChevronDown className={`icon-sm transition-transform duration-300 ${showRegionDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showRegionDropdown && (
+                <div className="filter-dropdown-menu filter-dropdown-region dropdown-below">
+                  {regions.map(region => (
+                    <button
+                      key={region.id}
+                      className={`dropdown-item ${filters.region === region.id ? 'active active-region' : ''}`}
+                      onClick={() => { handleFilterChange('region', region.id); setShowRegionDropdown(false); }}
+                    >
+                      <span className="font-medium">{region.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1365,9 +1553,6 @@ function QueueSystem() {
         {/* Active Filters */}
         {(filters.roles.length > 0 || filters.rank !== 'all' || filters.queueType !== 'all' || filters.region !== 'all') && (
           <div className="active-filters-row">
-            <span className="active-filters-label">
-              <Search className="icon-sm" /> Active Filters:
-            </span>
             <div className="active-tags-container">
               {filters.roles.map(roleId => (
                 <span key={roleId} className="filter-active-tag cyan">
@@ -1382,162 +1567,25 @@ function QueueSystem() {
                 </span>
               )}
               {filters.queueType !== 'all' && (
-                <span key="queue-tag" className="filter-active-tag white">
+                <span key="queue-tag" className="filter-active-tag purple">
                   {queueTypes.find(q => q.id === filters.queueType)?.name}
                   <X className="icon-xs cursor-pointer" onClick={() => handleFilterChange('queueType', 'all')} />
                 </span>
               )}
-              <button onClick={resetFilters} className="reset-filters-btn">RESET ALL</button>
+              {filters.region !== 'all' && (
+                <span key="region-tag" className="filter-active-tag green">
+                  {regions.find(r => r.id === filters.region)?.name}
+                  <X className="icon-xs cursor-pointer" onClick={() => handleFilterChange('region', 'all')} />
+                </span>
+              )}
+              <button onClick={resetFilters} className="reset-filters-btn"><X className="icon-xs" /> Clear All</button>
             </div>
           </div>
         )}
       </div>
 
 
-      {(isPostingGame || isEditingGame) && (
-        <div className="post-lobby-panel">
-          <div className="post-panel-header">
-            <div className={`status-icon-wrap ${isEditingGame ? 'gold' : 'primary'}`}>
-              {isEditingGame ? <Edit3 className="icon-md" /> : <PlusSquare className="icon-md" />}
-            </div>
-            <h3 className="post-panel-title">
-              {isEditingGame ? 'Edit Listing' : 'Create New Listing'}
-            </h3>
-          </div>
-
-          <div className="post-form-grid">
-            {/* Left Col: Info */}
-            <div className="form-field-group">
-              <div>
-                <label className="form-field-label">Linked Identity</label>
-                <div className="linked-account-card">
-                  <div className="account-info-bundle">
-                    <div className="account-pfp-wrapper">
-                      <img src={userProfile?.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"} alt="" className="account-pfp" />
-                    </div>
-                    <div className="account-names">
-                      <div className="account-username">{userProfile?.displayName}</div>
-                      <div className="account-riot-id">{userProfile?.riotAccount || 'No account'}</div>
-                    </div>
-                  </div>
-                  {!userProfile?.riotAccountData && (
-                    <button onClick={() => navigate('/profile')} className="link-action-text">Link account</button>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="form-field-label">Queue Type</label>
-                <div className="filter-select-wrapper">
-                  <select
-                    name="queueType"
-                    value={gameData.queueType}
-                    onChange={handleInputChange}
-                    className="filter-custom-select"
-                  >
-                    {queueTypes.filter(q => q.id !== 'all').map(queue => (
-                      <option key={queue.id} value={queue.id} className="select-option">{queue.name}</option>
-                    ))}
-                  </select>
-                  <div className="select-arrow-icon">
-                    <ChevronDown className="icon-md" />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="form-field-label">Communication</label>
-                <div className="comm-type-grid">
-                  {communicationTypes.map(comm => (
-                    <button
-                      key={comm.id}
-                      type="button"
-                      onClick={() => handleCommunicationSelect(comm.id)}
-                      className={`comm-btn ${gameData.communication === comm.id ? 'active' : ''}`}
-                    >
-                      {comm.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Col: Roles & Description */}
-            <div className="form-field-group">
-              <div className="filters-grid u-mb-0"> {/* Reusing grid for roles */}
-                <div className="form-field-group">
-                  <label className="form-field-label">My Role</label>
-                  <div className="role-filter-row">
-                    {roles.filter(r => r.id !== 'all').map(role => (
-                      <button
-                        key={role.id}
-                        type="button"
-                        onClick={() => handleInputChange({ target: { name: 'role', value: role.id } })}
-                        className={`role-btn ${gameData.role === role.id ? 'active' : ''}`}
-                        title={role.name}
-                      >
-                        <img src={role.icon} alt={role.name} className="icon-lg" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="form-field-group">
-                  <label className="form-field-label">Looking For</label>
-                  <div className="role-filter-row">
-                    {roles.filter(r => r.id !== 'all').map(role => (
-                      <button
-                        key={role.id}
-                        type="button"
-                        onClick={() => handleInputChange({ target: { name: 'preferredDuoRole', value: role.id } })}
-                        className={`role-btn ${gameData.preferredDuoRole === role.id ? 'active' : ''}`}
-                        title={role.name}
-                      >
-                        <img src={role.icon} alt={role.name} className="icon-lg" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="u-flex-between spacing-v-sm">
-                  <label className="form-field-label">Message</label>
-                  <span className={`char-counter ${gameData.description.length >= 200 ? 'error' : ''}`}>
-                    {gameData.description.length}/200
-                  </span>
-                </div>
-                <textarea
-                  name="description"
-                  value={gameData.description}
-                  onChange={(e) => {
-                    handleInputChange(e);
-                    handleTextareaResize(e);
-                  }}
-                  placeholder="Need an aggressive jungler for duo queue, have discord..."
-                  className="post-form-textarea"
-                  maxLength={200}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="post-panel-footer">
-            <button
-              className="btn-discard"
-              onClick={isEditingGame ? handleCancelEdit : () => setIsPostingGame(false)}
-            >
-              Discard
-            </button>
-            <button
-              className="btn-publish"
-              onClick={isEditingGame ? handleUpdateGame : handlePostGame}
-              disabled={!gameData.description.trim() || !userProfile?.riotAccountData}
-            >
-              {isEditingGame ? 'Update Lobby' : 'Post Lobby'}
-            </button>
-          </div>
-        </div>
-      )}
+      {isPostingGame && !isEditingGame && renderGameForm(false)}
 
 
       <div className="active-lobbies-section">
@@ -1577,6 +1625,14 @@ function QueueSystem() {
         ) : (
           <div className="lobbies-stack">
             {filteredListings.map(game => {
+              if (isEditingGame === game.id) {
+                return (
+                  <div key={game.id} className="lobby-card-inline-edit">
+                    {renderGameForm(true)}
+                  </div>
+                );
+              }
+
               const isOwnGame = game.userId === auth.currentUser?.uid;
               const isFriend = isAlreadyFriend(game.userId);
               const requestSent = hasRequestSent(game.userId);
@@ -1750,208 +1806,267 @@ function QueueSystem() {
         )}
       </div>
 
-      {showJoinModal && (
-        <div className="lobby-modal-overlay" onClick={() => setShowJoinModal(false)}>
-          <div className="lobby-modal-card" onClick={e => e.stopPropagation()}>
-            <div className="post-panel-header panel-padding u-border-b">
-              <div className="status-icon-wrap primary">
-                <Swords className="icon-md" />
-              </div>
-              <h3 className="post-panel-title">Apply to Join</h3>
-              <button onClick={() => setShowJoinModal(false)} className="icon-only-btn u-ml-auto">
-                <X className="icon-md" />
-              </button>
-            </div>
-
-            <div className="panel-padding">
-              <div className="form-field-group">
-                <label className="form-field-label">Lobby Lead</label>
-                <div className="linked-account-card spacing-v-lg">
-                  <div className="account-info-bundle">
-                    <div className="account-pfp-wrapper">
-                      <img src={selectedGame?.userProfileImage} alt="" className="account-pfp" />
-                    </div>
-                    <div className="account-names">
-                      <div className="account-username">{selectedGame?.userDisplayName}</div>
-                      <div className="account-riot-id">{selectedGame?.userRiotAccount}</div>
-                    </div>
-                  </div>
-                  <div className="u-flex-col u-gap-1 u-text-right">
-                    <span className="form-field-label">Region</span>
-                    <span className="region-tag">{selectedGame?.region || 'EUW'}</span>
-                  </div>
+      {
+        showJoinModal && (
+          <div className="lobby-modal-overlay" onClick={() => setShowJoinModal(false)}>
+            <div className="lobby-modal-card" onClick={e => e.stopPropagation()}>
+              <div className="post-panel-header panel-padding u-border-b">
+                <div className="status-icon-wrap primary">
+                  <Swords className="icon-md" />
                 </div>
-
-                <div className="u-flex-between u-mb-3">
-                  <label className="form-field-label">Battle Cry (Optional)</label>
-                  <span className={`char-counter ${joinMessage.length >= 200 ? 'error' : ''}`}>
-                    {joinMessage.length}/200
-                  </span>
-                </div>
-                <textarea
-                  value={joinMessage}
-                  onChange={(e) => setJoinMessage(e.target.value)}
-                  placeholder="Why should you join this lobby? (e.g. 'Emerald peak, maining Vayne')"
-                  className="post-form-textarea"
-                  maxLength={200}
-                />
+                <h3 className="post-panel-title">Apply to Join</h3>
+                <button onClick={() => setShowJoinModal(false)} className="icon-only-btn u-ml-auto">
+                  <X className="icon-md" />
+                </button>
               </div>
-            </div>
 
-            <div className="post-panel-footer panel-padding u-bg-black-20">
-              <button
-                className="btn-discard"
-                onClick={() => setShowJoinModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn-publish"
-                onClick={() => handleJoinQueue(selectedGame.id, joinMessage)}
-                disabled={!selectedGame}
-              >
-                Send Request
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showRequestModal && (
-        <div className="lobby-modal-overlay" onClick={() => setShowRequestModal(false)}>
-          <div className="lobby-modal-card" style={{ maxWidth: '48rem' }} onClick={e => e.stopPropagation()}>
-            <div className="post-panel-header panel-padding u-border-b">
-              <div className="status-icon-wrap primary">
-                <Users className="icon-md" />
-              </div>
-              <h3 className="post-panel-title">Incoming Requests</h3>
-              <button onClick={() => setShowRequestModal(false)} className="icon-only-btn u-ml-auto">
-                <X className="icon-md" />
-              </button>
-            </div>
-
-            <div className="panel-padding u-max-h-modal u-overflow-y-auto u-bg-black-10">
-              {myGameRequests.length === 0 ? (
-                <div className="text-center u-py-16">
-                  <div className="status-icon-wrap secondary u-mx-auto spacing-v-md">
-                    <Users className="icon-lg" />
-                  </div>
-                  <p className="lobby-subtitle uppercase tracking-widest text-sm">No active applicants yet</p>
-                </div>
-              ) : (
-                <div className="lobbies-stack">
-                  {myGameRequests.map(request => {
-                    const soloQueue = getQueueData(request.rankedData, 'RANKED_SOLO_5x5');
-                    const rankText = soloQueue ? formatRankDisplay(soloQueue) : 'Unranked';
-                    const rankIcon = getRankIcon(soloQueue?.tier);
-                    const isProcessing = processingRequests.has(`${request.gameId}_${request.userId}`);
-
-                    return (
-                      <div key={request.id} className="lobby-card">
-                        <div className="author-main-info" style={{ width: '100%' }}>
-                          <div className="author-pfp-circle icon-xxl">
-                            <img src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"} alt="" className="author-pfp-img" />
-                          </div>
-                          <div className="author-meta-text u-ml-4 u-flex-1">
-                            <div className="u-justify-between">
-                              <h4 className="author-name">{request.displayName}</h4>
-                              {isAlreadyFriend(request.userId) && (
-                                <span className="comm-tag voice">FRIEND</span>
-                              )}
-                            </div>
-                            <div className="riot-id-text">{request.riotAccount}</div>
-                            <div className="u-items-center u-gap-2 u-mt-2">
-                              <img src={rankIcon} alt="" className="icon-md" />
-                              <span className="u-text-xs u-font-bold text-white u-uppercase">{rankText}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="u-flex-1">
-                          <div className="u-items-center u-gap-2 u-spacing-v-sm">
-                            <span className="queue-type-tag">{getQueueTypeName(request.gameQueueType)}</span>
-                            <span className="time-ago-wrapper">Request received {formatTimeAgo(new Date(request.appliedAt))}</span>
-                          </div>
-                          {request.message && (
-                            <div className="lobby-description u-py-2 u-text-sm">
-                              "{request.message}"
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="post-suggestion-popover post-suggestion-pos">
-                          <button
-                            className="icon-only-btn"
-                            onClick={() => handleViewProfile(request.userId)}
-                            disabled={isProcessing}
-                          >
-                            <ExternalLink className="icon-sm" />
-                          </button>
-                          <button
-                            className="btn-discard u-py-2 u-flex-1"
-                            onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                            disabled={isProcessing}
-                          >
-                            DECLINE
-                          </button>
-                          <button
-                            className="btn-publish u-py-2 u-flex-1"
-                            onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                            disabled={isProcessing || isAlreadyFriend(request.userId)}
-                          >
-                            {isAlreadyFriend(request.userId) ? 'ACCEPTED' : 'ACCEPT'}
-                          </button>
-                        </div>
+              <div className="panel-padding">
+                <div className="form-field-group">
+                  <label className="form-field-label">Lobby Lead</label>
+                  <div className="linked-account-card">
+                    <div className="account-info-bundle">
+                      <div className="account-pfp-wrapper">
+                        <img
+                          src={selectedGame?.userProfileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                          alt=""
+                          className="account-pfp"
+                          onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
+                        />
                       </div>
-                    );
-                  })}
+                      <div className="account-names">
+                        <div className="account-username">{selectedGame?.userDisplayName}</div>
+                        <div className="account-riot-id">{selectedGame?.userRiotAccount}</div>
+                      </div>
+                    </div>
+                    <div className="u-flex-col u-gap-1 u-text-right">
+                      <span className="form-field-label">Region</span>
+                      <span className="region-tag">{selectedGame?.region || 'EUW'}</span>
+                    </div>
+                  </div>
+
+                  <div className="u-flex-between u-mb-3">
+                    <label className="form-field-label">Battle Cry (Optional)</label>
+                    <span className={`char-counter ${joinMessage.length >= 200 ? 'error' : ''}`}>
+                      {joinMessage.length}/200
+                    </span>
+                  </div>
+                  <textarea
+                    value={joinMessage}
+                    onChange={(e) => setJoinMessage(e.target.value)}
+                    placeholder="Why should you join this lobby? (e.g. 'Emerald peak, maining Vayne')"
+                    className="post-form-textarea"
+                    maxLength={200}
+                  />
+
+                  <div className="u-mt-4">
+                    <label className="form-field-label u-mb-3">My Role for this game</label>
+                    <div className="role-selector-row">
+                      {roles.map((role) => (
+                        <button
+                          key={role.id}
+                          className={`role-select-btn ${selectedJoinRole === role.id ? 'active' : ''}`}
+                          onClick={() => setSelectedJoinRole(role.id)}
+                          title={role.name}
+                        >
+                          <img src={role.icon} alt={role.name} />
+                          <span className="role-tooltip">{role.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            <div className="post-panel-footer panel-padding">
-              <button
-                className="post-lobby-btn u-w-full u-flex-center"
-                onClick={() => setShowRequestModal(false)}
-              >
-                Return to Hub
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showDeleteConfirm && ReactDOM.createPortal(
-        <div className="lobby-modal-overlay">
-          <div className="lobby-modal-card" style={{ maxWidth: '28rem' }}>
-            <div className="panel-padding text-center">
-              <div className="status-icon-wrap error u-mx-auto u-mb-6">
-                <Trash2 className="icon-xl" />
               </div>
-              <h3 className="post-panel-title u-mb-2">Delete Lobby?</h3>
-              <p className="lobby-subtitle u-text-sm u-mb-8">This operation is irreversible. You will lose all active applications.</p>
 
-              <div className="u-flex-row u-gap-4">
+              <div className="post-panel-footer panel-padding u-bg-black-20">
                 <button
-                  className="btn-discard u-flex-1"
-                  onClick={cancelDeleteListing}
+                  className="btn-discard"
+                  onClick={() => setShowJoinModal(false)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn-publish u-flex-1"
-                  style={{ background: '#ef4444', color: 'white' }}
-                  onClick={confirmDeleteListing}
+                  className="btn-publish"
+                  onClick={() => handleJoinQueue(selectedGame.id, joinMessage)}
+                  disabled={!selectedGame}
                 >
-                  Confirm
+                  Send Request
                 </button>
               </div>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
-    </div>
+        )
+      }
+
+      {
+        showRequestModal && (
+          <div className="lobby-modal-overlay" onClick={() => setShowRequestModal(false)}>
+            <div className="lobby-modal-card" style={{ maxWidth: '48rem' }} onClick={e => e.stopPropagation()}>
+              <div className="post-panel-header panel-padding u-border-b">
+                <div className="status-icon-wrap primary">
+                  <Users className="icon-md" />
+                </div>
+                <h3 className="post-panel-title">Incoming Requests</h3>
+                <button onClick={() => setShowRequestModal(false)} className="icon-only-btn u-ml-auto">
+                  <X className="icon-md" />
+                </button>
+              </div>
+
+              <div className="panel-padding u-max-h-modal u-overflow-y-auto u-bg-black-10">
+                {myGameRequests.length === 0 ? (
+                  <div className="text-center u-py-20">
+                    <p className="empty-requests-message">NO ACTIVE APPLICANTS YET</p>
+                  </div>
+                ) : (
+                  <div className="lobbies-stack">
+                    {myGameRequests.map(request => {
+                      const soloQueue = getQueueData(request.rankedData, 'RANKED_SOLO_5x5');
+                      const rankText = soloQueue ? formatRankDisplay(soloQueue) : 'Unranked';
+                      const rankIcon = getRankIcon(soloQueue?.tier);
+                      const isProcessing = processingRequests.has(`${request.gameId}_${request.userId}`);
+
+                      return (
+                        <div key={request.id} className="lobby-card">
+                          <div className="author-main-info u-flex u-items-center u-gap-4" style={{ width: '100%' }}>
+                            <div className="author-pfp-circle icon-xxl">
+                              <img src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"} alt="" className="author-pfp-img" />
+                            </div>
+
+                            <div className="u-flex u-flex-1 u-items-center u-justify-between u-gap-6">
+                              <div className="player-identity-group">
+                                <h4
+                                  className="author-name cursor-pointer hover:text-primary transition-colors u-mb-1"
+                                  onClick={() => handleViewProfile(request.userId)}
+                                >
+                                  {request.displayName}
+                                </h4>
+                                <div className="u-flex u-items-center u-gap-2">
+                                  <div className="riot-id-text">{request.riotAccount}</div>
+                                  <button
+                                    className="icon-only-btn-xs"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(request.riotAccount);
+                                    }}
+                                    title="Copy Riot ID"
+                                  >
+                                    <Copy className="icon-2xs" />
+                                  </button>
+                                  {isAlreadyFriend(request.userId) && (
+                                    <span className="comm-tag voice u-ml-2">FRIEND</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="rank-summaries u-flex u-gap-3" style={{ width: 'auto', flexDirection: 'row' }}>
+                                <div className="rank-mini-card compact">
+                                  <img src={rankIcon} alt="" className="rank-mini-icon" />
+                                  <div className="rank-mini-details">
+                                    <div className="rank-tier-text">{rankText}</div>
+                                  </div>
+                                </div>
+                                {getQueueData(request.rankedData, 'RANKED_FLEX_SR') && (
+                                  <div className="rank-mini-card compact">
+                                    <img
+                                      src={getRankIcon(getQueueData(request.rankedData, 'RANKED_FLEX_SR')?.tier)}
+                                      alt=""
+                                      className="rank-mini-icon"
+                                    />
+                                    <div className="rank-mini-details">
+                                      <div className="rank-tier-text">{formatRankDisplay(getQueueData(request.rankedData, 'RANKED_FLEX_SR'))}</div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="lobby-details-row u-mt-4 u-flex u-gap-4 u-items-center">
+                            <div className="role-mini-display-card" title={`Selected Role: ${roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name}`}>
+                              <img src={getRoleImage(request.role)} alt="" />
+                            </div>
+                            <div className="u-flex-1">
+                              <div className="u-flex-between u-items-center u-mb-2">
+                                <span className="queue-type-tag">{getQueueTypeName(request.gameQueueType)}</span>
+                                <span className="time-ago-wrapper">Received {formatTimeAgo(new Date(request.appliedAt))}</span>
+                              </div>
+                              {request.message && (
+                                <div className="lobby-description-inner">
+                                  "{request.message}"
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="lobby-card-actions-row compact-actions">
+                            <div className="main-actions u-ml-auto">
+                              <button
+                                className="btn-discard"
+                                onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                                disabled={isProcessing}
+                              >
+                                DECLINE
+                              </button>
+                              <button
+                                className="btn-publish"
+                                onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                                disabled={isProcessing || isAlreadyFriend(request.userId)}
+                              >
+                                {isAlreadyFriend(request.userId) ? 'ACCEPTED' : 'ACCEPT'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="post-panel-footer panel-padding">
+                <button
+                  className="post-lobby-btn u-w-full u-flex-center"
+                  onClick={() => setShowRequestModal(false)}
+                >
+                  Return to Hub
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        showDeleteConfirm && ReactDOM.createPortal(
+          <div className="lobby-modal-overlay">
+            <div className="lobby-modal-card" style={{ maxWidth: '28rem' }}>
+              <div className="panel-padding text-center">
+                <div className="status-icon-wrap error u-mx-auto u-mb-6">
+                  <Trash2 className="icon-xl" />
+                </div>
+                <h3 className="post-panel-title u-mb-2">Delete Lobby?</h3>
+                <p className="lobby-subtitle u-text-sm u-mb-8">This operation is irreversible. You will lose all active applications.</p>
+
+                <div className="u-flex-row u-gap-4">
+                  <button
+                    className="btn-discard u-flex-1"
+                    onClick={cancelDeleteListing}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn-publish u-flex-1"
+                    style={{ background: '#ef4444', color: 'white' }}
+                    onClick={confirmDeleteListing}
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      }
+    </div >
   );
 }
 

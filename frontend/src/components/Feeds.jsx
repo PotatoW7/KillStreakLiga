@@ -5,10 +5,25 @@ import { ref, onValue } from "firebase/database";
 import ProfilePosts from "./ProfilePosts";
 import { Award, TrendingUp, Clock, Search, ChevronDown, Users, Bell, Zap, Activity, Lock, ChevronRight } from "lucide-react";
 
+const normalizeProfileIcon = (url) => {
+    if (!url) return url;
+    if (typeof url !== 'string') return url;
+    // Replace legacy icon 588 with 29 and update version to 14.3.1
+    if (url.includes('profileicon/588.png')) {
+        return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
+    }
+    // Update old version in any ddragon URL to 14.3.1 for consistency
+    if (url.includes('ddragon.leagueoflegends.com/cdn/13.20.1/')) {
+        return url.replace('13.20.1', '14.3.1');
+    }
+    return url;
+};
+
 function Feeds() {
     const [user, setUser] = useState(null);
     const [profileImage, setProfileImage] = useState(null);
     const [posts, setPosts] = useState([]);
+    const [liveProfileImages, setLiveProfileImages] = useState({});
     const [loading, setLoading] = useState(true);
     const [likesLeaderboard, setLikesLeaderboard] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -52,7 +67,7 @@ function Feeds() {
                         userLikesMap[post.userId] = {
                             userId: post.userId,
                             username: post.username || "Unknown",
-                            profileImage: post.userProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png",
+                            profileImage: post.userProfileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png",
                             totalLikes: 0
                         };
                     }
@@ -65,8 +80,29 @@ function Feeds() {
                 .sort((a, b) => b.totalLikes - a.totalLikes)
                 .slice(0, 5);
 
-            const enrichLeaderboard = async () => {
+            // Enrich all post authors with live data
+            const uniqueAuthorIds = [...new Set(filteredPosts.map(p => p.userId).filter(Boolean))];
+            const enrichPostsAndLeaderboard = async () => {
+                const liveMap = {};
+                await Promise.all(uniqueAuthorIds.map(async (authorId) => {
+                    try {
+                        const authorDoc = await getDoc(doc(db, "users", authorId));
+                        if (authorDoc.exists()) {
+                            liveMap[authorId] = normalizeProfileIcon(authorDoc.data().profileImage) || null;
+                        }
+                    } catch (err) {
+                        console.error("Error fetching live author data:", err);
+                    }
+                }));
+                setLiveProfileImages(liveMap);
+
                 const enriched = await Promise.all(leaderboard.map(async (entry) => {
+                    if (liveMap[entry.userId]) {
+                        return {
+                            ...entry,
+                            profileImage: liveMap[entry.userId]
+                        };
+                    }
                     try {
                         const userDoc = await getDoc(doc(db, "users", entry.userId));
                         if (userDoc.exists()) {
@@ -74,18 +110,19 @@ function Feeds() {
                             return {
                                 ...entry,
                                 username: userData.username || entry.username,
-                                profileImage: userData.profileImage || entry.profileImage
+                                profileImage: normalizeProfileIcon(userData.profileImage) || entry.profileImage
+                                // Note: normalizeProfileIcon handles the 588 -> 29 update
                             };
                         }
                     } catch (err) {
                         console.error("Error fetching live user data for leaderboard:", err);
                     }
-                    return entry;
+                    return { ...entry, profileImage: normalizeProfileIcon(entry.profileImage) };
                 }));
                 setLikesLeaderboard(enriched);
             };
 
-            enrichLeaderboard();
+            enrichPostsAndLeaderboard();
 
             if (activeTab === "recent") {
                 filteredPosts.sort((a, b) => {
@@ -177,6 +214,7 @@ function Feeds() {
                                 posts={filteredPostsBySearch}
                                 isOwnProfile={true}
                                 isFeedsPage={true}
+                                liveProfileImages={liveProfileImages}
                                 onPostCreated={() => { }}
                             />
                         </div>

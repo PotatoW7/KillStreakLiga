@@ -168,7 +168,7 @@ function Profile() {
     try {
       setState(prev => ({ ...prev, rankedUpdateLoading: true }));
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/${account.region}/${encodeURIComponent(account.gameName)}/${encodeURIComponent(account.tagLine)}`);
+      const response = await fetch(`/summoner-info/${account.region}/${encodeURIComponent(account.gameName)}/${encodeURIComponent(account.tagLine)}`);
       if (response.ok) {
         const summonerData = await response.json();
         const rankedData = summonerData.ranked || [];
@@ -462,7 +462,7 @@ function Profile() {
     if (gameName.length > 16) throw new Error('Game name cannot be longer than 16 characters');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/${region}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
+      const response = await fetch(`/summoner-info/${region}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
       if (!response.ok) {
         let errorMessage = 'Summoner not found';
         try {
@@ -595,7 +595,7 @@ function Profile() {
       const userId = state.user.uid;
 
       try {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/queue/leave`, {
+        await fetch(`/api/queue/leave`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
         });
       } catch (error) { console.log("Could not remove from queue system, continuing..."); }
@@ -707,7 +707,7 @@ function Profile() {
   const displayEmail = state.isOwnProfile ? state.user?.email : null;
   const joinedDate = state.profileData?.createdAt ? new Date(state.profileData.createdAt.seconds * 1000) : new Date();
   const accountAgeDays = Math.floor((Date.now() - joinedDate) / 86400000);
-  const currentProfileImage = state.profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
+  const currentProfileImage = state.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png";
   const userRole = state.profileData?.role || "user";
   const coachAppStatus = state.profileData?.coachApplication?.status;
 
@@ -831,7 +831,7 @@ function Profile() {
                   {state.profileImage && (
                     <button
                       onClick={() => {
-                        updateProfileImage(null);
+                        updateProfileImage("https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png");
                         setState(prev => ({ ...prev, contextMenuPosition: null }));
                         showNotification("Profile image removed!", "success");
                       }}

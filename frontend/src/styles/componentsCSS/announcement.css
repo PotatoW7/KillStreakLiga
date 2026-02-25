@@ -144,8 +144,30 @@
 
 .announce-request-top {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
+    width: 100%;
+}
+
+.announce-request-player-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.announce-request-avatar-box {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.announce-request-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .announce-request-name-row {
@@ -590,6 +612,13 @@
     color: var(--color-primary);
 }
 
+.announce-modal-ranks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
 .announce-modal-rank-row {
     display: flex;
     align-items: center;
@@ -687,6 +716,8 @@
     color: rgba(255, 255, 255, 0.4);
     font-style: italic;
     line-height: 1.625;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 /* Modal Card Time */
