@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_URL || "";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { auth, db, rtdb } from "../firebase";
 import { ref, onValue } from "firebase/database";
@@ -168,7 +169,7 @@ function Profile() {
     try {
       setState(prev => ({ ...prev, rankedUpdateLoading: true }));
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/${account.region}/${encodeURIComponent(account.gameName)}/${encodeURIComponent(account.tagLine)}`);
+      const response = await fetch(`${API_URL}/summoner-info/${account.region}/${encodeURIComponent(account.gameName)}/${encodeURIComponent(account.tagLine)}`);
       if (response.ok) {
         const summonerData = await response.json();
         const rankedData = summonerData.ranked || [];
@@ -462,7 +463,7 @@ function Profile() {
     if (gameName.length > 16) throw new Error('Game name cannot be longer than 16 characters');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/${region}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
+      const response = await fetch(`${API_URL}/summoner-info/${region}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
       if (!response.ok) {
         let errorMessage = 'Summoner not found';
         try {
@@ -595,7 +596,7 @@ function Profile() {
       const userId = state.user.uid;
 
       try {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/queue/leave`, {
+        await fetch(`${API_URL}/api/queue/leave`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
         });
       } catch (error) { console.log("Could not remove from queue system, continuing..."); }
