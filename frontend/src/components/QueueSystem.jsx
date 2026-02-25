@@ -339,7 +339,7 @@ function QueueSystem() {
 
         if (userData.riotAccount && userData.riotAccount.gameName && userData.riotAccount.tagLine) {
           try {
-            const response = await fetch(`/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
             if (response.ok) {
               const summonerData = await response.json();
               const rankedData = summonerData.ranked || [];
@@ -629,17 +629,12 @@ function QueueSystem() {
   };
 
   const getProfileImage = (game) => {
-    // 1. Prioritize live cache (Normalized)
     if (game.userId && playerProfiles[game.userId]?.profileImage) {
       return normalizeProfileIcon(playerProfiles[game.userId].profileImage);
     }
-
-    // 2. Fallback to snapshotted image (Normalized)
     if (game.userProfileImage) {
       return normalizeProfileIcon(game.userProfileImage);
     }
-
-    // 3. Absolute fallback
     return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
   };
 
@@ -1245,7 +1240,6 @@ function QueueSystem() {
         )}
 
         <div className="post-form-grid">
-          {/* Role Choice */}
           <div className="form-field-group">
             <label className="form-field-label">My Role</label>
             <div className="role-filter-row">
@@ -1262,8 +1256,6 @@ function QueueSystem() {
               ))}
             </div>
           </div>
-
-          {/* Queue Type */}
           <div className="form-field-group">
             <label className="form-field-label">Queue System</label>
             <div className="filter-select-wrapper" ref={postQueueDropdownRef}>
@@ -1300,8 +1292,6 @@ function QueueSystem() {
               )}
             </div>
           </div>
-
-          {/* Communication */}
           <div className="form-field-group">
             <label className="form-field-label">Communication</label>
             <div className="comm-type-grid">
@@ -1317,8 +1307,6 @@ function QueueSystem() {
               ))}
             </div>
           </div>
-
-          {/* Searching Role */}
           <div className="form-field-group">
             <label className="form-field-label">Searching For</label>
             <div className="role-filter-row">
@@ -1335,8 +1323,6 @@ function QueueSystem() {
               ))}
             </div>
           </div>
-
-          {/* Description */}
           <div className="form-field-group" style={{ gridColumn: '1 / -1' }}>
             <label className="form-field-label">Description (Optional)</label>
             <textarea
@@ -1397,7 +1383,6 @@ function QueueSystem() {
 
   return (
     <div className="lobby-hub-page">
-      {/* Header Section */}
       <div className="lobby-hub-header">
         <div className="lobby-title-group">
           <h1>Lobby Hub</h1>
@@ -1423,8 +1408,6 @@ function QueueSystem() {
           </button>
         </div>
       </div>
-
-      {/* Filter Section */}
       <div className="lobby-filters-panel">
         <div className="filters-accent-bar"></div>
 
@@ -1436,7 +1419,6 @@ function QueueSystem() {
         </div>
 
         <div className="filters-grid">
-          {/* Role Filter */}
           <div className="filter-group">
             <label className="filter-label">Select Roles</label>
             <div className="role-filter-row">
@@ -1452,8 +1434,6 @@ function QueueSystem() {
               ))}
             </div>
           </div>
-
-          {/* Rank Filter */}
           <div className="filter-group">
             <label className="filter-label">Skill Level</label>
             <div className="filter-select-wrapper" ref={rankDropdownRef}>
@@ -1487,8 +1467,6 @@ function QueueSystem() {
               )}
             </div>
           </div>
-
-          {/* Queue Type Filter */}
           <div className="filter-group">
             <label className="filter-label">Queue System</label>
             <div className="filter-select-wrapper" ref={queueDropdownRef}>
@@ -1518,8 +1496,6 @@ function QueueSystem() {
               )}
             </div>
           </div>
-
-          {/* Region Filter */}
           <div className="filter-group">
             <label className="filter-label">Server Region</label>
             <div className="filter-select-wrapper" ref={regionDropdownRef}>
@@ -1549,8 +1525,6 @@ function QueueSystem() {
             </div>
           </div>
         </div>
-
-        {/* Active Filters */}
         {(filters.roles.length > 0 || filters.rank !== 'all' || filters.queueType !== 'all' || filters.region !== 'all') && (
           <div className="active-filters-row">
             <div className="active-tags-container">
@@ -1663,8 +1637,6 @@ function QueueSystem() {
               return (
                 <div key={game.id} className="lobby-card">
                   {isOwnGame && <div className="own-lobby-indicator"></div>}
-
-                  {/* User Section */}
                   <div className="lobby-author-area">
                     <div className="author-main-info">
                       <div className="author-pfp-container">
@@ -1706,8 +1678,6 @@ function QueueSystem() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Content Section */}
                   <div className="lobby-main-content">
                     <div>
                       <div className="lobby-tags-row">
@@ -1751,8 +1721,6 @@ function QueueSystem() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Actions Section */}
                   <div className="lobby-actions-area">
                     {isOwnGame ? (
                       <>

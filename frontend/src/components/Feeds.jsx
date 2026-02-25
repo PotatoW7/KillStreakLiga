@@ -252,8 +252,7 @@ function Feeds() {
                                             {leader.username}
                                         </h4>
                                         <div className="feeds-leader-stats">
-                                            <TrendingUp className="feeds-leader-stats-icon" />
-                                            <span className="feeds-leader-stats-text">{leader.totalLikes} Points</span>
+                                            <span className="feeds-leader-stats-text">{leader.totalLikes} Likes</span>
                                         </div>
                                     </div>
                                     <ChevronRight className="feeds-leader-chevron" />
