@@ -54,12 +54,6 @@
     letter-spacing: 0.1em;
 }
 
-.role-badge.owner {
-    background: rgba(234, 179, 8, 0.1);
-    color: var(--color-primary);
-    border: 1px solid rgba(234, 179, 8, 0.3);
-}
-
 .role-badge.admin {
     background: rgba(34, 211, 238, 0.1);
     color: #22d3ee;

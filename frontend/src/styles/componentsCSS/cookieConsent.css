@@ -235,18 +235,23 @@
 }
 
 .cookie-btn-decline {
-    padding: 0.5rem 1rem;
-    font-size: 0.5625rem;
+    padding: 0.625rem 1.5rem;
+    border-radius: 0.75rem;
+    background: rgba(239, 68, 68, 0.05);
+    /* Slight red background */
+    border: 1px solid rgba(239, 68, 68, 0.1);
+    font-size: 0.625rem;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.2em;
-    color: hsl(var(--muted-foreground) / 0.3);
+    color: hsl(var(--muted-foreground) / 0.5);
     transition: all var(--transition-base);
-    margin-left: auto;
 }
 
 .cookie-btn-decline:hover {
     color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.1);
 }
 
 .cookie-btn-accept.full-width {

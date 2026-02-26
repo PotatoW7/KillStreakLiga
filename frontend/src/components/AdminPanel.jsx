@@ -43,25 +43,12 @@ function AdminPanel() {
                 if (userDoc.exists()) {
                     const role = userDoc.data().role || 'user';
 
-                    if (role === 'owner') {
-                        setUserRole('owner');
+                    if (role === 'admin') {
+                        setUserRole('admin');
                         setActiveTab('admin-requests');
                         setLoading(false);
                         return;
-                    } else if (role === 'admin') {
-                        setUserRole('admin');
-                        setActiveTab('coach-applications');
-                        setLoading(false);
-                        return;
                     }
-                }
-
-                const ownerDoc = await getDoc(doc(db, "owners", firebaseUser.uid));
-                if (ownerDoc.exists()) {
-                    setUserRole('owner');
-                    setActiveTab('admin-requests');
-                    setLoading(false);
-                    return;
                 }
 
                 const adminDoc = await getDoc(doc(db, "admins", firebaseUser.uid));
@@ -85,7 +72,7 @@ function AdminPanel() {
     }, [navigate]);
 
     useEffect(() => {
-        if (userRole === 'owner' || userRole === 'admin') {
+        if (userRole === 'admin') {
             fetchData();
         }
     }, [userRole]);
@@ -93,40 +80,38 @@ function AdminPanel() {
     const fetchData = async () => {
         setError(null);
         try {
-            if (userRole === 'owner') {
-                try {
+            try {
+                const adminQuery = query(
+                    collection(db, "adminApplications"),
+                    where("status", "==", "pending"),
+                    orderBy("submittedAt", "desc")
+                );
+                const adminSnapshot = await getDocs(adminQuery);
+                const adminData = adminSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setAdminRequests(adminData);
+            } catch (indexError) {
+                if (indexError.code === 'failed-precondition') {
+                    console.log('Index not ready, falling back to client-side sorting');
                     const adminQuery = query(
                         collection(db, "adminApplications"),
-                        where("status", "==", "pending"),
-                        orderBy("submittedAt", "desc")
+                        where("status", "==", "pending")
                     );
                     const adminSnapshot = await getDocs(adminQuery);
                     const adminData = adminSnapshot.docs.map(doc => ({
                         id: doc.id,
                         ...doc.data()
                     }));
+                    adminData.sort((a, b) => {
+                        const dateA = a.submittedAt?.toDate?.() || new Date(a.submittedAt || 0);
+                        const dateB = b.submittedAt?.toDate?.() || new Date(b.submittedAt || 0);
+                        return dateB - dateA;
+                    });
                     setAdminRequests(adminData);
-                } catch (indexError) {
-                    if (indexError.code === 'failed-precondition') {
-                        console.log('Index not ready, falling back to client-side sorting');
-                        const adminQuery = query(
-                            collection(db, "adminApplications"),
-                            where("status", "==", "pending")
-                        );
-                        const adminSnapshot = await getDocs(adminQuery);
-                        const adminData = adminSnapshot.docs.map(doc => ({
-                            id: doc.id,
-                            ...doc.data()
-                        }));
-                        adminData.sort((a, b) => {
-                            const dateA = a.submittedAt?.toDate?.() || new Date(a.submittedAt || 0);
-                            const dateB = b.submittedAt?.toDate?.() || new Date(b.submittedAt || 0);
-                            return dateB - dateA;
-                        });
-                        setAdminRequests(adminData);
-                    } else {
-                        throw indexError;
-                    }
+                } else {
+                    throw indexError;
                 }
             }
 
@@ -164,7 +149,7 @@ function AdminPanel() {
     };
 
     const handleApproveAdmin = async (applicationId, userId) => {
-        if (userRole !== 'owner') return;
+        if (userRole !== 'admin') return;
         setProcessingId(applicationId);
 
         try {
@@ -210,7 +195,7 @@ function AdminPanel() {
     };
 
     const handleRejectAdmin = async (applicationId) => {
-        if (userRole !== 'owner') return;
+        if (userRole !== 'admin') return;
         setProcessingId(applicationId);
 
         try {
@@ -336,13 +321,13 @@ function AdminPanel() {
                 <div className="admin-header">
                     <div className="header-content">
                         <h1>
-                            {userRole === 'owner' ? ' Owner Dashboard' : ' Admin Panel'}
+                            Admin Panel
                         </h1>
                         <p>Manage applications and user roles</p>
                     </div>
                     <div className="role-indicator">
                         <span className={`role-badge ${userRole}`}>
-                            {userRole === 'owner' ? ' Owner' : ' Admin'}
+                            Admin
                         </span>
                     </div>
                 </div>
@@ -354,7 +339,7 @@ function AdminPanel() {
                 )}
 
                 <div className="admin-tabs">
-                    {userRole === 'owner' && (
+                    {userRole === 'admin' && (
                         <button
                             className={`tab ${activeTab === 'admin-requests' ? 'active' : ''}`}
                             onClick={() => setActiveTab('admin-requests')}
@@ -377,7 +362,7 @@ function AdminPanel() {
                 </div>
 
                 <div className="admin-content">
-                    {activeTab === 'admin-requests' && userRole === 'owner' && (
+                    {activeTab === 'admin-requests' && userRole === 'admin' && (
                         <div className="requests-section">
                             <h2>Pending Admin Requests</h2>
                             {adminRequests.length === 0 ? (
@@ -434,7 +419,7 @@ function AdminPanel() {
                         </div>
                     )}
 
-                    {activeTab === 'coach-applications' && (userRole === 'owner' || userRole === 'admin') && (
+                    {activeTab === 'coach-applications' && userRole === 'admin' && (
                         <div className="requests-section">
                             <h2>Pending Coach Applications</h2>
                             {coachApplications.length === 0 ? (

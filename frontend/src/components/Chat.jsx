@@ -23,6 +23,7 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [suggestionCoords, setSuggestionCoords] = useState({ top: 0, left: 0 });
   const [activeVideo, setActiveVideo] = useState(null);
+  const [activeImagePreview, setActiveImagePreview] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const prevMessageCountRef = useRef(0);
 
@@ -615,8 +616,8 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
                       )}
 
                       {msg.type === 'image' && (
-                        <div className="message-image-shared" onClick={() => window.open(msg.imageData)}>
-                          <img src={msg.imageData} alt="Shared" className="message-image" />
+                        <div className="message-image-shared" onClick={() => setActiveImagePreview(msg.imageUrl || msg.imageData)}>
+                          <img src={msg.imageUrl || msg.imageData} alt="Shared" className="message-image" />
                           <div className="image-overlay">
                             <span className="view-image-badge">View Image</span>
                           </div>
@@ -736,8 +737,8 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
               )}
               {activeVideo.type === 'tiktok' && (
                 <iframe
-                  src={`https://www.tiktok.com/embed/v2/${activeVideo.id}`}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  src={`https://www.tiktok.com/embed/v2/${activeVideo.id}?rel=0&loop=1`}
+                  style={{ width: '100%', height: '600px', border: 'none', borderRadius: '12px' }}
                   allowFullScreen
                 ></iframe>
               )}
@@ -766,6 +767,19 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
                 </div>
               )}
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {activeImagePreview && createPortal(
+        <div className="video-modal-overlay" onClick={() => setActiveImagePreview(null)}>
+          <div className="video-modal-backdrop" />
+          <div className="image-preview-modal-container" style={{ maxWidth: '90vw', maxHeight: '90vh', position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+            <img src={activeImagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 30px 100px rgba(0, 0, 0, 0.8)' }} />
+            <button onClick={() => setActiveImagePreview(null)} className="video-close-btn" style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 110, background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '2.5rem', height: '2.5rem', borderRadius: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              ✕
+            </button>
           </div>
         </div>,
         document.body

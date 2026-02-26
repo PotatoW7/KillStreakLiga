@@ -763,7 +763,7 @@ function Profile() {
                     <div className="menu-item-dot" />
                     Account Info
                   </button>
-                  {userRole !== 'admin' && userRole !== 'owner' &&
+                  {userRole !== 'admin' &&
                     state.profileData?.adminApplication?.status !== 'pending' && (
                       <Link
                         to="/apply-admin"

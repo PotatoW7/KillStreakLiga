@@ -4,7 +4,6 @@ import { setPersistence, browserLocalPersistence, browserSessionPersistence } fr
 
 const CookieConsent = () => {
     const [isVisible, setIsVisible] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
 
     useEffect(() => {
         const checkConsent = async () => {
@@ -77,49 +76,19 @@ const CookieConsent = () => {
                     </div>
 
                     <div>
-                        {!showSettings ? (
-                            <p className="cookie-desc">
-                                Rifthub utilizes memory segments to optimize your neural connection.
-                                Authorizing these protocols ensures <span className="highlight">Persistence</span> across signal sessions.
-                            </p>
-                        ) : (
-                            <div className="cookie-settings">
-                                <div className="cookie-setting-item">
-                                    <div>
-                                        <p className="cookie-setting-label">Essential Matrix</p>
-                                        <p className="cookie-setting-desc">Required for signal security & node status.</p>
-                                    </div>
-                                    <div className="cookie-toggle">
-                                        <div className="cookie-toggle-dot" />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <p className="cookie-desc">
+                            If you <span className="highlight">accept</span>, you will stay logged in.
+                            <br />If you <strong style={{ color: 'rgba(255,255,255,0.7)' }}>decline</strong>, you will not be logged in the next time you open the page.
+                        </p>
                     </div>
 
                     <div className="cookie-actions">
-                        {!showSettings ? (
-                            <>
-                                <button className="cookie-btn-accept" onClick={handleAcceptAll}>
-                                    Authorize Signal
-                                </button>
-                                <button className="cookie-btn-settings" onClick={() => setShowSettings(true)}>
-                                    Intel
-                                </button>
-                                <button className="cookie-btn-decline" onClick={handleDeclineAll}>
-                                    Decline
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <button className="cookie-btn-accept full-width" onClick={handleAcceptAll}>
-                                    Save Directive
-                                </button>
-                                <button className="cookie-btn-settings" onClick={() => setShowSettings(false)}>
-                                    Back
-                                </button>
-                            </>
-                        )}
+                        <button className="cookie-btn-accept" onClick={handleAcceptAll}>
+                            Accept
+                        </button>
+                        <button className="cookie-btn-decline" onClick={handleDeclineAll}>
+                            Decline
+                        </button>
                     </div>
                 </div>
             </div>

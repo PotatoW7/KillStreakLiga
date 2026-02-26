@@ -43,7 +43,7 @@ function AdminApplication() {
                         const data = userDoc.data();
                         setUserData(data);
 
-                        if (data.role === 'admin' || data.role === 'owner') {
+                        if (data.role === 'admin') {
                             navigate('/admin');
                             return;
                         }
@@ -147,7 +147,7 @@ function AdminApplication() {
                 rejectionReason: null
             });
 
-            setSuccess('Your admin application has been submitted! The Owner will review it soon.');
+            setSuccess('Your admin application has been submitted! An Admin will review it soon.');
             setForm({ reason: '', experience: '' });
             setExistingApplication({ status: 'pending' });
         } catch (err) {
@@ -199,7 +199,7 @@ function AdminApplication() {
 
                 {hasPendingApplication && (
                     <div className="status-banner pending">
-                        <p>Your admin application is pending review. The Owner will review it soon.</p>
+                        <p>Your admin application is pending review. An Admin will review it soon.</p>
                     </div>
                 )}
 

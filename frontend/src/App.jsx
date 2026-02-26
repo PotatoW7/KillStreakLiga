@@ -30,7 +30,7 @@ import { auth, db, storage } from "./firebase";
 import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where } from "firebase/firestore";
 import "./styles/index.css";
 
-const OWNER_EMAIL = "mainprofile@gmail.com";
+
 
 function NavLink({ to, children }) {
   const navigate = useNavigate();
@@ -145,40 +145,21 @@ function App() {
   async function initializeUserInFirestore(user) {
     const userRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userRef);
-    const isOwner = user.email?.toLowerCase() === OWNER_EMAIL;
 
     if (!userDoc.exists()) {
       const newUserData = {
-        username: isOwner ? "Owner" : user.displayName,
-        usernameLowercase: (isOwner ? "Owner" : (user.displayName || "anonymous")).toLowerCase(),
+        username: user.displayName,
+        usernameLowercase: (user.displayName || "anonymous").toLowerCase(),
         email: user.email,
         createdAt: new Date(),
         friends: [],
         pendingRequests: [],
-        role: isOwner ? "owner" : "user",
+        role: "user",
       };
       await setDoc(userRef, newUserData);
-
-      if (isOwner) {
-        await setDoc(doc(db, "owners", user.uid), {
-          username: "Owner",
-          email: user.email,
-          createdAt: new Date()
-        });
-      }
       return newUserData.role;
     } else {
       const existingData = userDoc.data();
-
-      if (isOwner && existingData.role !== 'owner') {
-        await setDoc(userRef, { role: 'owner', username: 'Owner' }, { merge: true });
-        await setDoc(doc(db, "owners", user.uid), {
-          username: "Owner",
-          email: user.email,
-          createdAt: new Date()
-        }, { merge: true });
-        return 'owner';
-      }
       if (!existingData.usernameLowercase) {
         await updateDoc(userRef, {
           usernameLowercase: (existingData.username || user.displayName || "anonymous").toLowerCase()
@@ -243,19 +224,22 @@ function App() {
                 <>
                   <NavLink to="/summoner">Summoner Lookup</NavLink>
                   <NavLink to="/coaching">Coaching</NavLink>
-                  <Link to="/login" className="login-btn-desktop">LOGIN</Link>
+                  <div className="auth-buttons-group">
+                    <Link to="/login" className="login-btn-desktop">LOGIN</Link>
+                    <Link to="/register" className="login-btn-desktop">REGISTER</Link>
+                  </div>
                 </>
               ) : (
                 <>
                   <NavLink to="/summoner">Summoner Lookup</NavLink>
                   <NavLink to="/queue">Queue finder</NavLink>
                   <NavLink to="/coaching">Coaching</NavLink>
-                  {(userRole === 'admin' || userRole === 'owner' || userRole === 'coach') && (
+                  {(userRole === 'admin' || userRole === 'coach') && (
                     <NavLink to="/champions">Champions</NavLink>
                   )}
-                  {(userRole === 'admin' || userRole === 'owner') && (
+                  {userRole === 'admin' && (
                     <Link className="admin-badge" to="/admin">
-                      {userRole === 'owner' ? 'OWNER' : 'ADMIN'}
+                      ADMIN
                     </Link>
                   )}
                 </>

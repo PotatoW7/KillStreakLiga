@@ -730,6 +730,25 @@
     }
 }
 
+.social-embed-frame.tiktok-frame {
+    aspect-ratio: auto;
+    min-height: auto;
+}
+
+.social-iframe-tiktok {
+    width: 100%;
+    min-height: 615px;
+    /* Standard profile view height */
+    border: none;
+    border-radius: 0.75rem;
+}
+
+.feeds-layout-variant .social-iframe-tiktok {
+    width: 100%;
+    min-height: 610px;
+    /* Taller feed view to accommodate all TikTok buttons */
+}
+
 .post-images-grid {
     display: grid;
     gap: 4px;

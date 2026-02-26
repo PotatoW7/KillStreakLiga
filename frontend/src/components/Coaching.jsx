@@ -218,7 +218,7 @@ function Coaching() {
 
     const canDeleteSession = (session) => {
         if (!user) return false;
-        if (userRole === 'admin' || userRole === 'owner') return true;
+        if (userRole === 'admin') return true;
         return session.coachId === user.uid;
     };
 
@@ -360,9 +360,9 @@ function Coaching() {
                                         className="creation-select"
                                         required
                                     >
-                                        <option value="" className="u-bg-black-10">Select Specialty...</option>
+                                        <option value="" className="option-bg-dark">Select Specialty...</option>
                                         {specialtyOptions.map(s => (
-                                            <option key={s} value={s} className="u-bg-black-10">{s.toUpperCase()}</option>
+                                            <option key={s} value={s} className="option-bg-dark">{s.toUpperCase()}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -613,7 +613,7 @@ function SessionCard({
                                 required
                             >
                                 {specialtyOptions.map(s => (
-                                    <option key={s} value={s} className="bg-neutral-900">{s.toUpperCase()}</option>
+                                    <option key={s} value={s} className="option-bg-dark">{s.toUpperCase()}</option>
                                 ))}
                             </select>
                         </div>
@@ -684,6 +684,13 @@ function SessionCard({
                             )}
                         </div>
                     </div>
+                </div>
+                <div className="card-pricing">
+                    <div className="price-row">
+                        <span className="price-currency">$</span>
+                        <span className="price-val">{Number(session.price || 0).toFixed(2)}</span>
+                    </div>
+                    <span className="price-unit">PER HOUR</span>
                 </div>
             </div>
 
@@ -759,7 +766,7 @@ function CoachCard({ coach }) {
                             className="coach-main-pfp"
                         />
                     ) : (
-                        <div className="pfp-placeholder italic">👤</div>
+                        <div className="pfp-placeholder italic"></div>
                     )}
                 </div>
                 <div className="coach-dual-rank">

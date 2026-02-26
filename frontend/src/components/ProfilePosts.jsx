@@ -832,7 +832,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                 {(post.socialPreview || (post.postImages && post.postImages.length > 0)) && (
                                                     <div className="post-media-box">
                                                         {post.socialPreview && (
-                                                            <div className="social-embed-frame">
+                                                            <div className={`social-embed-frame ${post.socialPreview.type === 'tiktok' ? 'tiktok-frame' : ''}`}>
                                                                 {post.socialPreview.type === 'youtube' && (
                                                                     <iframe
                                                                         width="100%"
@@ -846,10 +846,12 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                                 )}
                                                                 {post.socialPreview.type === 'tiktok' && (
                                                                     <iframe
-                                                                        src={`https://www.tiktok.com/embed/v2/${post.socialPreview.id}`}
-                                                                        style={{ width: '100%', height: '100%', border: 'none' }}
+                                                                        className="social-iframe-tiktok"
+                                                                        src={`https://www.tiktok.com/embed/v2/${post.socialPreview.id}?rel=0&loop=1`}
                                                                         scrolling="no"
                                                                         allowFullScreen
+                                                                        width="100%"
+                                                                        height="100%"
                                                                         title="TikTok player"
                                                                     />
                                                                 )}

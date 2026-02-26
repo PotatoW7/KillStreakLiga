@@ -1543,10 +1543,14 @@
 .creation-select {
     width: 100%;
     height: 3.5rem;
-    background: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.05);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255, 255, 255, 0.5)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1.5rem center;
+    background-size: 1.25rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 1rem;
-    padding: 0 1.5rem;
+    padding: 0 3rem 0 1.5rem;
     font-size: 0.875rem;
     color: white;
     outline: none;
@@ -1557,6 +1561,7 @@
 
 .creation-select:focus {
     border-color: hsl(var(--primary) / 0.5);
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 .creation-textarea {
@@ -1694,10 +1699,14 @@
 .filter-select {
     width: 100%;
     height: 3rem;
-    background: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.05);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255, 255, 255, 0.5)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.25rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
-    padding: 0 1.5rem 0 3.5rem;
+    padding: 0 2.5rem 0 3.5rem;
     font-size: 0.6875rem;
     font-weight: 900;
     letter-spacing: 0.1em;
@@ -1711,7 +1720,7 @@
 
 .filter-select:focus {
     border-color: hsl(var(--primary) / 0.5);
-    background: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 .price-filters-wrap {
@@ -2350,10 +2359,14 @@
 .edit-select {
     width: 100%;
     height: 3rem;
-    background: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.05);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255, 255, 255, 0.5)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.25rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
-    padding: 0 1rem;
+    padding: 0 2.5rem 0 1rem;
     font-size: 0.6875rem;
     font-weight: 900;
     text-transform: uppercase;
@@ -2365,6 +2378,7 @@
 
 .edit-select:focus {
     border-color: hsl(var(--primary) / 0.5);
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 .edit-panel-actions {
@@ -2943,6 +2957,20 @@
     font-style: italic;
     color: rgba(255, 255, 255, 0.3) !important;
     font-size: 0.8125rem !important;
+}
+
+/* Remove spin buttons from number inputs */
+.coaching-page input[type="number"]::-webkit-outer-spin-button,
+.coaching-page input[type="number"]::-webkit-inner-spin-button,
+.edit-session-panel input[type="number"]::-webkit-outer-spin-button,
+.edit-session-panel input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.coaching-page input[type="number"],
+.edit-session-panel input[type="number"] {
+    -moz-appearance: textfield;
 }
 
 /* CTA */

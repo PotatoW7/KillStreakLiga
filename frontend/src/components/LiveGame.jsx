@@ -6,6 +6,8 @@ import { fetchDDragon } from '../utils/fetchDDragon';
 import ItemTooltip from './ItemTooltip';
 import '../styles/componentsCSS/livegame.css';
 
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_URL || "";
+
 function LiveGame() {
     const [liveData, setLiveData] = useState(null);
     const [loading, setLoading] = useState(true);

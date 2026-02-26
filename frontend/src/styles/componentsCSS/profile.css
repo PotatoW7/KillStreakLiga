@@ -75,10 +75,6 @@
     box-shadow: var(--shadow-xl);
 }
 
-.role-tag-large.owner {
-    background: var(--color-primary);
-    color: black;
-}
 
 .role-tag-large.admin {
     background: #ef4444;
@@ -210,7 +206,7 @@
 }
 
 .profile-hamburger.open span:nth-child(1) {
-    transform: rotate(45deg) translateY(6px);
+    transform: rotate(45deg) translateY(4px) translateX(4px);
     background: white;
 }
 
@@ -219,7 +215,7 @@
 }
 
 .profile-hamburger.open span:nth-child(3) {
-    transform: rotate(-45deg) translateY(-6px);
+    transform: rotate(-45deg) translateY(-4px) translateX(4px);
     background: white;
 }
 

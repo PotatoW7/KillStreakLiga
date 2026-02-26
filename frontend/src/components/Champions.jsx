@@ -48,7 +48,7 @@ function Champions() {
                 const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
                 if (userDoc.exists()) {
                     const role = userDoc.data().role || 'user';
-                    if (['owner', 'admin', 'coach'].includes(role)) {
+                    if (['admin', 'coach'].includes(role)) {
                         setUserRole(role);
                     } else {
                         navigate('/');
@@ -220,7 +220,7 @@ function Champions() {
                     <div className="header-actions">
                         <div className="role-indicator">
                             <span className={`role-badge ${userRole}`}>
-                                {userRole === 'owner' ? 'Owner' : userRole === 'admin' ? 'Admin' : 'Coach'}
+                                {userRole === 'admin' ? 'Admin' : 'Coach'}
                             </span>
                         </div>
                     </div>
