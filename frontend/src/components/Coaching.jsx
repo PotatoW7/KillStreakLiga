@@ -812,7 +812,7 @@ function CoachCard({ coach }) {
                 to={`/profile/${coach.id}`}
                 className="inspect-coach-btn"
             >
-                <span className="inspect-btn-label">Inspect Presence</span>
+                <span className="inspect-btn-label">View Profile</span>
                 <div className="inspect-btn-hover-bg" />
             </Link>
         </div>

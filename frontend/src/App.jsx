@@ -248,7 +248,7 @@ function App() {
               ) : (
                 <>
                   <NavLink to="/summoner">Summoner Lookup</NavLink>
-                  <NavLink to="/queue">Queue</NavLink>
+                  <NavLink to="/queue">Queue finder</NavLink>
                   <NavLink to="/coaching">Coaching</NavLink>
                   {(userRole === 'admin' || userRole === 'owner' || userRole === 'coach') && (
                     <NavLink to="/champions">Champions</NavLink>

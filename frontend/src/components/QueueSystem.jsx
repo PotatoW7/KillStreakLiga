@@ -1370,7 +1370,7 @@ function QueueSystem() {
             <ShieldCheck className="icon-xxl" />
           </div>
           <h2 className="filters-title">Access Denied</h2>
-          <p className="lobby-subtitle">Please login to access the Queue System and find your perfect duo partner.</p>
+          <p className="lobby-subtitle">Please login to access the Queue finder and find your perfect duo partner.</p>
           <button
             onClick={() => navigate('/login')}
             className="btn-publish w-full"
@@ -1386,7 +1386,7 @@ function QueueSystem() {
     <div className="lobby-hub-page">
       <div className="lobby-hub-header">
         <div className="lobby-title-group">
-          <h1>Lobby Hub</h1>
+          <h1>Queue finder</h1>
           <p className="lobby-subtitle">
             Find your perfect duo or group. Filter by rank, role, and region to dominate the Rift.
           </p>
