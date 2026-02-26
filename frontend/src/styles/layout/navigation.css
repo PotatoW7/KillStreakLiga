@@ -30,11 +30,13 @@
 }
 
 .header-inner {
-    width: 100%;
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
     display: flex;
     height: 5rem;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     padding-left: 0;
     padding-right: 1.5rem;
 }
@@ -45,6 +47,8 @@
     align-items: center;
     gap: 0.5rem;
     transition: all var(--transition-base);
+    position: absolute;
+    left: 1.5rem;
 }
 
 .logo-image {
