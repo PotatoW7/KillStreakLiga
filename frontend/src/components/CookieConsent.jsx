@@ -71,7 +71,6 @@ const CookieConsent = () => {
                                 <div className="cookie-title-bar" />
                                 <h2 className="cookie-title">Privacy Protocol</h2>
                             </div>
-                            <p className="cookie-subtitle">System Identifier: [RHS-PRIV-01]</p>
                         </div>
                     </div>
 

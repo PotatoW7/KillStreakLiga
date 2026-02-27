@@ -209,7 +209,7 @@ function App() {
   if (loading) return <div className="loading">Checking authentication...</div>;
 
   return (
-    <div className="app-root">
+    <div className={`app-root ${showSocial ? 'social-open' : ''}`}>
       <header className="app-header">
         <div className="header-inner">
           <Link className="logo-link" to="/">
