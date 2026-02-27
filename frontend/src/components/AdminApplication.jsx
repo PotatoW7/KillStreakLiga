@@ -190,10 +190,10 @@ function AdminApplication() {
                 <div className="admin-info-section">
                     <h3>What do Admins do?</h3>
                     <ul>
-                        <li>✅ Review and approve coach applications</li>
-                        <li>✅ Monitor community guidelines</li>
-                        <li>✅ Help maintain platform quality</li>
-                        <li>✅ Support users with issues</li>
+                        <li> Review and approve coach applications</li>
+                        <li>Monitor community guidelines</li>
+                        <li>Help maintain platform quality</li>
+                        <li>Support users with issues</li>
                     </ul>
                 </div>
 
