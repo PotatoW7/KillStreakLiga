@@ -402,14 +402,14 @@ function AdminPanel() {
                                                     onClick={() => handleApproveAdmin(request.id, request.userId)}
                                                     disabled={processingId === request.id}
                                                 >
-                                                    {processingId === request.id ? 'Processing...' : '✅ Approve'}
+                                                    {processingId === request.id ? 'Processing...' : 'Approve'}
                                                 </button>
                                                 <button
                                                     className="reject-btn"
                                                     onClick={() => setShowRejectModal({ type: 'admin', id: request.id })}
                                                     disabled={processingId === request.id}
                                                 >
-                                                    ❌ Reject
+                                                    Reject
                                                 </button>
                                             </div>
                                         </div>
