@@ -979,8 +979,13 @@ function Profile() {
 
                 {state.backendError && (
                   <div className="backend-error-notice">
-                    <div className="error-icon">!</div>
-                    <p className="error-msg">Backend Offline - Sync Unavailable</p>
+                    <div className="error-icon-wrapper">
+                      <span className="error-icon">!</span>
+                    </div>
+                    <div className="error-text-content">
+                      <h5 className="error-title">Backend Offline</h5>
+                      <p className="error-msg">Sync Unavailable - Server connection failed</p>
+                    </div>
                   </div>
                 )}
 

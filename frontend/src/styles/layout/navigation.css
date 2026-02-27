@@ -42,9 +42,10 @@
     display: flex;
     height: 5rem;
     align-items: center;
-    justify-content: flex-end;
-    padding-left: 0;
+    justify-content: space-between;
+    padding-left: 1.5rem;
     padding-right: 1.5rem;
+    gap: 1rem;
 }
 
 /* ===== LOGO ===== */
@@ -53,8 +54,7 @@
     align-items: center;
     gap: 0.5rem;
     transition: all var(--transition-base);
-    position: absolute;
-    left: 1.5rem;
+    flex-shrink: 0;
 }
 
 .logo-image {
@@ -101,6 +101,7 @@
     display: none;
     align-items: center;
     gap: 1.25rem;
+    flex-shrink: 1;
 }
 
 @media (min-width: 1024px) {
