@@ -135,7 +135,7 @@ function Profile() {
     rankedUpdateLoading: false,
     lastUpdateTime: null,
     posts: [],
-    loadingPosts: false,
+    loadingPosts: true,
     backendError: false,
     notification: { message: "", type: "", visible: false }
   });
@@ -266,7 +266,7 @@ function Profile() {
       postsUnsubscribe.current();
     }
 
-    setState(prev => ({ ...prev, loadingPosts: true }));
+    setState(prev => ({ ...prev, loadingPosts: true, posts: [] }));
 
     const postsQuery = query(
       collection(db, "posts"),
@@ -284,8 +284,8 @@ function Profile() {
       fetchedPosts = fetchedPosts.filter(post => {
         if (isOwn) return true;
         if (!post.visibility) return true;
-        if (post.visibility === "public" || post.visibility === "profile-only") return true;
-        if (post.visibility === "private" && isFriend) return true;
+        if (post.visibility === "public" || post.visibility === "profile only") return true;
+        if (post.visibility === "friends only" && isFriend) return true;
         return false;
       });
 
@@ -345,7 +345,8 @@ function Profile() {
               user: currentUser,
               profileImage: userData.profileImage || null,
               linkedAccount: userData.riotAccount || null,
-              emailVerificationSent: userData.emailVerificationSent || false
+              emailVerificationSent: userData.emailVerificationSent || false,
+              loadingPosts: true
             }));
 
             if (userData.riotAccount) {
@@ -355,7 +356,8 @@ function Profile() {
             setState(prev => ({
               ...prev,
               profileImage: userData.profileImage || null,
-              linkedAccount: userData.riotAccount || null
+              linkedAccount: userData.riotAccount || null,
+              loadingPosts: true
             }));
           }
 
@@ -1078,6 +1080,7 @@ function Profile() {
           posts={state.posts}
           isOwnProfile={state.isOwnProfile}
           onPostCreated={() => { }}
+          loadingPosts={state.loadingPosts}
         />
 
         {state.accountInfoOpen && state.isOwnProfile && (

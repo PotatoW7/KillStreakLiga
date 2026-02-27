@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
@@ -69,10 +69,16 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
     return () => chatMessages.removeEventListener('wheel', handleWheel);
   }, []);
 
+  useLayoutEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [messages.length]);
+
   const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
   };
 
   const markMessagesAsRead = async (msgs) => {
@@ -177,7 +183,6 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
   useEffect(() => {
     const currentCount = messages.length;
     if (currentCount > prevMessageCountRef.current) {
-      // Only scroll when a new message arrives, not on deletion
       scrollToBottom();
     }
     prevMessageCountRef.current = currentCount;
@@ -500,8 +505,6 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
   return (
     <div className="chat-container">
       <div className="chat-bg-overlay" />
-
-      {/* Header */}
       <div className="chat-header">
         <div className="chat-header-left">
           <button onClick={onBack} className="chat-back-btn">
@@ -528,8 +531,6 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
         </div>
 
       </div>
-
-      {/* Message Stream */}
       <div
         ref={chatMessagesRef}
         className="chat-messages custom-scrollbar"
@@ -645,8 +646,6 @@ function Chat({ selectedFriend, onBack, isSocialOpen }) {
         })}
         <div ref={messagesEndRef} />
       </div>
-
-      {/* Input Section */}
       <div className="chat-footer">
         <input
           type="file"

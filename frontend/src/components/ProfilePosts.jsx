@@ -6,7 +6,7 @@ import {
     onSnapshot, query, orderBy, increment
 } from "firebase/firestore";
 import IconRenderer, { LoLSuggestions } from "./IconRenderer";
-import { X, ChevronDown, Lock, Send, Image as ImageIcon } from "lucide-react";
+import { X, ChevronDown, Lock, Send, Image as ImageIcon, Loader2 } from "lucide-react";
 import "../styles/componentsCSS/ProfilePosts.css";
 
 const normalizeProfileIcon = (url) => {
@@ -21,7 +21,7 @@ const normalizeProfileIcon = (url) => {
     return url;
 };
 
-function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCreated, isFeedsPage, liveProfileImages = {} }) {
+function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCreated, isFeedsPage, liveProfileImages = {}, loadingPosts }) {
     const [state, setState] = useState({
         newPostContent: "",
         newPostImages: [],
@@ -45,7 +45,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         suggestionCoords: { top: 0, left: 0 },
         showAuthPrompt: false,
         subComments: {},
-        isDragging: false
+        isDragging: false,
+        postToDelete: null
     });
 
     const postImageInputRef = useRef(null);
@@ -330,14 +331,23 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         }
     };
 
-    const deletePost = async (postId) => {
-        if (!window.confirm("Are you sure you want to delete this post?")) return;
+    const confirmDeletePost = (postId) => {
+        setState(prev => ({ ...prev, postToDelete: postId }));
+    };
 
+    const cancelDeletePost = () => {
+        setState(prev => ({ ...prev, postToDelete: null }));
+    };
+
+    const executeDeletePost = async () => {
+        if (!state.postToDelete) return;
         try {
-            await deleteDoc(doc(db, "posts", postId));
+            await deleteDoc(doc(db, "posts", state.postToDelete));
+            setState(prev => ({ ...prev, postToDelete: null }));
         } catch (error) {
             console.error("Error deleting post:", error);
             alert("Failed to delete post.");
+            setState(prev => ({ ...prev, postToDelete: null }));
         }
     };
 
@@ -345,7 +355,8 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
         setState(prev => ({
             ...prev,
             editingPostId: post.id,
-            editContent: post.content
+            editContent: post.content,
+            editVisibility: post.visibility || "public"
         }));
     };
 
@@ -367,6 +378,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
             await updateDoc(postRef, {
                 content: state.editContent.trim(),
                 socialPreview: socialPreview || null,
+                visibility: state.editVisibility,
                 updatedAt: serverTimestamp()
             });
 
@@ -374,6 +386,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                 ...prev,
                 editingPostId: null,
                 editContent: "",
+                editVisibility: "public",
                 updatingPost: false
             }));
         } catch (error) {
@@ -702,6 +715,19 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                     )}
 
                     <div className="creator-actions-row">
+                        <div className="creator-left-tools">
+                            <div className="visibility-select-wrapper">
+                                <select
+                                    className="visibility-select"
+                                    value={state.postVisibility}
+                                    onChange={(e) => setState(prev => ({ ...prev, postVisibility: e.target.value }))}
+                                >
+                                    <option value="public">Public</option>
+                                    <option value="friends only">Friends Only</option>
+                                    <option value="profile only">Profile Only</option>
+                                </select>
+                            </div>
+                        </div>
                         <div className="creator-right-tools">
                             <button
                                 className="attach-media-btn"
@@ -744,12 +770,17 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                     </div>
                 )}
 
-                {posts.length === 0 ? (
-                    <div className="empty-posts-state">
-                        <p className="empty-posts-text">No posts to display yet.</p>
+                {loadingPosts ? (
+                    <div className="posts-loading-container" style={{ display: 'flex', justifyContent: 'center', padding: '4rem', opacity: 0.7 }}>
+                        <Loader2 className="animate-spin" style={{ width: '3rem', height: '3rem', color: 'var(--color-primary, #eab308)' }} />
+                    </div>
+                ) : posts.length === 0 ? (
+                    <div className="empty-profile-posts">
+                        <h4>No posts to display yet.</h4>
+                        {isOwnProfile && <p>Be the first to share something with your friends!</p>}
                     </div>
                 ) : (
-                    <div className="post-cards-stack">
+                    <div className="posts-grid-feed">
                         {posts.map(post => (
                             <div key={post.id} className={`post-card-outer animate-fade-in ${state.showSuggestions && state.activeCommentId === post.id ? 'has-active-suggestions' : ''}`}>
                                 <div className={`post-card-inner ${state.openCommentsPostId === post.id ? 'active-comments' : ''}`}>
@@ -774,6 +805,9 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                                 <span className="timestamp-dot">•</span>
                                                                 {formatPostTime(post.createdAt)}
                                                             </span>
+                                                            <span className="post-visibility-pill">
+                                                                {post.visibility || "public"}
+                                                            </span>
                                                         </div>
                                                     </div>
 
@@ -788,7 +822,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                             </button>
                                                             <button
                                                                 className="action-btn delete"
-                                                                onClick={() => deletePost(post.id)}
+                                                                onClick={() => confirmDeletePost(post.id)}
                                                                 title="Delete Post"
                                                             >
                                                                 <X />
@@ -805,21 +839,27 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                                                 value={state.editContent}
                                                                 onChange={(e) => setState(prev => ({ ...prev, editContent: e.target.value }))}
                                                             />
+
                                                             <div className="edit-actions-row">
-                                                                <button
-                                                                    className="cancel-edit-btn"
-                                                                    onClick={cancelEditingPost}
-                                                                    disabled={state.updatingPost}
-                                                                >
-                                                                    Cancel
-                                                                </button>
-                                                                <button
-                                                                    className="save-edit-btn"
-                                                                    onClick={() => updatePost(post.id)}
-                                                                    disabled={state.updatingPost || !state.editContent.trim()}
-                                                                >
-                                                                    {state.updatingPost ? "Saving..." : "Save Post"}
-                                                                </button>
+                                                                <div className="visibility-select-wrapper">
+                                                                    <select
+                                                                        className="visibility-select"
+                                                                        value={state.editVisibility}
+                                                                        onChange={(e) => setState(prev => ({ ...prev, editVisibility: e.target.value }))}
+                                                                    >
+                                                                        <option value="public">Public</option>
+                                                                        <option value="friends only">Friends Only</option>
+                                                                        <option value="profile only">Profile Only</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div className="edit-buttons-group">
+                                                                    <button className="cancel-edit-btn" onClick={cancelEditingPost}>
+                                                                        Cancel
+                                                                    </button>
+                                                                    <button className="save-edit-btn" onClick={() => updatePost(post.id)} disabled={state.updatingPost || !state.editContent.trim()}>
+                                                                        {state.updatingPost ? "..." : "Save"}
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     ) : (
@@ -1083,6 +1123,20 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                             </div>
                                         )}
                                     </div>
+
+                                    {state.postToDelete === post.id && (
+                                        <div className="delete-confirm-overlay animate-fade-in">
+                                            <div className="delete-confirm-box">
+                                                <h4>Delete Post?</h4>
+                                                <p>Are you sure you want to delete this post? This action cannot be undone.</p>
+                                                <div className="delete-confirm-actions">
+                                                    <button className="delete-cancel-btn" onClick={cancelDeletePost}>Cancel</button>
+                                                    <button className="delete-confirm-btn" onClick={executeDeletePost}>Delete</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                 </div>
                             </div>
                         ))}

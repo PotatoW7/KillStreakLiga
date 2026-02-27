@@ -170,6 +170,8 @@
     gap: 1.5rem;
     position: relative;
     z-index: 10;
+    scroll-behavior: auto !important;
+    /* Forces instant scroll in modern browsers down to the element root */
 }
 
 /* Message Bubble */

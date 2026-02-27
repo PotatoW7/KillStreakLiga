@@ -127,12 +127,8 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
       const applicantData = applicantDoc.data();
       const hostFriends = hostData.friends || [];
       const applicantFriends = applicantData.friends || [];
-
-      // Check each side independently to fix non-reciprocal states
       const hostHasApplicant = hostFriends.some(friend => friend.id === applicantUserId);
       const applicantHasHost = applicantFriends.some(friend => friend.id === hostUserId);
-
-      // Clear any stale friend requests between them
       const hostPendingToRemove = (hostData.pendingRequests || []).filter(req => req.from === applicantUserId);
       const hostSentToRemove = (hostData.sentFriendRequests || []).filter(req => req.to === applicantUserId);
       const applicantPendingToRemove = (applicantData.pendingRequests || []).filter(req => req.from === hostUserId);
@@ -166,16 +162,12 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
             })
           });
         }
-
-        // Cleanup requests for host
         if (hostPendingToRemove.length > 0) {
           batch.update(hostRef, { pendingRequests: arrayRemove(...hostPendingToRemove) });
         }
         if (hostSentToRemove.length > 0) {
           batch.update(hostRef, { sentFriendRequests: arrayRemove(...hostSentToRemove) });
         }
-
-        // Cleanup requests for applicant
         if (applicantPendingToRemove.length > 0) {
           batch.update(applicantRef, { pendingRequests: arrayRemove(...applicantPendingToRemove) });
         }

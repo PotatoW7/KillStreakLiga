@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
+import { Routes, Route, Link, useNavigate, Navigate, useLocation } from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
@@ -31,6 +31,20 @@ import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where } 
 import "./styles/index.css";
 
 
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }, [pathname]);
+
+  return null;
+}
 
 function NavLink({ to, children }) {
   const navigate = useNavigate();
@@ -317,6 +331,7 @@ function App() {
       </header>
 
       <main className="main-content">
+        <ScrollToTop />
         <div className="page-content">
           <Routes>
             <Route path="/" element={<Home />} />

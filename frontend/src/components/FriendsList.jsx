@@ -57,7 +57,6 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
 
         uniqueFriends.forEach(friend => {
           if (!friendUnsubscribes.has(friend.id)) {
-            // Also listen to Firestore for profile image / username changes
             const friendRef = doc(db, 'users', friend.id);
             const firestoreUnsub = onSnapshot(friendRef, (friendDoc) => {
               if (friendDoc.exists()) {
@@ -103,8 +102,6 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
       const usersRef = collection(db, 'users');
       const searchTerm = searchUsername.toLowerCase().trim();
       const rawSearchTerm = searchUsername.trim();
-
-      // Perform two queries in parallel: one case-insensitive (new field) and one fallback (original field)
       const q1 = query(
         usersRef,
         where('usernameLowercase', '>=', searchTerm),
