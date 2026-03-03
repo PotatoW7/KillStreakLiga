@@ -23,6 +23,7 @@ import TermsOfService from "./components/TermsOfService";
 import Legal from "./components/Legal";
 import Contact from "./components/Contact";
 import FAQ from "./components/FAQ";
+import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
 import { applyActionCode, checkActionCode, reload } from "firebase/auth";
 
