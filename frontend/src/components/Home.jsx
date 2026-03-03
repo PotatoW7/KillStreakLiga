@@ -72,9 +72,6 @@ function Home() {
         <div className="hero-glow-accent" />
 
         <div className="hero-content">
-          <div className="beta-badge">
-            <span>Beta</span>
-          </div>
 
           <h1 className="hero-title">
             DOMINATE<br />THE RIFT

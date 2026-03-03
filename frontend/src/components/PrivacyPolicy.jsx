@@ -184,9 +184,6 @@ const PrivacyPolicy = () => {
                         </section>
                     </div>
 
-                    <div className="legal-end">
-                        <p>End of Policy</p>
-                    </div>
                 </main>
             </div>
         </div>
