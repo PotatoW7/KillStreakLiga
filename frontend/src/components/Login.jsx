@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { auth } from "../firebase";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 
 function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isVerified = searchParams.get("verified") === "true";
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -72,6 +74,12 @@ function Login() {
                 <p className="auth-subtitle">Login</p>
               </div>
             </div>
+
+            {isVerified && (
+              <div className="auth-success">
+                Verification completed successfully! You can now log in.
+              </div>
+            )}
 
             {error && (
               <div className="auth-error">

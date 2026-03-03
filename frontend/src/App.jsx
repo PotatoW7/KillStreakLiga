@@ -23,9 +23,8 @@ import TermsOfService from "./components/TermsOfService";
 import Legal from "./components/Legal";
 import Contact from "./components/Contact";
 import FAQ from "./components/FAQ";
-import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
-import AuthActionHandler from "./components/AuthActionHandler";
+import { applyActionCode, checkActionCode, reload } from "firebase/auth";
 
 import { auth, db, storage } from "./firebase";
 import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where } from "firebase/firestore";
@@ -74,8 +73,10 @@ function App() {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [globalFriends, setGlobalFriends] = useState([]);
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [verificationPopup, setVerificationPopup] = useState(null);
   const profileDropdownRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -98,17 +99,40 @@ function App() {
 
     return () => unsubscribe();
   }, []);
-
-  // Handle incoming Firebase Auth Links (verification etc)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode');
-    if (mode === 'verifyEmail' && window.location.pathname !== '/auth-action') {
-      navigate(`/auth-action${window.location.search}`);
-    }
-  }, [navigate]);
+    const oobCode = params.get('oobCode');
 
-  // Listen to Global Friends List
+    if (mode === 'verifyEmail' && oobCode) {
+      handleVerifyEmail(oobCode);
+    }
+  }, [location.search]);
+
+  const handleVerifyEmail = async (code) => {
+    setVerificationPopup({ status: 'loading' });
+    try {
+      await checkActionCode(auth, code);
+      await applyActionCode(auth, code);
+      if (auth.currentUser) {
+        await reload(auth.currentUser);
+      }
+      setVerificationPopup({ status: 'success' });
+      setTimeout(() => setVerificationPopup(null), 5000);
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    } catch (error) {
+      console.error("Verification error:", error);
+      setVerificationPopup({
+        status: 'error',
+        message: error.code === "auth/invalid-action-code"
+          ? "Verification link expired or already used."
+          : "An error occurred during verification."
+      });
+      setTimeout(() => setVerificationPopup(null), 5000);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       setGlobalFriends([]);
@@ -125,8 +149,6 @@ function App() {
 
     return () => unsubscribe();
   }, [user]);
-
-  // Listen to Global Unread Messages
   useEffect(() => {
     if (!user || globalFriends.length === 0) {
       setUnreadCounts({});
@@ -161,10 +183,6 @@ function App() {
     const total = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
     setTotalUnreadMessages(total);
   }, [unreadCounts]);
-
-  // Removed presence logic
-
-  // Removed obsolete heartbeat
 
   async function initializeUserInFirestore(user) {
     const userRef = doc(db, "users", user.uid);
@@ -357,7 +375,6 @@ function App() {
             <Route path="/live-game" element={<LiveGame />} />
             <Route path="/queue" element={<QueueSystem />} />
             <Route path="/finishSignIn" element={<FinishSignIn />} />
-            <Route path="/auth-action" element={<AuthActionHandler />} />
             <Route path="/become-coach" element={<BecomeCoach />} />
             <Route path="/coach-rules" element={<CoachRules />} />
             <Route path="/coaching" element={<Coaching />} />
@@ -457,6 +474,34 @@ function App() {
       </main>
       <Footer />
       <CookieConsent />
+      {
+        verificationPopup && (
+          <div className={`verification-popup-overlay ${verificationPopup.status}`}>
+            <div className="verification-popup-card glass-panel">
+              {verificationPopup.status === 'loading' ? (
+                <div className="verifying-content">
+                  <div className="verifying-spinner" />
+                  <p>Verifying account...</p>
+                </div>
+              ) : verificationPopup.status === 'success' ? (
+                <div className="success-content">
+                  <div className="success-icon">✓</div>
+                  <h3>Success!</h3>
+                  <p>Account verification completed</p>
+                  <button onClick={() => setVerificationPopup(null)} className="close-popup-btn">Dismiss</button>
+                </div>
+              ) : (
+                <div className="error-content">
+                  <div className="error-icon">✕</div>
+                  <h3>Failed</h3>
+                  <p>{verificationPopup.message}</p>
+                  <button onClick={() => setVerificationPopup(null)} className="close-popup-btn">Dismiss</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }
     </div >
   );
 }

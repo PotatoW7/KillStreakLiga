@@ -386,3 +386,118 @@
 .auth-confirm-btn.secondary:hover {
     background: #4b5563;
 }
+
+/* ===== VERIFICATION POPUP ===== */
+.verification-popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.verification-popup-card {
+    max-width: 24rem;
+    width: 90%;
+    padding: 3rem;
+    text-align: center;
+    border-radius: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(13, 17, 23, 0.95);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.verifying-content,
+.success-content,
+.error-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.verifying-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 3px solid rgba(234, 179, 8, 0.1);
+    border-top-color: #eab308;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.success-icon {
+    width: 4rem;
+    height: 4rem;
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+}
+
+.error-icon {
+    width: 4rem;
+    height: 4rem;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.verification-popup-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: white;
+}
+
+.verification-popup-card p {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.6;
+}
+
+.close-popup-btn {
+    margin-top: 1rem;
+    padding: 0.75rem 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 1rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.close-popup-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
