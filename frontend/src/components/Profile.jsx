@@ -15,7 +15,7 @@ import {
 } from "firebase/firestore";
 import { fetchDDragon } from "../utils/fetchDDragon";
 import ProfilePosts from "./ProfilePosts";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, RotateCw } from "lucide-react";
 import "../styles/componentsCSS/profile.css";
 
 const REGIONS = [
@@ -123,6 +123,7 @@ function Profile() {
     latestVersion: "25.12",
     verificationLoading: false,
     emailVerificationSent: false,
+    verificationCooldown: 0,
     deleteButtonActive: false,
     ripple: false,
     profileData: null,
@@ -416,6 +417,19 @@ function Profile() {
     };
   }, [userId, state.menuOpen, state.accountInfoOpen]);
 
+  useEffect(() => {
+    let timer;
+    if (state.verificationCooldown > 0) {
+      timer = setInterval(() => {
+        setState(prev => ({
+          ...prev,
+          verificationCooldown: Math.max(0, prev.verificationCooldown - 1)
+        }));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [state.verificationCooldown]);
+
   const updateProfileImage = async (newImage) => {
     if (!state.user) return;
     const userRef = doc(db, "users", state.user.uid);
@@ -556,7 +570,7 @@ function Profile() {
   };
 
   const verifyEmail = async () => {
-    if (!state.user) return;
+    if (!state.user || state.verificationCooldown > 0) return;
 
     try {
       setState(prev => ({ ...prev, verificationLoading: true }));
@@ -565,11 +579,35 @@ function Profile() {
       const userRef = doc(db, "users", state.user.uid);
       await updateDoc(userRef, { emailVerificationSent: true, lastVerificationSent: new Date() });
 
-      setState(prev => ({ ...prev, emailVerificationSent: true, verificationLoading: false }));
+      setState(prev => ({
+        ...prev,
+        emailVerificationSent: true,
+        verificationLoading: false,
+        verificationCooldown: 30
+      }));
       showNotification("Verification email sent! Please check your inbox.", "success");
     } catch (error) {
       console.error("Error sending verification:", error);
       showNotification(error.code === 'auth/too-many-requests' ? "Too many requests. Please wait." : "Error sending email.", "error");
+      setState(prev => ({ ...prev, verificationLoading: false }));
+    }
+  };
+
+  const refreshStatus = async () => {
+    if (!state.user) return;
+    try {
+      setState(prev => ({ ...prev, verificationLoading: true }));
+      await state.user.reload();
+      const updatedUser = auth.currentUser;
+      setState(prev => ({
+        ...prev,
+        user: updatedUser,
+        verificationLoading: false
+      }));
+      showNotification("Account status refreshed!", "success");
+    } catch (error) {
+      console.error("Error refreshing status:", error);
+      showNotification("Failed to refresh status.", "error");
       setState(prev => ({ ...prev, verificationLoading: false }));
     }
   };
@@ -903,7 +941,7 @@ function Profile() {
                 ) : (
                   <div className="bio-text-display">
                     <p className="bio-text">
-                      {state.aboutMe || "No bio data recorded..."}
+                      {state.aboutMe || "No bio"}
                     </p>
                   </div>
                 )}
@@ -1104,13 +1142,23 @@ function Profile() {
                     <span className={`status-text ${state.user?.emailVerified ? "verified" : "unverified"}`}>
                       {state.user?.emailVerified ? "Verified" : "Unverified"}
                     </span>
+                    <button
+                      onClick={refreshStatus}
+                      className="status-refresh-btn"
+                      disabled={state.verificationLoading}
+                      title="Refresh verification status"
+                    >
+                      <RotateCw className={`icon-sm ${state.verificationLoading ? 'animate-spin' : ''}`} />
+                    </button>
                     {!state.user?.emailVerified && (
                       <button
                         onClick={verifyEmail}
                         className="resend-verify-btn"
-                        disabled={state.verificationLoading || state.emailVerificationSent}
+                        disabled={state.verificationLoading || state.verificationCooldown > 0}
                       >
-                        {state.verificationLoading ? "Sending..." : "Send Verification"}
+                        {state.verificationLoading ? "Sending..." :
+                          state.verificationCooldown > 0 ? `Resend in ${state.verificationCooldown}s` :
+                            "Send Verification"}
                       </button>
                     )}
                   </div>

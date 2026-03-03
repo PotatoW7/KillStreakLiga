@@ -25,6 +25,7 @@ import Contact from "./components/Contact";
 import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
+import AuthActionHandler from "./components/AuthActionHandler";
 
 import { auth, db, storage } from "./firebase";
 import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where } from "firebase/firestore";
@@ -97,6 +98,15 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // Handle incoming Firebase Auth Links (verification etc)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    if (mode === 'verifyEmail' && window.location.pathname !== '/auth-action') {
+      navigate(`/auth-action${window.location.search}`);
+    }
+  }, [navigate]);
 
   // Listen to Global Friends List
   useEffect(() => {
@@ -347,6 +357,7 @@ function App() {
             <Route path="/live-game" element={<LiveGame />} />
             <Route path="/queue" element={<QueueSystem />} />
             <Route path="/finishSignIn" element={<FinishSignIn />} />
+            <Route path="/auth-action" element={<AuthActionHandler />} />
             <Route path="/become-coach" element={<BecomeCoach />} />
             <Route path="/coach-rules" element={<CoachRules />} />
             <Route path="/coaching" element={<Coaching />} />
