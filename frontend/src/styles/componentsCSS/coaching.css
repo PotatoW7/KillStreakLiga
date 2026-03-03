@@ -2971,6 +2971,7 @@
 .coaching-page input[type="number"],
 .edit-session-panel input[type="number"] {
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 /* CTA */

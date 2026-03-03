@@ -1439,11 +1439,12 @@ function QueueSystem() {
             <label className="filter-label">Skill Level</label>
             <div className="filter-select-wrapper" ref={rankDropdownRef}>
               <button
-                className="filter-custom-select u-flex-between"
+                className="filter-custom-select u-flex-between filter-btn-rank"
                 onClick={() => setShowRankDropdown(!showRankDropdown)}
               >
                 <div className="u-flex-center u-gap-3">
-                  <img src={getRankIconForFilter(filters.rank)} alt="" className="icon-lg" />
+                  {/* Trigger icon: icon-sm (1rem) matches the height of other filters */}
+                  <img src={getRankIconForFilter(filters.rank)} alt="" className="icon-sm" />
                   <span className="font-medium">{rankTiers.find(r => r.id === filters.rank)?.name}</span>
                 </div>
                 <ChevronDown className={`icon-sm transition-transform duration-300 ${showRankDropdown ? 'rotate-180' : ''}`} />
@@ -1460,7 +1461,8 @@ function QueueSystem() {
                         setShowRankDropdown(false);
                       }}
                     >
-                      <img src={getRankIconForFilter(rank.id)} alt="" className="icon-xl" />
+                      {/* Dropdown icon: icon-md (1.25rem) for a clearer but not oversized look */}
+                      <img src={getRankIconForFilter(rank.id)} alt="" className="icon-md" />
                       <span className="font-medium">{rank.name}</span>
                     </button>
                   ))}
