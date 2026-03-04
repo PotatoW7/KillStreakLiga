@@ -161,7 +161,7 @@ function Feeds() {
                                 COMMUNITY<br /><span className="highlight">FEED</span>
                             </h1>
                             <p className="feeds-hero-desc">
-                                Curating community highlights, top discussions, and global RiftHub activity.
+                                Curating community highlights, top discussions, and global KillStreak activity.
                             </p>
                         </div>
                     </div>

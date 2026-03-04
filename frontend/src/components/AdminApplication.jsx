@@ -184,7 +184,7 @@ function AdminApplication() {
             <div className="admin-application-container">
                 <div className="application-header">
                     <h1>Apply to Become an Admin</h1>
-                    <p>Help manage the RiftHub community</p>
+                    <p>Help manage the KillStreak community</p>
                 </div>
 
                 <div className="admin-info-section">
@@ -244,7 +244,7 @@ function AdminApplication() {
                                 id="reason"
                                 value={form.reason}
                                 onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                                placeholder="Explain why you'd like to help manage the RiftHub community..."
+                                placeholder="Explain why you'd like to help manage the KillStreak community..."
                                 rows={4}
                                 required
                                 minLength={30}

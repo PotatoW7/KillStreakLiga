@@ -191,7 +191,7 @@ function Home() {
           <div className="cta-glow" />
           <h2>READY TO CLIMB?</h2>
           <p className="cta-desc">
-            Join thousands of players using RiftHub to track their progress and find teammates.
+            Join thousands of players using KillStreak to track their progress and find teammates.
           </p>
           <div className="cta-buttons">
             {!user ? (

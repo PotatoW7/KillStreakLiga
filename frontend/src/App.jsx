@@ -257,7 +257,7 @@ function App() {
         <div className="header-inner">
           <Link className="logo-link" to="/">
             <img src="/rifthub.png" alt="RiftHub Logo" className="logo-image" />
-            <span className="logo-text">RIFTHUB</span>
+            <span className="logo-text">KILLSTREAK</span>
           </Link>
 
           <div className="nav-actions">

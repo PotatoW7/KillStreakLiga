@@ -12,11 +12,11 @@ const Footer = () => {
                         <div className="footer-brand-inner">
                             <div className="footer-logo">
                                 <img src="/rifthub.png" alt="RiftHub Logo" className="footer-logo-image" />
-                                <span className="footer-logo-text">RIFTHUB<span className="accent">.LOL</span></span>
+                                <span className="footer-logo-text">KILLSTREAK<span className="accent"></span></span>
                             </div>
                         </div>
                         <p className="footer-disclaimer">
-                            Rifthub.lol is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. League of Legends © Riot Games, Inc.
+                            KillStreak is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. League of Legends © Riot Games, Inc.
                         </p>
                     </div>
 

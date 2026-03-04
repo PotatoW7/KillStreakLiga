@@ -59,7 +59,7 @@ const TermsOfService = () => {
                                 <h2 className="legal-section-title">1. Acceptance of Terms</h2>
                             </div>
                             <p className="legal-text">
-                                By accessing or using <span className="highlight">RiftHub.lol</span> (the "Platform"), you formally agree to comply with and be bound by these Terms of Service. Access to the platform implies total acceptance of these terms.
+                                By accessing or using <span className="highlight">KillStreak</span> (the "Platform"), you formally agree to comply with and be bound by these Terms of Service. Access to the platform implies total acceptance of these terms.
                             </p>
                         </section>
 
@@ -69,7 +69,7 @@ const TermsOfService = () => {
                                 <h2 className="legal-section-title">2. Service Overview</h2>
                             </div>
                             <p className="legal-text">
-                                RiftHub.lol provides League of Legends analytics, match history, and a peer-to-peer coaching marketplace. We provide in-depth data and community features to the user base.
+                                KillStreak provides League of Legends analytics, match history, and a peer-to-peer coaching marketplace. We provide in-depth data and community features to the user base.
                             </p>
                         </section>
 
@@ -79,10 +79,10 @@ const TermsOfService = () => {
                                 <h2 className="legal-section-title">3. Riot Data Integration</h2>
                             </div>
                             <div className="legal-text">
-                                <p>Data is retrieved via the Riot Games Global API. RiftHub maintains no official affiliation with Riot Games, Inc.</p>
+                                <p>Data is retrieved via the Riot Games Global API. KillStreak maintains no official affiliation with Riot Games, Inc.</p>
                                 <div className="legal-notice" style={{ marginTop: '1rem' }}>
                                     <p className="legal-notice-label">Data Access Policy:</p>
-                                    <p>All data retrieved from the Riot Games API is distributed to the user base at no cost. RiftHub prohibits the sale of raw data or basic summoner statistics.</p>
+                                    <p>All data retrieved from the Riot Games API is distributed to the user base at no cost. KillStreak prohibits the sale of raw data or basic summoner statistics.</p>
                                 </div>
                             </div>
                         </section>
@@ -123,7 +123,7 @@ const TermsOfService = () => {
                                 </div>
                                 <div className="legal-text">
                                     <p style={{ color: 'white', fontWeight: 700 }}>Boosting is strictly forbidden by Riot Games and will result in Account Suspension.</p>
-                                    <p style={{ marginTop: '1rem' }}>RiftHub facilitates player development and learning only. Facilitating or requesting boosting services via this site will result in a <span style={{ color: '#ef4444', fontWeight: 900, fontStyle: 'italic' }}>Permanent Ban</span>. Engaging in unauthorized account activity is at your own risk.</p>
+                                    <p style={{ marginTop: '1rem' }}>KillStreak facilitates player development and learning only. Facilitating or requesting boosting services via this site will result in a <span style={{ color: '#ef4444', fontWeight: 900, fontStyle: 'italic' }}>Permanent Ban</span>. Engaging in unauthorized account activity is at your own risk.</p>
                                 </div>
                             </div>
                         </section>
@@ -134,7 +134,7 @@ const TermsOfService = () => {
                                 <h2 className="legal-section-title">7. Intellectual Property</h2>
                             </div>
                             <p className="legal-text">
-                                All original content, site design, and architectural code on RiftHub.lol remain exclusive property of RiftHub. League of Legends items are subject to Riot Games, Inc. ownership.
+                                All original content, site design, and architectural code on KillStreak remain exclusive property of KillStreak. League of Legends items are subject to Riot Games, Inc. ownership.
                             </p>
                         </section>
 
@@ -144,7 +144,7 @@ const TermsOfService = () => {
                                 <h2 className="legal-section-title">8. Disclaimer of Warranties</h2>
                             </div>
                             <p className="legal-text" style={{ fontStyle: 'italic' }}>
-                                This site is provided "AS IS". Rifthub disclaims all warranties, including implied merchantability or fitness for specific performance targets. No specific outcome is guaranteed.
+                                This site is provided "AS IS". KillStreak disclaims all warranties, including implied merchantability or fitness for specific performance targets. No specific outcome is guaranteed.
                             </p>
                         </section>
 
@@ -154,7 +154,7 @@ const TermsOfService = () => {
                                 <h2 className="legal-section-title">9. Limitation of Liability</h2>
                             </div>
                             <p className="legal-text">
-                                RiftHub systems shall not be liable for any data loss, profit degradation, or business interruption arising from site use or disconnection.
+                                KillStreak systems shall not be liable for any data loss, profit degradation, or business interruption arising from site use or disconnection.
                             </p>
                         </section>
 

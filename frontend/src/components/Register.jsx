@@ -123,7 +123,7 @@ function Register() {
               <div className="auth-header-inner">
                 <div className="auth-title-row">
                   <div className="auth-title-bar" />
-                  <h2 className="auth-title">Join RiftHub</h2>
+                  <h2 className="auth-title">Join KillStreak</h2>
                 </div>
                 <p className="auth-subtitle">User Registration</p>
               </div>

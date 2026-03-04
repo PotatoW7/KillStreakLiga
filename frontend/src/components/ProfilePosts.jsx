@@ -1151,7 +1151,7 @@ function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCrea
                                 <Lock />
                             </div>
                             <h2 className="auth-prompt-title">Authentication Required</h2>
-                            <p className="auth-prompt-desc">Please log in or register to interact with the Rifthub community feed.</p>
+                            <p className="auth-prompt-desc">Please log in or register to interact with the KillStreak community feed.</p>
 
                             <div className="auth-actions-group">
                                 <button

@@ -69,7 +69,7 @@ function Login() {
               <div className="auth-header-inner">
                 <div className="auth-title-row">
                   <div className="auth-title-bar" />
-                  <h2 className="auth-title">Welcome to RiftHub</h2>
+                  <h2 className="auth-title">Welcome to KillStreak</h2>
                 </div>
                 <p className="auth-subtitle">Login</p>
               </div>
@@ -120,7 +120,7 @@ function Login() {
 
             <div className="auth-footer">
               <div className="auth-footer-group">
-                <p className="auth-footer-text">New to RiftHub?</p>
+                <p className="auth-footer-text">New to KillStreak?</p>
                 <Link to="/register" className="auth-footer-link">
                   Create Account
                 </Link>

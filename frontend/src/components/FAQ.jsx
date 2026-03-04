@@ -60,10 +60,10 @@ const FAQ = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem', marginLeft: '1.25rem' }}>
                         <section id="what-is-rifthub" className="legal-section" style={{ scrollMarginTop: '8rem' }}>
                             <h2 className="faq-question">
-                                <span className="faq-number">01.</span> What is Rifthub?
+                                <span className="faq-number">01.</span> What is KillStreak?
                             </h2>
                             <p className="faq-answer">
-                                RiftHub is an advanced analytics and social synchronization platform for the League of Legends community.
+                                KillStreak is an advanced analytics and social synchronization platform for the League of Legends community.
                                 We provide detailed information on your summoner account and others, comprehensive match histories, a secure marketplace to connect with elite tactical coaches, and social features such as chat and activity feeds to engage with the community.
                             </p>
                         </section>
@@ -73,7 +73,7 @@ const FAQ = () => {
                                 <span className="faq-number">02.</span> Is it free?
                             </h2>
                             <p className="faq-answer">
-                                RiftHub is free to use. You can view match histories, analyze gameplay, and use all our tools at no cost. The only paid features are available on our coaching page.
+                                KillStreak is free to use. You can view match histories, analyze gameplay, and use all our tools at no cost. The only paid features are available on our coaching page.
                             </p>
                         </section>
 
@@ -82,7 +82,7 @@ const FAQ = () => {
                                 <span className="faq-number">03.</span> Is it official?
                             </h2>
                             <p className="faq-answer">
-                                RiftHub.lol is entirely independent. We are not endorsed by Riot Games and do not reflect their views or policies
+                                KillStreak is entirely independent. We are not endorsed by Riot Games and do not reflect their views or policies
                             </p>
                         </section>
 
@@ -91,7 +91,7 @@ const FAQ = () => {
                                 <span className="faq-number">04.</span> How does training work?
                             </h2>
                             <p className="faq-answer">
-                                Tactical instructors offer their services on our marketplace. Players can browse, analyze, and book training sessions to improve their gameplay. RiftHub handles scheduling and coordination, while the specific training plan is managed directly between the instructor and the student.
+                                Tactical instructors offer their services on our marketplace. Players can browse, analyze, and book training sessions to improve their gameplay. KillStreak handles scheduling and coordination, while the specific training plan is managed directly between the instructor and the student.
                             </p>
                         </section>
 

@@ -9,7 +9,7 @@ function CoachRules() {
             <div className="coach-rules-container">
                 <div className="rules-header">
                     <h1>Coaching Guidelines & Requirements</h1>
-                    <p>Everything you need to know about becoming a RiftHub coach</p>
+                    <p>Everything you need to know about becoming a KillStreak coach</p>
                 </div>
 
                 <section className="rules-section">
@@ -20,7 +20,7 @@ function CoachRules() {
                                 <strong>Rank Requirement:</strong> You must be Platinum rank or higher in Solo/Duo or Flex queue.
                             </li>
                             <li>
-                                <strong>Verified Account:</strong> Your Riot Games account must be linked and verified on RiftHub.
+                                <strong>Verified Account:</strong> Your Riot Games account must be linked and verified on KillStreak.
                             </li>
                             <li>
                                 <strong>Good Standing:</strong> Your account must be in good standing with no recent bans or restrictions.
@@ -84,7 +84,7 @@ function CoachRules() {
                             <span className="step-number">1</span>
                             <div>
                                 <strong>Link Your Account</strong>
-                                <p>Verify your Riot Games account on your RiftHub profile.</p>
+                                <p>Verify your Riot Games account on your KillStreak profile.</p>
                             </div>
                         </div>
                         <div className="step">

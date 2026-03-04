@@ -17,7 +17,7 @@ const Contact = () => {
                                 <div className="legal-title-bar" style={{ height: '2.5rem' }} />
                                 <h1 className="legal-title" style={{ fontSize: '2.25rem' }}>Contact Us</h1>
                             </div>
-                            <p className="cookie-subtitle" style={{ marginLeft: '1.25rem' }}>Get in touch with the Rifthub support team.</p>
+                            <p className="cookie-subtitle" style={{ marginLeft: '1.25rem' }}>Get in touch with the KillStreak support team.</p>
                         </div>
 
                         <div style={{ marginLeft: '1.25rem', maxWidth: '42rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
