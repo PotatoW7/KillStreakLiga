@@ -8,7 +8,7 @@ import {
   updateDoc, arrayUnion, arrayRemove, getDocs, writeBatch
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Users, Swords, Filter, Clock, ShieldCheck, Star, Trash2, Edit3, UserPlus, Check, X, Copy, ExternalLink, ChevronDown, PlusSquare } from 'lucide-react';
+import { MessageSquare, Users, Swords, Filter, Clock, ShieldCheck, ShieldX, Star, Trash2, Edit3, UserPlus, Check, X, Copy, ExternalLink, ChevronDown, PlusSquare } from 'lucide-react';
 import '../styles/componentsCSS/queue-system.css';
 
 const normalizeProfileIcon = (url) => {
@@ -62,6 +62,8 @@ function QueueSystem() {
     preferredDuoRole: 'fill',
     description: '',
   });
+
+  const [showRiotLinkModal, setShowRiotLinkModal] = useState(false);
 
   const rankDropdownRef = useRef(null);
   const queueDropdownRef = useRef(null);
@@ -772,8 +774,7 @@ function QueueSystem() {
     }
 
     if (!userProfile?.riotAccountData) {
-      alert('Please link your Riot account first in your Profile!');
-      navigate('/profile');
+      setShowRiotLinkModal(true);
       return;
     }
 
@@ -870,6 +871,10 @@ function QueueSystem() {
   };
 
   const openJoinModal = (game) => {
+    if (!userProfile?.riotAccountData) {
+      setShowRiotLinkModal(true);
+      return;
+    }
     setSelectedGame(game);
     setJoinMessage('');
     setShowJoinModal(true);
@@ -1394,7 +1399,13 @@ function QueueSystem() {
         <div className="lobby-header-actions">
           <button
             className="post-lobby-btn"
-            onClick={() => setIsPostingGame(!isPostingGame)}
+            onClick={() => {
+              if (!isPostingGame && !userProfile?.riotAccountData) {
+                setShowRiotLinkModal(true);
+              } else {
+                setIsPostingGame(!isPostingGame);
+              }
+            }}
           >
             {isPostingGame ? <X className="icon-md" /> : <PlusSquare className="icon-md" />}
             {isPostingGame ? 'Cancel Post' : 'Post a Game'}
@@ -1566,6 +1577,24 @@ function QueueSystem() {
 
 
       <div className="active-lobbies-section">
+        {!userProfile?.riotAccountData && (
+          <div className="unlinked-warning-banner">
+            <div className="warning-banner-content">
+              <ShieldX className="warning-banner-icon color-error" />
+              <div className="warning-banner-text">
+                <h4>You have not connected Riot account</h4>
+                <p>You need to link your Riot Games account to join or post lobbies. This ensures fair matchmaking and verification.</p>
+              </div>
+            </div>
+            <button
+              className="btn-publish compact-btn"
+              onClick={() => navigate('/profile')}
+            >
+              Connect Now
+            </button>
+          </div>
+        )}
+
         <div className="active-lobbies-header">
           <h3 className="active-lobbies-title">
             Active Lobbies
@@ -2037,6 +2066,40 @@ function QueueSystem() {
           document.body
         )
       }
+
+      {showRiotLinkModal && (
+        <div className="lobby-modal-overlay" onClick={() => setShowRiotLinkModal(false)}>
+          <div className="lobby-modal-card" style={{ maxWidth: '32rem' }} onClick={e => e.stopPropagation()}>
+            <div className="panel-padding text-center">
+              <div className="status-icon-wrap error u-mx-auto u-mb-6">
+                <ExternalLink className="icon-xl" />
+              </div>
+              <h3 className="post-panel-title u-mb-2">Riot Account Required</h3>
+              <p className="lobby-subtitle u-text-sm u-mb-8">
+                To maintain a safe and competitive environment, all players must link their Riot Games account before joining or posting lobbies.
+              </p>
+
+              <div className="u-flex-row u-gap-4">
+                <button
+                  className="btn-discard u-flex-1"
+                  onClick={() => setShowRiotLinkModal(false)}
+                >
+                  Close
+                </button>
+                <button
+                  className="btn-publish u-flex-1"
+                  onClick={() => {
+                    setShowRiotLinkModal(false);
+                    navigate('/profile');
+                  }}
+                >
+                  Link Account
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 }
