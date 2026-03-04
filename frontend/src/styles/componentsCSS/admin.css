@@ -642,3 +642,200 @@
     background: rgba(255, 255, 255, 0.1);
     color: white;
 }
+
+/* ── Staff Management ── */
+.staff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 1.5rem;
+}
+
+.staff-card {
+    background: rgba(22, 27, 34, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+}
+
+.staff-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(30, 36, 44, 0.82);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.staff-user-info {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.staff-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    object-fit: cover;
+}
+
+.staff-details h3 {
+    font-family: var(--font-display);
+    color: white;
+    font-size: 1.25rem;
+    margin-bottom: 0.125rem;
+}
+
+.staff-details .email {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    display: block;
+}
+
+.staff-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.25rem;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 1rem;
+}
+
+.meta-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.meta-row label {
+    color: rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    font-weight: 800;
+}
+
+.meta-row span {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+}
+
+.demote-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: rgba(239, 68, 68, 0.08);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.demote-btn:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: white;
+}
+
+.demote-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.no-staff {
+    text-align: center;
+    padding: 4rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.staff-count {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: 0.5rem;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* ── Custom Modals & Notifications ── */
+.notification-popup {
+    text-align: center;
+    max-width: 400px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem !important;
+}
+
+.notification-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.notification-icon.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+    border: 2px solid rgba(34, 197, 94, 0.2);
+}
+
+.notification-icon.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border: 2px solid rgba(239, 68, 68, 0.2);
+}
+
+.notification-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.confirm-btn {
+    flex: 1;
+    padding: 0.875rem;
+    background: var(--color-primary);
+    color: black;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.confirm-btn:hover {
+    background: white;
+    transform: translateY(-2px);
+}
+
+.close-notif-btn {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 0.875rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.close-notif-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}

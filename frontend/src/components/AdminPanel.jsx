@@ -23,9 +23,16 @@ function AdminPanel() {
     const [activeTab, setActiveTab] = useState('admin-requests');
     const [adminRequests, setAdminRequests] = useState([]);
     const [coachApplications, setCoachApplications] = useState([]);
+    const [currentAdmins, setCurrentAdmins] = useState([]);
+    const [currentCoaches, setCurrentCoaches] = useState([]);
+    const [adminsMetadata, setAdminsMetadata] = useState({});
+    const [staffUsernames, setStaffUsernames] = useState({});
     const [processingId, setProcessingId] = useState(null);
+    const [demotingId, setDemotingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [showRejectModal, setShowRejectModal] = useState(null);
+    const [showConfirmModal, setShowConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
@@ -138,6 +145,39 @@ function AdminPanel() {
                     );
                 setCoachApplications(coachData);
             }
+            const adminsQuery = query(collection(db, "users"), where("role", "==", "admin"));
+            const adminsSnap = await getDocs(adminsQuery);
+            setCurrentAdmins(adminsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const coachesQuery = query(collection(db, "users"), where("role", "==", "coach"));
+            const coachesSnap = await getDocs(coachesQuery);
+            setCurrentCoaches(coachesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const metaSnap = await getDocs(collection(db, "admins"));
+            const metaMap = {};
+            metaSnap.forEach(doc => {
+                metaMap[doc.id] = doc.data();
+            });
+            setAdminsMetadata(metaMap);
+            const staffIds = new Set();
+            Object.values(metaMap).forEach(m => {
+                if (m.promotedBy) staffIds.add(m.promotedBy);
+            });
+            coachesSnap.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.coachApplication?.reviewedBy) staffIds.add(data.coachApplication.reviewedBy);
+            });
+
+            if (staffIds.size > 0) {
+                const staffMap = {};
+                const userDocs = await Promise.all(
+                    Array.from(staffIds).map(id => getDoc(doc(db, "users", id)))
+                );
+                userDocs.forEach(d => {
+                    if (d.exists()) {
+                        staffMap[d.id] = d.data().username;
+                    }
+                });
+                setStaffUsernames(staffMap);
+            }
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -185,10 +225,10 @@ function AdminPanel() {
             });
 
             setAdminRequests(prev => prev.filter(req => req.id !== applicationId));
-            alert('User has been promoted to Admin!');
+            setNotification({ show: true, message: 'User has been promoted to Admin!', type: 'success' });
         } catch (error) {
             console.error('Error approving admin:', error);
-            alert(`Failed to approve admin request: ${error.message}`);
+            setNotification({ show: true, message: `Failed to approve admin request: ${error.message}`, type: 'error' });
         }
 
         setProcessingId(null);
@@ -216,10 +256,10 @@ function AdminPanel() {
             setAdminRequests(prev => prev.filter(req => req.id !== applicationId));
             setShowRejectModal(null);
             setRejectionReason('');
-            alert('Admin request has been rejected. User can reapply in 5 months.');
+            setNotification({ show: true, message: 'Admin request has been rejected.', type: 'success' });
         } catch (error) {
             console.error('Error rejecting admin:', error);
-            alert(`Failed to reject admin request: ${error.message}`);
+            setNotification({ show: true, message: `Failed to reject admin request: ${error.message}`, type: 'error' });
         }
 
         setProcessingId(null);
@@ -252,10 +292,10 @@ function AdminPanel() {
             });
 
             setCoachApplications(prev => prev.filter(app => app.id !== userId));
-            alert('User has been approved as a Coach!');
+            setNotification({ show: true, message: 'User has been approved as a Coach!', type: 'success' });
         } catch (error) {
             console.error('Error approving coach:', error);
-            alert(`Failed to approve coach application: ${error.message}`);
+            setNotification({ show: true, message: `Failed to approve coach application: ${error.message}`, type: 'error' });
         }
 
         setProcessingId(null);
@@ -282,13 +322,54 @@ function AdminPanel() {
             setCoachApplications(prev => prev.filter(app => app.id !== userId));
             setShowRejectModal(null);
             setRejectionReason('');
-            alert('Coach application has been rejected.');
+            setNotification({ show: true, message: 'Coach application has been rejected.', type: 'success' });
         } catch (error) {
             console.error('Error rejecting coach:', error);
-            alert(`Failed to reject coach application: ${error.message}`);
+            setNotification({ show: true, message: `Failed to reject coach application: ${error.message}`, type: 'error' });
         }
 
         setProcessingId(null);
+    };
+
+    const handleDemote = async (userId, currentRole) => {
+        setShowConfirmModal({
+            show: true,
+            title: `Demote ${currentRole}`,
+            message: `Are you sure you want to demote this ${currentRole} to a regular user?`,
+            onConfirm: async () => {
+                setShowConfirmModal(prev => ({ ...prev, show: false }));
+                setDemotingId(userId);
+
+                try {
+                    const userRef = doc(db, "users", userId);
+                    await updateDoc(userRef, {
+                        role: 'user'
+                    });
+
+                    if (currentRole === 'admin') {
+                        await updateDoc(doc(db, "admins", userId), {
+                            demotedAt: serverTimestamp(),
+                            demotedBy: user.uid
+                        });
+                    }
+
+                    if (currentRole === 'coach') {
+                        await updateDoc(userRef, {
+                            'coachApplication.status': 'demoted',
+                            coachProfile: null
+                        });
+                    }
+
+                    setNotification({ show: true, message: `User has been demoted to a regular user.`, type: 'success' });
+                    fetchData();
+                } catch (error) {
+                    console.error('Error demoting user:', error);
+                    setNotification({ show: true, message: `Failed to demote user: ${error.message}`, type: 'error' });
+                }
+
+                setDemotingId(null);
+            }
+        });
     };
 
     const getHighestRank = (rankedData) => {
@@ -357,6 +438,24 @@ function AdminPanel() {
                         Coach Applications
                         {coachApplications.length > 0 && (
                             <span className="badge">{coachApplications.length}</span>
+                        )}
+                    </button>
+                    <button
+                        className={`tab ${activeTab === 'current-admins' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('current-admins')}
+                    >
+                        Current Admins
+                        {currentAdmins.length > 0 && (
+                            <span className="staff-count">({currentAdmins.length})</span>
+                        )}
+                    </button>
+                    <button
+                        className={`tab ${activeTab === 'current-coaches' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('current-coaches')}
+                    >
+                        Current Coaches
+                        {currentCoaches.length > 0 && (
+                            <span className="staff-count">({currentCoaches.length})</span>
                         )}
                     </button>
                 </div>
@@ -536,6 +635,111 @@ function AdminPanel() {
                             )}
                         </div>
                     )}
+
+                    {activeTab === 'current-admins' && (
+                        <div className="current-staff-section">
+                            <h2>Current Administrators</h2>
+                            {currentAdmins.length === 0 ? (
+                                <div className="no-staff">
+                                    <p>No other administrators found.</p>
+                                </div>
+                            ) : (
+                                <div className="staff-grid">
+                                    {currentAdmins.map(admin => {
+                                        const metadata = adminsMetadata[admin.id];
+                                        return (
+                                            <div key={admin.id} className="staff-card">
+                                                <div className="staff-user-info">
+                                                    <img
+                                                        src={admin.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                        alt=""
+                                                        className="staff-avatar"
+                                                    />
+                                                    <div className="staff-details">
+                                                        <h3>{admin.username}</h3>
+                                                        <span className="email">{admin.email}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="staff-meta">
+                                                    <div className="meta-row">
+                                                        <label>Promoted On</label>
+                                                        <span>{metadata ? formatDate(metadata.promotedAt) : 'N/A'}</span>
+                                                    </div>
+                                                    <div className="meta-row">
+                                                        <label>Promoted By</label>
+                                                        <span>{metadata?.promotedBy ? (staffUsernames[metadata.promotedBy] || 'System') : 'N/A'}</span>
+                                                    </div>
+                                                </div>
+                                                {userRole === 'owner' && (
+                                                    <button
+                                                        className="demote-btn"
+                                                        onClick={() => handleDemote(admin.id, 'admin')}
+                                                        disabled={demotingId === admin.id || admin.id === user.uid}
+                                                        title={admin.id === user.uid ? "You cannot demote yourself" : ""}
+                                                    >
+                                                        {demotingId === admin.id ? 'Processing...' : 'Demote to User'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'current-coaches' && (
+                        <div className="current-staff-section">
+                            <h2>Current Coaches</h2>
+                            {currentCoaches.length === 0 ? (
+                                <div className="no-staff">
+                                    <p>No coaches found.</p>
+                                </div>
+                            ) : (
+                                <div className="staff-grid">
+                                    {currentCoaches.map(coach => (
+                                        <div key={coach.id} className="staff-card">
+                                            <div className="staff-user-info">
+                                                <img
+                                                    src={coach.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                    alt=""
+                                                    className="staff-avatar"
+                                                />
+                                                <div className="staff-details">
+                                                    <h3>{coach.username}</h3>
+                                                    <span className="email">{coach.email}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="staff-meta">
+                                                <div className="meta-row">
+                                                    <label>Specialties</label>
+                                                    <span>{coach.coachProfile?.specialties?.join(', ') || 'N/A'}</span>
+                                                </div>
+                                                <div className="meta-row">
+                                                    <label>Approved By</label>
+                                                    <span>{coach.coachProfile?.reviewedBy ? (staffUsernames[coach.coachProfile.reviewedBy] || 'System') : (staffUsernames[coach.coachApplication?.reviewedBy] || 'System')}</span>
+                                                </div>
+                                                <div className="meta-row">
+                                                    <label>Approved On</label>
+                                                    <span>{formatDate(coach.coachProfile?.approvedAt)}</span>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                className="demote-btn"
+                                                onClick={() => handleDemote(coach.id, 'coach')}
+                                                disabled={demotingId === coach.id}
+                                            >
+                                                {demotingId === coach.id ? 'Processing...' : 'Remove Coach Role'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -580,6 +784,42 @@ function AdminPanel() {
                                 Cancel
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showConfirmModal.show && (
+                <div className="modal-overlay" onClick={() => setShowConfirmModal(prev => ({ ...prev, show: false }))}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <h3>{showConfirmModal.title}</h3>
+                        <p>{showConfirmModal.message}</p>
+                        <div className="modal-actions">
+                            <button className="confirm-btn" onClick={showConfirmModal.onConfirm}>
+                                Confirm Action
+                            </button>
+                            <button className="cancel-btn" onClick={() => setShowConfirmModal(prev => ({ ...prev, show: false }))}>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {notification.show && (
+                <div className="modal-overlay" onClick={() => setNotification({ show: false, message: '', type: 'success' })}>
+                    <div className="notification-popup modal-content" onClick={e => e.stopPropagation()}>
+                        <div className={`notification-icon ${notification.type}`}>
+                            {notification.type === 'success' ? (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg>
+                            ) : (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                            )}
+                        </div>
+                        <h3>{notification.type === 'success' ? 'Success' : 'Error'}</h3>
+                        <p>{notification.message}</p>
+                        <button className="close-notif-btn" onClick={() => setNotification({ show: false, message: '', type: 'success' })}>
+                            Continue
+                        </button>
                     </div>
                 </div>
             )}
