@@ -403,7 +403,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
         <div className={`mh-indicator ${isWin ? "win" : "loss"}`} />
         <div className="mh-header" onClick={() => toggleMatch(i)}>
           <div className="mh-header-content">
-            {/* Champion & Result */}
             <div className="mh-champ-section">
               <div className="mh-champ-wrapper">
                 <img
