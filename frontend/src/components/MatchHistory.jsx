@@ -403,7 +403,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
         <div className={`mh-indicator ${isWin ? "win" : "loss"}`} />
         <div className="mh-header" onClick={() => toggleMatch(i)}>
           <div className="mh-header-content">
-            {/* Champion & Result */}
             <div className="mh-champ-section">
               <div className="mh-champ-wrapper">
                 <img
@@ -420,8 +419,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
                 <div className="mh-time-ago">{timeAgo}</div>
               </div>
             </div>
-
-            {/* Stats */}
             <div className="mh-stats">
               <div className="mh-kda">
                 <div className="mh-kda-numbers">
@@ -456,7 +453,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
               </div>
             </div>
 
-            {/* Toggle */}
             <div className={`mh-toggle ${isWin ? "win" : "loss"}`}>
               <span className={`mh-toggle-arrow ${expanded ? "expanded" : ""}`}>▼</span>
             </div>
