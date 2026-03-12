@@ -44,6 +44,9 @@ app.use('/api/queue', queueRoutes);
 const matchHistoryRouter = require('./routes/matchHistory');
 app.use('/match-history', matchHistoryRouter);
 
+const aiRouter = require('./routes/ai');
+app.use('/api/ai', aiRouter);
+
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running on http://localhost:${process.env.PORT || 3000}`);
 });

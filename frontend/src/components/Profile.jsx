@@ -519,14 +519,11 @@ function Profile() {
 
     try {
       const validatedAccount = await validateRiotId(state.riotId, state.region);
-
-      // Prevent multiple users from linking the same Riot account
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("riotAccount.puuid", "==", validatedAccount.puuid));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        // Only error if it's linked to someone OTHER than the current user
         const alreadyLinkedToOthers = querySnapshot.docs.some(doc => doc.id !== state.user.uid);
         if (alreadyLinkedToOthers) {
           throw new Error("This Riot account is already linked to another profile.");

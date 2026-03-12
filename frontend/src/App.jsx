@@ -25,6 +25,7 @@ import Contact from "./components/Contact";
 import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
+import AiAssistant from "./components/AiAssistant";
 import { applyActionCode, checkActionCode, reload } from "firebase/auth";
 
 import { auth, db, storage } from "./firebase";
@@ -473,6 +474,7 @@ function App() {
           </>
         )}
       </main>
+      <AiAssistant />
       <Footer />
       <CookieConsent />
       {

@@ -1454,7 +1454,6 @@ function QueueSystem() {
                 onClick={() => setShowRankDropdown(!showRankDropdown)}
               >
                 <div className="u-flex-center u-gap-3">
-                  {/* Trigger icon: icon-sm (1rem) matches the height of other filters */}
                   <img src={getRankIconForFilter(filters.rank)} alt="" className="icon-sm" />
                   <span className="font-medium">{rankTiers.find(r => r.id === filters.rank)?.name}</span>
                 </div>
@@ -1472,7 +1471,6 @@ function QueueSystem() {
                         setShowRankDropdown(false);
                       }}
                     >
-                      {/* Dropdown icon: icon-md (1.25rem) for a clearer but not oversized look */}
                       <img src={getRankIconForFilter(rank.id)} alt="" className="icon-md" />
                       <span className="font-medium">{rank.name}</span>
                     </button>

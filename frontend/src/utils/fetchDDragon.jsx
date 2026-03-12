@@ -35,9 +35,6 @@ export async function fetchDDragon() {
                 name: aug.name,
                 description: aug.desc,
                 icon: aug.iconLarge,
-                // Store dataValues for parsing later if needed, or parse description here if possible. 
-                // But MatchHistory will handle parsing to keep this clean or we can do it here. 
-                // Let's pass the raw dataValues too.
                 dataValues: aug.dataValues
               };
             });
@@ -49,8 +46,6 @@ export async function fetchDDragon() {
 
       const runesData = {};
       runeData.forEach(tree => {
-        // Process the tree itself (Domination, Precision, etc.) - usually not needed for individual rune tooltips but good to have context if needed
-        // Iterate slots/runes
         tree.slots.forEach(slot => {
           slot.runes.forEach(rune => {
             runesData[rune.id] = {
