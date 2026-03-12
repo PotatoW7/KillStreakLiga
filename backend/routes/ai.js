@@ -127,11 +127,16 @@ const getSystemPrompt = () => {
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   const itemRegistry = Object.entries(currentItems)
-    .map(([name, data]) => `${name}: ${data.price}g - ${data.description.substring(0, 100)}`)
+    .map(([name, data]) => `${name}: ${data.price}g - ${data.description.substring(0, 300)}`)
     .join('\n');
 
   return `You are the RiftHub AI, a professional League of Legends technical analyst. 
-Today's date is ${dateStr}. You are operating in the REAL-TIME present (Season 2024/2025). 
+Today's date is ${dateStr}. You are operating in the REAL-TIME present (Season 2026). 
+
+### FORMATTING RULES (CRITICAL):
+- **Champions**: Wrap all champion names in double asterisks, e.g., **Lee Sin**, **Jinx**. (Displays as GREEN)
+- **Items/Numbers**: Wrap all item names, gold costs, and damage numbers in backticks, e.g., \`Hubris\`, \`2800g\`, \`1400 damage\`. (Displays as YELLOW)
+- **Conciseness**: Give direct, numbered/bulleted info. No conversational filler.
 
 ### OFFICIAL DATA BASES (Patch v${currentLolVersion})
 
@@ -153,7 +158,7 @@ ${patchChanges.length > 0 ? patchChanges.join('\n') : 'No major changes detected
 - Smite Damage Stages [Season 2026]:
     - Stage 1 (Basic/Non-upgraded): 600 true damage to monsters. (Available from start).
     - Stage 2 (Upgraded): 1200 true damage to monsters. Deals 40-160 true damage to champions (based on level). [Unlocked after finishing 20 camps].
-    - Stage 3 (Final Upgrade): 1400 true damage to monsters. Deals 40-160 true damage to champions (based on level) + 20% slow. [Unlocked after finishing 40 camps].
+    - Stage 3 (Final Upgrade): 1400 true damage to monsters. Deals 40-160 true damage to champions (based on level) + 20% slow. [Unlocked after finishing the rest 20 camps].
 - Role Quests [NEW 2026 FEATURE]:
     - Top: Level 20 cap, Enhanced Teleport.
     - Mid: Free Tier 3 Boots, faster recall.
@@ -181,14 +186,14 @@ AI: "Smite Damage:
 router.post('/chat', async (req, res) => {
   if (!process.env.GEMINI_API_KEY) {
     return res.status(503).json({
-      error: 'limit reached switch to different model'
+      error: 'AI API Key is missing. Please check backend configuration.'
     });
   }
 
   const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
   if (!checkRateLimit(clientIp)) {
     return res.status(429).json({
-      error: 'limit reached switch to different model'
+      error: 'You are sending messages too fast. Please wait a moment.'
     });
   }
 
@@ -196,26 +201,25 @@ router.post('/chat', async (req, res) => {
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'Messages array is required.' });
   }
+  const modelMapping = {
+    'gemini-3-flash': 'gemini-3-flash-preview',
+    'gemini-2.5-flash': 'gemini-2.5-flash',
+    'gemini-2.5-pro': 'gemini-2.5-pro',
+    'gemini-2-flash': 'gemini-2.0-flash'
+  };
 
-  const fallbackModels = [
-    'gemini-3-flash',
+  const targetModel = modelMapping[requestedModel] || 'gemini-2.0-flash';
+  let modelsToTry = [
+    targetModel,
+    'gemini-2.0-flash',
     'gemini-2.5-flash',
     'gemini-2.5-pro',
-    'gemini-2-flash',
-    'gemini-2-flash-exp',
-    'gemini-2-flash-lite',
-    'gemini-2.5-flash-lite',
-    'gemini-3.1-pro',
-    'gemini-3.1-flash-lite'
+    'gemini-3-flash-preview',
+    'gemini-flash-latest',
+    'gemini-pro-latest'
   ];
-
-  let modelsToTry = [...fallbackModels];
-  if (requestedModel && fallbackModels.includes(requestedModel)) {
-    modelsToTry = [requestedModel, ...fallbackModels.filter(m => m !== requestedModel)];
-  }
-
+  modelsToTry = [...new Set(modelsToTry)];
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
   let contextInfo = '';
   if (userContext) {
     const parts = [];
@@ -256,8 +260,19 @@ router.post('/chat', async (req, res) => {
     } catch (err) {
       lastError = err;
       const errorMsg = err.message || '';
+      const statusCode = err.status || (err.response && err.response.status);
 
-      if (!errorMsg.includes('429') && !errorMsg.toLowerCase().includes('quota') && !errorMsg.toLowerCase().includes('rate limit')) {
+      console.error(`[AI Model Error] ${modelName}:`, {
+        message: errorMsg,
+        status: statusCode,
+        stack: err.stack?.substring(0, 200)
+      });
+      const isRateLimit = statusCode === 429 ||
+        errorMsg.includes('429') ||
+        errorMsg.toLowerCase().includes('quota') ||
+        errorMsg.toLowerCase().includes('rate limit');
+
+      if (!isRateLimit) {
         break;
       }
 
@@ -265,21 +280,49 @@ router.post('/chat', async (req, res) => {
     }
   }
 
-  console.error('AI chat final error:', lastError.message || lastError);
-  const finalErrorMsg = lastError?.message || 'Unknown error';
+  console.error('AI chat final failure detail:');
+  console.dir(lastError, { depth: null });
 
-  if (finalErrorMsg.includes('429') || finalErrorMsg.toLowerCase().includes('rate limit') || finalErrorMsg.toLowerCase().includes('quota')) {
+  const finalErrorMsg = lastError?.message || 'Unknown error';
+  const finalStatus = lastError?.status || (lastError?.response && lastError?.response.status);
+
+  if (finalStatus === 429 || finalErrorMsg.includes('429') || finalErrorMsg.toLowerCase().includes('rate limit') || finalErrorMsg.toLowerCase().includes('quota')) {
     return res.status(429).json({
-      error: 'limit reached switch to different model',
+      error: 'API rate limit reached. Please try one of the other models in the list.',
       isRateLimit: true
     });
   }
 
-  if (finalErrorMsg.includes('API_KEY') || finalErrorMsg.includes('401') || finalErrorMsg.includes('403')) {
-    return res.status(401).json({ error: 'limit reached switch to different model' });
+  if (finalStatus === 401 || finalStatus === 403 || finalErrorMsg.includes('API_KEY')) {
+    return res.status(401).json({ error: 'AI Service configuration error (API Key). Please contact admin.' });
   }
 
-  res.status(500).json({ error: 'limit reached switch to different model' });
+  res.status(500).json({ error: `AI Error: ${finalErrorMsg.substring(0, 200)}${finalErrorMsg.length > 200 ? '...' : ''}` });
+});
+
+router.get('/models', async (req, res) => {
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(503).json({ error: 'API Key missing' });
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.error || 'Failed to list models' });
+    }
+
+    const modelNames = data.models.map(m => m.name.replace('models/', ''));
+    res.json({
+      count: modelNames.length,
+      available: modelNames
+    });
+  } catch (err) {
+    console.error('Model list error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.get('/test', async (req, res) => {

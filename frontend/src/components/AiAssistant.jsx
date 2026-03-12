@@ -1,76 +1,97 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { Bot, Send, X, Sparkles, Loader2, Trash2 } from 'lucide-react';
+import { doc, getDoc, updateDoc, deleteDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+import { Bot, Send, X, Sparkles, Loader2, Trash2, LogIn, Plus, MessageSquare } from 'lucide-react';
 import '../styles/componentsCSS/ai-assistant.css';
 
 const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_URL || "";
 
 function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem('rift_hub_ai_messages');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
   const [userContext, setUserContext] = useState(null);
+  const [chats, setChats] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
   const [selectedModel, setSelectedModel] = useState('gemini-3-flash');
   const [highlightModelSelect, setHighlightModelSelect] = useState(false);
+  const [confirmPopup, setConfirmPopup] = useState({ show: false, message: '', onConfirm: null });
+  const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
   const MODELS = [
-    { id: 'gemini-3-flash', name: 'G3 Flash' },
-    { id: 'gemini-2.5-flash', name: 'G2.5 Flash' },
-    { id: 'gemini-2.5-pro', name: 'G2.5 Pro' },
-    { id: 'gemini-2-flash', name: 'G2 Flash' },
-    { id: 'gemini-2-flash-exp', name: 'G2 Exp' },
-    { id: 'gemini-2-flash-lite', name: 'G2 Lite' },
-    { id: 'gemini-2.5-flash-lite', name: 'G2.5 Lite' },
-    { id: 'gemini-3.1-pro', name: 'G3.1 Pro' },
-    { id: 'gemini-3.1-flash-lite', name: 'G3.1 Lite' }
+    { id: 'gemini-3-flash', name: 'Gemini 3 Flash' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+    { id: 'gemini-2-flash', name: 'Gemini 2 Flash' }
   ];
 
   useEffect(() => {
-    localStorage.setItem('rift_hub_ai_messages', JSON.stringify(messages));
-  }, [messages]);
+    let unsubscribeChats = null;
+
+    const unsubscribeAuth = auth.onAuthStateChanged(async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            const ctx = {};
+            if (data.riotAccount) {
+              const { gameName, tagLine, region } = data.riotAccount;
+              if (gameName && tagLine) ctx.riotId = `${gameName}#${tagLine}`;
+              if (region) ctx.region = region;
+            }
+            if (data.rankedData && data.rankedData.length > 0) {
+              const solo = data.rankedData.find(q => q.queueType === 'RANKED_SOLO_5x5');
+              const flex = data.rankedData.find(q => q.queueType === 'RANKED_FLEX_SR');
+              const primary = solo || flex;
+              if (primary) {
+                ctx.rank = `${primary.tier} ${primary.rank || ''} (${primary.leaguePoints || 0} LP)`.trim();
+              }
+            }
+            if (Object.keys(ctx).length > 0) setUserContext(ctx);
+          }
+        } catch (err) {
+          console.error('Error fetching context:', err);
+        }
+
+        const chatsRef = collection(db, 'users', firebaseUser.uid, 'aiChats');
+        const q = query(chatsRef, orderBy('updatedAt', 'desc'));
+        unsubscribeChats = onSnapshot(q, (snapshot) => {
+          const fetchedChats = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setChats(fetchedChats);
+        });
+      } else {
+        setChats([]);
+        setMessages([]);
+        setCurrentChatId(null);
+        setUserContext(null);
+        if (unsubscribeChats) unsubscribeChats();
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeChats) unsubscribeChats();
+    };
+  }, []);
 
   useEffect(() => {
-    const fetchContext = async () => {
-      if (!auth.currentUser) return;
-      try {
-        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          const ctx = {};
-
-          if (data.riotAccount) {
-            const { gameName, tagLine, region } = data.riotAccount;
-            if (gameName && tagLine) ctx.riotId = `${gameName}#${tagLine}`;
-            if (region) ctx.region = region;
-          }
-
-          if (data.rankedData && data.rankedData.length > 0) {
-            const solo = data.rankedData.find(q => q.queueType === 'RANKED_SOLO_5x5');
-            const flex = data.rankedData.find(q => q.queueType === 'RANKED_FLEX_SR');
-            const primary = solo || flex;
-            if (primary) {
-              ctx.rank = `${primary.tier} ${primary.rank || ''} (${primary.leaguePoints || 0} LP)`.trim();
-            }
-          }
-
-          if (Object.keys(ctx).length > 0) setUserContext(ctx);
-        }
-      } catch (err) {
-        console.error('Error fetching AI user context:', err);
-      }
-    };
-
-    const unsubscribe = auth.onAuthStateChanged(() => fetchContext());
-    return () => unsubscribe();
-  }, []);
+    if (!user || !currentChatId) return;
+    const chat = chats.find(c => c.id === currentChatId);
+    if (chat) {
+      setMessages(chat.messages || []);
+    }
+  }, [currentChatId, chats]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -113,14 +134,30 @@ function AiAssistant() {
         if (data.isRateLimit) {
           setHighlightModelSelect(true);
         }
-        throw new Error(data.error || 'limit reached switch to different model');
+        throw new Error(data.error || 'Failed to get response from AI assistant');
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+      const assistantMessage = { role: 'assistant', content: data.response };
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
+
+      if (user) {
+        const chatData = {
+          messages: finalMessages,
+          updatedAt: serverTimestamp(),
+          title: finalMessages[0].content.substring(0, 30) + '...'
+        };
+
+        if (currentChatId) {
+          await updateDoc(doc(db, 'users', user.uid, 'aiChats', currentChatId), chatData);
+        } else {
+          const newChatRef = await addDoc(collection(db, 'users', user.uid, 'aiChats'), chatData);
+          setCurrentChatId(newChatRef.id);
+        }
+      }
     } catch (err) {
       console.error('AI chat error:', err);
-      const isRate = err.message.includes('limit reached');
-      setError(isRate ? 'limit reached switch to different model' : 'Something went wrong. Please try again.');
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -133,10 +170,52 @@ function AiAssistant() {
     }
   };
 
-  const clearChat = () => {
-    setMessages([]);
-    setError(null);
-    localStorage.removeItem('rift_hub_ai_messages');
+  const clearChat = async () => {
+    if (!user || !currentChatId) {
+      setMessages([]);
+      return;
+    }
+
+    setConfirmPopup({
+      show: true,
+      message: "are you sure you want to clear your chat with the ai bot",
+      onConfirm: async () => {
+        try {
+          const chatToDelete = currentChatId;
+          setCurrentChatId(null);
+          setMessages([]);
+          await updateDoc(doc(db, 'users', user.uid, 'aiChats', chatToDelete), {
+            messages: [],
+            updatedAt: serverTimestamp()
+          });
+        } catch (err) {
+          console.error('Error clearing AI history:', err);
+        }
+        setConfirmPopup({ show: false, message: '', onConfirm: null });
+      }
+    });
+  };
+
+  const deleteHistory = async (e, chatId) => {
+    e.stopPropagation();
+    if (!user || !chatId) return;
+
+    setConfirmPopup({
+      show: true,
+      message: "Are you sure you want to PERMANENTLY delete this chat?",
+      onConfirm: async () => {
+        try {
+          if (currentChatId === chatId) {
+            setCurrentChatId(null);
+            setMessages([]);
+          }
+          await deleteDoc(doc(db, 'users', user.uid, 'aiChats', chatId));
+        } catch (err) {
+          console.error('Error deleting chat history:', err);
+        }
+        setConfirmPopup({ show: false, message: '', onConfirm: null });
+      }
+    });
   };
 
   const formatMessage = (text) => {
@@ -163,19 +242,13 @@ function AiAssistant() {
       .join('');
   };
 
-  const SUGGESTIONS = [
-    "Best build for Jinx?",
-    "How to climb out of Gold?",
-    "Counter picks for Yasuo mid?",
-    "Tips for wave management"
-  ];
 
   return (
     <>
       <button
         className={`ai-trigger-btn ${isOpen ? 'hidden' : ''}`}
         onClick={() => setIsOpen(true)}
-        title="AI Champion Advisor"
+        title="RiftHub AI"
       >
         <div className="ai-trigger-glow" />
         <Sparkles size={22} />
@@ -190,7 +263,6 @@ function AiAssistant() {
             </div>
             <div>
               <h4 className="ai-panel-title">RiftHub AI</h4>
-              <span className="ai-panel-subtitle">Champion Advisor</span>
             </div>
           </div>
           <div className="ai-header-actions">
@@ -209,6 +281,18 @@ function AiAssistant() {
                 </option>
               ))}
             </select>
+            {user && (
+              <button
+                onClick={() => {
+                  setCurrentChatId(null);
+                  setMessages([]);
+                }}
+                className="ai-new-chat-btn"
+                title="New Chat"
+              >
+                <Plus size={16} />
+              </button>
+            )}
             {messages.length > 0 && (
               <button
                 onClick={clearChat}
@@ -228,79 +312,142 @@ function AiAssistant() {
           </div>
         </div>
 
+        {confirmPopup.show && (
+          <div className="ai-confirm-overlay">
+            <div className="ai-confirm-modal glass-panel">
+              <p className="ai-confirm-message">{confirmPopup.message}</p>
+              <div className="ai-confirm-actions">
+                <button
+                  className="ai-confirm-btn cancel"
+                  onClick={() => setConfirmPopup({ show: false, message: '', onConfirm: null })}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="ai-confirm-btn accept"
+                  onClick={() => confirmPopup.onConfirm()}
+                >
+                  Accept
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {user && chats.length > 0 && (
+          <div className="ai-history-bar">
+            <select
+              value={currentChatId || ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setCurrentChatId(val || null);
+                if (!val) setMessages([]);
+              }}
+              className="ai-history-select"
+              title={chats.find(c => c.id === currentChatId)?.title || (currentChatId ? '' : 'New Conversation')}
+            >
+              {!currentChatId && <option value="" title="Start a fresh conversation">New Conversation</option>}
+              {chats.map(chat => (
+                <option
+                  key={chat.id}
+                  value={chat.id}
+                  title={chat.title}
+                >
+                  {chat.title || 'Chat ' + chat.id.substring(0, 5)}
+                </option>
+              ))}
+            </select>
+            {currentChatId && (
+              <button
+                onClick={(e) => deleteHistory(e, currentChatId)}
+                className="ai-history-delete-btn"
+                title="Delete this history"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="ai-messages-area">
-          {messages.length === 0 && !isLoading && (
+          {!user ? (
             <div className="ai-welcome">
               <div className="ai-welcome-icon-wrap">
-                <Sparkles size={28} />
+                <LogIn size={28} />
               </div>
-              <h3 className="ai-welcome-title">Hey Summoner!</h3>
+              <h3 className="ai-welcome-title">Login Required</h3>
               <p className="ai-welcome-desc">
-                Ask me about builds, matchups, strategies, or anything League of Legends.
+                Please log in to your RiftHub account to chat with the AI assistant.
               </p>
-              {userContext?.rank && (
-                <div className="ai-user-rank-badge">
-                  <span>Playing as: {userContext.rank}</span>
+              <button
+                className="ai-login-redirect-btn"
+                onClick={() => { setIsOpen(false); navigate('/login'); }}
+              >
+                Log In
+              </button>
+            </div>
+          ) : (
+            <>
+              {messages.length === 0 && !isLoading ? (
+                <div className="ai-welcome">
+                  <div className="ai-welcome-icon-wrap">
+                    <Sparkles size={28} />
+                  </div>
+                  <h3 className="ai-welcome-title">RiftHub Technical Analyst</h3>
+                  <p className="ai-welcome-desc">
+                    I provide info on Season 2026 game mechanics (v16.5.1).
+                    General climb strategies are outside my scope.
+                  </p>
+                  <div className="ai-user-rank-badge">
+                    <span>Patch v16.5.1 Active</span>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`ai-message ${msg.role}`}>
+                      {msg.role === 'assistant' && (
+                        <div className="ai-avatar">
+                          <Bot size={14} />
+                        </div>
+                      )}
+                      <div className={`ai-message-bubble ${msg.role}`}>
+                        {msg.role === 'assistant' ? (
+                          <div
+                            className="ai-message-text"
+                            dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
+                          />
+                        ) : (
+                          <div className="ai-message-text">{msg.content}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {isLoading && (
+                    <div className="ai-message assistant">
+                      <div className="ai-avatar">
+                        <Bot size={14} />
+                      </div>
+                      <div className="ai-message-bubble assistant">
+                        <div className="ai-typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="ai-error-msg">
+                      <span>{error}</span>
+                    </div>
+                  )}
+                </>
               )}
-              <div className="ai-suggestions">
-                {SUGGESTIONS.map((s, i) => (
-                  <button
-                    key={i}
-                    className="ai-suggestion-chip"
-                    onClick={() => {
-                      setInputValue(s);
-                      setTimeout(() => inputRef.current?.focus(), 50);
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
+            </>
           )}
-
-          {messages.map((msg, i) => (
-            <div key={i} className={`ai-message ${msg.role}`}>
-              {msg.role === 'assistant' && (
-                <div className="ai-avatar">
-                  <Bot size={14} />
-                </div>
-              )}
-              <div className={`ai-message-bubble ${msg.role}`}>
-                {msg.role === 'assistant' ? (
-                  <div
-                    className="ai-message-text"
-                    dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
-                  />
-                ) : (
-                  <div className="ai-message-text">{msg.content}</div>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {isLoading && (
-            <div className="ai-message assistant">
-              <div className="ai-avatar">
-                <Bot size={14} />
-              </div>
-              <div className="ai-message-bubble assistant">
-                <div className="ai-typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="ai-error-msg">
-              <span>{error}</span>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
 
@@ -312,9 +459,9 @@ function AiAssistant() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about builds, matchups, strategies..."
+              placeholder={user ? "Ask about builds, matchups, strategies..." : "Log in to chat..."}
               className="ai-input"
-              disabled={isLoading}
+              disabled={isLoading || !user}
               maxLength={500}
             />
             <button
