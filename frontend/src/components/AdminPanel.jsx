@@ -8,8 +8,8 @@ import {
     getDocs,
     doc,
     getDoc,
-    updateDoc,
-    setDoc,
+    deleteDoc,
+    writeBatch,
     serverTimestamp,
     orderBy
 } from 'firebase/firestore';
@@ -27,6 +27,7 @@ function AdminPanel() {
     const [currentCoaches, setCurrentCoaches] = useState([]);
     const [adminsMetadata, setAdminsMetadata] = useState({});
     const [staffUsernames, setStaffUsernames] = useState({});
+    const [allUsers, setAllUsers] = useState([]);
     const [processingId, setProcessingId] = useState(null);
     const [demotingId, setDemotingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -178,6 +179,9 @@ function AdminPanel() {
                 });
                 setStaffUsernames(staffMap);
             }
+
+            const allUsersSnap = await getDocs(collection(db, "users"));
+            setAllUsers(allUsersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -366,8 +370,74 @@ function AdminPanel() {
                     console.error('Error demoting user:', error);
                     setNotification({ show: true, message: `Failed to demote user: ${error.message}`, type: 'error' });
                 }
-
                 setDemotingId(null);
+            }
+        });
+    };
+
+    const handleDeleteUser = async (userId) => {
+        setShowConfirmModal({
+            show: true,
+            title: `Delete User Account`,
+            message: `Are you sure you want to delete this user's profile and all their data (posts, friends, etc.)?`,
+            onConfirm: async () => {
+                setShowConfirmModal(prev => ({ ...prev, show: false }));
+                setProcessingId(userId);
+                try {
+                    try {
+                        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/queue/leave`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId })
+                        });
+                    } catch (e) { }
+
+                    const allUsersSnapshot = await getDocs(collection(db, "users"));
+                    let batch = writeBatch(db);
+                    let opCount = 0;
+
+                    allUsersSnapshot.forEach(uDoc => {
+                        if (uDoc.id !== userId) {
+                            const uData = uDoc.data();
+                            const updates = {};
+                            if (uData.friends?.some(f => f.id === userId)) updates.friends = uData.friends.filter(f => f.id !== userId);
+                            if (uData.pendingRequests?.some(r => r.from === userId)) updates.pendingRequests = uData.pendingRequests.filter(r => r.from !== userId);
+                            if (uData.sentFriendRequests?.some(r => r.to === userId)) updates.sentFriendRequests = uData.sentFriendRequests.filter(r => r.to !== userId);
+                            
+                            if (Object.keys(updates).length > 0) {
+                                batch.update(doc(db, "users", uDoc.id), updates);
+                                opCount++;
+                                if (opCount >= 400) {
+                                    batch.commit();
+                                    batch = writeBatch(db);
+                                    opCount = 0;
+                                }
+                            }
+                        }
+                    });
+                    if (opCount > 0) await batch.commit();
+
+                    const chatsSnap = await getDocs(query(collection(db, "chats"), where("participants", "array-contains", userId)));
+                    for (const cDoc of chatsSnap.docs) await deleteDoc(doc(db, "chats", cDoc.id));
+
+                    const postsSnap = await getDocs(query(collection(db, "posts"), where("userId", "==", userId)));
+                    for (const pDoc of postsSnap.docs) await deleteDoc(doc(db, "posts", pDoc.id));
+
+                    await deleteDoc(doc(db, "users", userId));
+
+                    try {
+                        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/users/${userId}`, {
+                            method: 'DELETE'
+                        });
+                    } catch (e) { }
+
+                    setAllUsers(prev => prev.filter(u => u.id !== userId));
+                    setNotification({ show: true, message: 'User and all their database data deleted successfully!', type: 'success' });
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    setNotification({ show: true, message: `Failed to delete user: ${error.message}`, type: 'error' });
+                }
+                setProcessingId(null);
             }
         });
     };
@@ -431,6 +501,12 @@ function AdminPanel() {
                             )}
                         </button>
                     )}
+                    <button
+                        className={`tab ${activeTab === 'all-users' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('all-users')}
+                    >
+                        Current Users
+                    </button>
                     <button
                         className={`tab ${activeTab === 'coach-applications' ? 'active' : ''}`}
                         onClick={() => setActiveTab('coach-applications')}
@@ -515,6 +591,53 @@ function AdminPanel() {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {activeTab === 'all-users' && (
+                        <div className="requests-section">
+                            <h2>Current Users Management</h2>
+                            <div className="user-list">
+                                {allUsers.map(u => (
+                                    <div key={u.id} className="user-item-row glass-panel">
+                                        <div className="user-main-info">
+                                            <div className="user-identity">
+                                                <img 
+                                                    src={u.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"} 
+                                                    alt="" 
+                                                    className="user-list-avatar"
+                                                />
+                                                <div className="user-text-meta">
+                                                    <h3>{u.username}</h3>
+                                                    <span className="user-email">{u.email}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="user-status-indicators">
+                                                <div className={`verification-badge ${u.emailVerified ? 'verified' : 'unverified'}`}>
+                                                    {u.emailVerified ? 'Verified' : 'Unverified'}
+                                                </div>
+                                                {u.riotAccount && (
+                                                    <div className="riot-connection-badge">
+                                                        <img src="/project-icons/Queue system/riot-icon.png" alt="Riot" className="riot-mini-icon" />
+                                                        {u.riotAccount.gameName}#{u.riotAccount.tagLine}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="user-actions">
+                                            <button 
+                                                className="delete-user-btn"
+                                                onClick={() => handleDeleteUser(u.id)}
+                                                disabled={processingId === u.id || u.id === user.uid}
+                                            >
+                                                {processingId === u.id ? '...' : 'Delete Account'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 

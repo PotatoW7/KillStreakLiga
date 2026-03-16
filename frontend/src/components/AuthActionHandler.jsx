@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { applyActionCode, checkActionCode, reload } from "firebase/auth";
 import { auth, db } from "../firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
@@ -34,8 +34,13 @@ function AuthActionHandler() {
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
-                const userData = querySnapshot.docs[0].data();
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
                 setVerifiedUsername(userData.username || "User");
+                
+                await updateDoc(doc(db, "users", userDoc.id), {
+                    emailVerified: true
+                });
             } else {
                 setVerifiedUsername("User");
             }

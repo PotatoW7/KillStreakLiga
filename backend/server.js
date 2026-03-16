@@ -44,8 +44,29 @@ app.use('/api/queue', queueRoutes);
 const matchHistoryRouter = require('./routes/matchHistory');
 app.use('/match-history', matchHistoryRouter);
 
+const admin = require('firebase-admin');
+
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  admin.initializeApp({
+    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))
+  });
+} else {
+  admin.initializeApp();
+}
+
 const aiRouter = require('./routes/ai');
 app.use('/api/ai', aiRouter);
+
+app.delete('/api/admin/users/:uid', async (req, res) => {
+  const { uid } = req.params;
+  try {
+    await admin.auth().deleteUser(uid);
+    res.json({ message: 'Successfully deleted user from Auth' });
+  } catch (error) {
+    console.error('Error deleting user from Auth:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running on http://localhost:${process.env.PORT || 3000}`);

@@ -28,6 +28,11 @@ function Login() {
         await sendEmailVerification(user);
         setError("Verification pending: Please check your email first. A new verification link has been sent.");
       } else {
+        const { doc, updateDoc } = await import("firebase/firestore");
+        const { db } = await import("../firebase");
+        await updateDoc(doc(db, "users", user.uid), {
+          emailVerified: true
+        });
         navigate("/profile");
       }
     } catch (err) {
