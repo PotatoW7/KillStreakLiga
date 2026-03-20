@@ -13,6 +13,7 @@ import {
     serverTimestamp,
     orderBy
 } from 'firebase/firestore';
+import { fetchDDragon } from '../utils/fetchDDragon';
 
 
 
@@ -35,6 +36,7 @@ function AdminPanel() {
     const [showConfirmModal, setShowConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
     const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
     const [error, setError] = useState(null);
+    const [latestVersion, setLatestVersion] = useState("14.3.1");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -78,6 +80,18 @@ function AdminPanel() {
 
         return () => unsubscribe();
     }, [navigate]);
+
+    useEffect(() => {
+        const loadVersion = async () => {
+            try {
+                const data = await fetchDDragon();
+                setLatestVersion(data.latestVersion);
+            } catch (err) {
+                console.error("Failed to load DDragon version:", err);
+            }
+        };
+        loadVersion();
+    }, []);
 
     useEffect(() => {
         if (userRole === 'admin') {
@@ -502,12 +516,6 @@ function AdminPanel() {
                         </button>
                     )}
                     <button
-                        className={`tab ${activeTab === 'all-users' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('all-users')}
-                    >
-                        Current Users
-                    </button>
-                    <button
                         className={`tab ${activeTab === 'coach-applications' ? 'active' : ''}`}
                         onClick={() => setActiveTab('coach-applications')}
                     >
@@ -520,7 +528,7 @@ function AdminPanel() {
                         className={`tab ${activeTab === 'current-admins' ? 'active' : ''}`}
                         onClick={() => setActiveTab('current-admins')}
                     >
-                        Current Admins
+                        Admins
                         {currentAdmins.length > 0 && (
                             <span className="staff-count">({currentAdmins.length})</span>
                         )}
@@ -529,9 +537,18 @@ function AdminPanel() {
                         className={`tab ${activeTab === 'current-coaches' ? 'active' : ''}`}
                         onClick={() => setActiveTab('current-coaches')}
                     >
-                        Current Coaches
+                        Coaches
                         {currentCoaches.length > 0 && (
                             <span className="staff-count">({currentCoaches.length})</span>
+                        )}
+                    </button>
+                    <button
+                        className={`tab ${activeTab === 'all-users' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('all-users')}
+                    >
+                        Users
+                        {allUsers.length > 0 && (
+                            <span className="staff-count">({allUsers.length})</span>
                         )}
                     </button>
                 </div>
@@ -619,7 +636,14 @@ function AdminPanel() {
                                                 </div>
                                                 {u.riotAccount && (
                                                     <div className="riot-connection-badge">
-                                                        <img src="/project-icons/Queue system/riot-icon.png" alt="Riot" className="riot-mini-icon" />
+                                                        <img 
+                                                            src={`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/${u.riotAccount.profileIconId}.png`} 
+                                                            alt="Riot" 
+                                                            className="riot-mini-icon" 
+                                                            onError={(e) => {
+                                                                e.target.src = "/project-icons/Profile icons/riot guest icon.png";
+                                                            }}
+                                                        />
                                                         {u.riotAccount.gameName}#{u.riotAccount.tagLine}
                                                     </div>
                                                 )}
