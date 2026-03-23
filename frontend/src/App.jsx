@@ -26,6 +26,7 @@ import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
 import AiAssistant from "./components/AiAssistant";
+import MatchDetails from "./components/MatchDetails";
 import { applyActionCode, checkActionCode, reload } from "firebase/auth";
 
 import { auth, db, storage } from "./firebase";
@@ -375,6 +376,7 @@ function App() {
             <Route path="/feeds" element={<Feeds />} />
             <Route path="/summoner" element={<Summoner />} />
             <Route path="/live-game" element={<LiveGame />} />
+            <Route path="/match/:region/:matchId" element={<MatchDetails />} />
             <Route path="/queue" element={<QueueSystem />} />
             <Route path="/finishSignIn" element={<FinishSignIn />} />
             <Route path="/become-coach" element={<BecomeCoach />} />

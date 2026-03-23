@@ -531,6 +531,7 @@ function Summoner() {
                 itemsData={itemsData}
                 version={version}
                 puuid={data.puuid}
+                region={region}
                 onPlayerClick={searchPlayer}
               />
             )}

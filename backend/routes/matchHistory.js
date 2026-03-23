@@ -79,6 +79,7 @@ router.get('/:region/:puuid', async (req, res) => {
         const endTime = info.gameEndTimestamp || (info.gameStartTimestamp + info.gameDuration * 1000);
 
         return {
+          matchId,
           gameDuration: info.gameDuration,
           gameMode: info.gameMode,
           queueId: info.queueId,
@@ -99,6 +100,78 @@ router.get('/:region/:puuid', async (req, res) => {
     res.json({ mode, recentGames });
   } catch (err) {
     console.error('Match history error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+router.get('/:region/match/:matchId', async (req, res) => {
+  const { region, matchId } = req.params;
+  const platformDomain = regionDomains[region];
+  const routingRegion = accountRouting[region];
+
+  if (!platformDomain || !routingRegion) {
+    return res.status(400).json({ error: 'Invalid region' });
+  }
+
+  try {
+    const matchRes = await fetch(
+      `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${API_KEY}`
+    );
+
+    if (!matchRes.ok) {
+      if (matchRes.status === 404) {
+        return res.status(404).json({ error: 'Match not found' });
+      }
+      throw new Error('Failed to fetch match details');
+    }
+
+    const matchData = await matchRes.json();
+    const info = matchData.info;
+
+    let timeline = null;
+    try {
+      const timelineRes = await fetch(
+        `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline?api_key=${API_KEY}`
+      );
+      if (timelineRes.ok) {
+        timeline = await timelineRes.json();
+      }
+    } catch (timelineErr) {
+      console.error('Failed to fetch timeline:', timelineErr);
+    }
+
+    const objectives = extractObjectives(info.teams);
+    const participantsWithRank = info.participants.map((p) => ({
+      ...p,
+      riotId: `${p.riotIdGameName || p.summonerName || 'Unknown'}#${p.riotIdTagline || ''}`,
+      items: [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5],
+      trinket: p.item6,
+    }));
+
+    const endTime = info.gameEndTimestamp || (info.gameStartTimestamp + info.gameDuration * 1000);
+
+    const detailedMatch = {
+      matchId,
+      gameDuration: info.gameDuration,
+      gameMode: info.gameMode,
+      queueId: info.queueId,
+      players: participantsWithRank,
+      teams: objectives,
+      gameStartTimestamp: info.gameStartTimestamp,
+      gameEndTimestamp: endTime,
+      dataVersion: matchData.metadata.dataVersion,
+      gameId: info.gameId,
+      gameType: info.gameType,
+      mapId: info.mapId,
+      platformId: info.platformId,
+      seasonId: info.seasonId,
+      tournamentCode: info.tournamentCode,
+      timeline: timeline
+    };
+
+    res.json(detailedMatch);
+  } catch (err) {
+    console.error('Match detail error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
