@@ -675,3 +675,138 @@
     opacity: 1 !important;
     color: #ef4444;
 }
+
+/* Custom Notification */
+.fl-notification {
+    position: absolute;
+    top: 1rem;
+    left: 1.5rem;
+    right: 1.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    animation: slideDownFade 0.3s ease-out;
+    pointer-events: none;
+}
+
+.fl-notification.success {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.fl-notification.error {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+/* Custom Confirm Modal */
+.fl-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1.5rem;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.fl-modal {
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 20rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.fl-modal-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: white;
+    font-style: italic;
+    text-align: center;
+}
+
+.fl-modal-text {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.5;
+    text-align: center;
+}
+
+.fl-modal-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.fl-modal-btn {
+    flex: 1;
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    font-weight: 900;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    font-style: italic;
+}
+
+.fl-modal-btn.confirm {
+    background: #ef4444;
+    color: white;
+    border: none;
+}
+
+.fl-modal-btn.confirm:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+}
+
+.fl-modal-btn.cancel {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fl-modal-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
+@keyframes slideDownFade {
+    from { opacity: 0; transform: translateY(-1rem); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}

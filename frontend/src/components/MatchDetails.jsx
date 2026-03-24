@@ -23,8 +23,8 @@ export default function MatchDetails() {
     const [hoveredItem, setHoveredItem] = useState(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const [hoveredBar, setHoveredBar] = useState(null);
-    const [compBlue, setCompBlue] = useState(null); // selected blue team player puuid
-    const [compRed, setCompRed] = useState(null);   // selected red team player puuid
+    const [compBlue, setCompBlue] = useState(null);
+    const [compRed, setCompRed] = useState(null);
     const [hoveredRunePlayer, setHoveredRunePlayer] = useState(null);
 
     useEffect(() => {
@@ -41,12 +41,9 @@ export default function MatchDetails() {
                 if (!res.ok) throw new Error("Failed to fetch match details");
                 const data = await res.json();
                 setMatch(data);
-
-                // Default comparison: same position on other team
                 if (viewerPuuid) {
                     const me = data.players.find(p => p.puuid === viewerPuuid);
                     if (me) {
-                        // Set the active player on their team, and auto-pick the lane opponent
                         const opp = data.players.find(p => p.teamId !== me.teamId && p.teamPosition === me.teamPosition);
                         if (me.teamId === 100) {
                             setCompBlue(me.puuid);
@@ -230,7 +227,7 @@ export default function MatchDetails() {
         const secondary = player.perks.styles[1];
         const fixed = fixStatPerks(player.perks.statPerks);
         const isHovered = hoveredRunePlayer === player.puuid;
-        
+
         return (
             <div className="runes-container">
                 {!isHovered ? (
@@ -330,9 +327,6 @@ export default function MatchDetails() {
                     if (event.type === "CHAMPION_KILL") allKills.push(event);
                 });
             });
-
-            // Engagement / Teamfight Winrate Logic
-            // Group kills into "Clashes" (within 25s of each other)
             const clashes = [];
             allKills.sort((a, b) => a.timestamp - b.timestamp).forEach(kill => {
                 let added = false;
@@ -349,35 +343,36 @@ export default function MatchDetails() {
             clashes.forEach(clash => {
                 const teamKillsCount = clash.filter(k => teamIds.includes(k.killerId)).length;
                 const enemyKillsCount = clash.filter(k => enemyIds.includes(k.killerId)).length;
-                const isTeamfight = clash.length >= 2; // At least 2 kills overall might indicate a skirmish/fight
-                
-                // Check if player participated in this clash
-                const playerParticipated = clash.some(k => 
-                    k.killerId === pId || k.victimId === pId || (k.assistingParticipantIds && k.assistingParticipantIds.includes(pId))
-                );
+                const teamMembersInvolved = new Set();
+                clash.forEach(k => {
+                    if (teamIds.includes(k.killerId)) teamMembersInvolved.add(k.killerId);
+                    if (k.assistingParticipantIds) {
+                        k.assistingParticipantIds.forEach(id => {
+                            if (teamIds.includes(id)) teamMembersInvolved.add(id);
+                        });
+                    }
+                    if (teamIds.includes(k.victimId)) teamMembersInvolved.add(k.victimId);
+                });
+                const isTeamfight = teamMembersInvolved.size >= 3;
 
-                if (isTeamfight && playerParticipated) {
-                    teamfights++;
-                    if (teamKillsCount >= enemyKillsCount) teamfightsWon++;
-                }
-                
                 if (isTeamfight) {
-                    // Global teamfight count
-                    const teamMembersInvolved = new Set();
-                    clash.forEach(k => {
-                        if (teamIds.includes(k.killerId)) teamMembersInvolved.add(k.killerId);
-                        if (k.assistingParticipantIds) k.assistingParticipantIds.filter(id => teamIds.includes(id)).forEach(id => teamMembersInvolved.add(id));
-                    });
-                    if (teamMembersInvolved.size >= 3) teamTotalTeamfights++;
+                    teamTotalTeamfights++;
+                    const playerParticipated = clash.some(k =>
+                        k.killerId === pId || k.victimId === pId || (k.assistingParticipantIds && k.assistingParticipantIds.includes(pId))
+                    );
+
+                    if (playerParticipated) {
+                        teamfights++;
+                        if (teamKillsCount > enemyKillsCount) {
+                            teamfightsWon++;
+                        }
+                    }
                 }
             });
-
-            // Single Event Stats (Solo Deaths / Duels)
             allKills.forEach(event => {
                 const victimPos = event.position;
                 let alliesNearby = false;
                 if (victimPos) {
-                    // Check positions in the closest frame
                     const frameIdx = Math.floor(event.timestamp / 60000);
                     const frame = match.timeline.info.frames[frameIdx];
                     if (frame && frame.participantFrames) {
@@ -386,7 +381,7 @@ export default function MatchDetails() {
                                 const allyFrame = frame.participantFrames[allyId];
                                 if (allyFrame && allyFrame.position) {
                                     const distSq = Math.pow(allyFrame.position.x - victimPos.x, 2) + Math.pow(allyFrame.position.y - victimPos.y, 2);
-                                    if (distSq < 4000000) alliesNearby = true; // 2000 units
+                                    if (distSq < 4000000) alliesNearby = true;
                                 }
                             }
                         });
@@ -451,7 +446,6 @@ export default function MatchDetails() {
         const radius = 35;
         const circumference = 2 * Math.PI * radius;
         const numericValue = parseFloat(value) || 0;
-        // Ensure percentage is capped between 0 and 100 for visual consistency
         const percentage = Math.min(Math.max(numericValue, 0), 100);
         const offset = isRaw ? circumference : circumference - (circumference * percentage / 100);
 
@@ -479,30 +473,27 @@ export default function MatchDetails() {
 
     const adv = calculateAdvancedStats(activePlayer);
     const itemHistory = getItemHistory(selectedPuuid);
-    
-    // Accurate Statistical Calculations
+
     const teamKills = (activePlayer.teamId === 100 ? blueTeam : redTeam).reduce((sum, p) => sum + p.kills, 0);
     const kpPct = teamKills > 0 ? (((activePlayer.kills + activePlayer.assists) / teamKills) * 100).toFixed(1) + "%" : "0.0%";
-    
-    // Teamfight participation: participation in teamfight events vs total team teamfights
-    const tfPartPct = adv.teamTotalTeamfights > 0 
-        ? ((adv.teamfights / adv.teamTotalTeamfights) * 100).toFixed(1) + "%" 
+    const tfPartPct = adv.teamTotalTeamfights > 0
+        ? ((adv.teamfights / adv.teamTotalTeamfights) * 100).toFixed(1) + "%"
         : "0.0%";
 
-    const tfWinratePct = adv.teamfights > 0 
-        ? ((adv.teamfightsWon / adv.teamfights) * 100).toFixed(1) + "%" 
+    const tfWinratePct = adv.teamfights > 0
+        ? ((adv.teamfightsWon / adv.teamfights) * 100).toFixed(1) + "%"
         : "0.0%";
 
-    const soloWinrateVal = (adv.pureDuelKills + adv.pureDuelDeaths) > 0 
-        ? ((adv.pureDuelKills / (adv.pureDuelKills + adv.pureDuelDeaths)) * 100).toFixed(1) + "%" 
+    const soloWinrateVal = (adv.pureDuelKills + adv.pureDuelDeaths) > 0
+        ? ((adv.pureDuelKills / (adv.pureDuelKills + adv.pureDuelDeaths)) * 100).toFixed(1) + "%"
         : "0.0%";
-    
-    const damagePct = activePlayer.challenges?.teamDamagePercentage 
-        ? (activePlayer.challenges.teamDamagePercentage * 100).toFixed(1) + "%" 
+
+    const damagePct = activePlayer.challenges?.teamDamagePercentage
+        ? (activePlayer.challenges.teamDamagePercentage * 100).toFixed(1) + "%"
         : "0.0%";
-        
-    const soloDeathsPct = activePlayer.deaths > 0 
-        ? ((adv.soloDeaths / activePlayer.deaths) * 100).toFixed(1) + "%" 
+
+    const soloDeathsPct = activePlayer.deaths > 0
+        ? ((adv.soloDeaths / activePlayer.deaths) * 100).toFixed(1) + "%"
         : "0.0%";
 
     const blueObjectives = match.teams?.["100"] || {};
@@ -549,25 +540,18 @@ export default function MatchDetails() {
         };
 
         const points = data.map((d, i) => `${getX(i)},${getY(d.adv)}`).join(" ");
-
-        // Build two filled polygons: positive (blue) and negative (red)
-        // Positive polygon: clip above yZero
         const posPoints = data.map((d, i) => {
             const x = getX(i);
             const y = Math.min(getY(d.adv), yZero);
             return `${x},${y}`;
         }).join(" ");
         const posPolygon = `${paddingLeft},${yZero} ${posPoints} ${getX(data.length - 1)},${yZero}`;
-
-        // Negative polygon: clip below yZero
         const negPoints = data.map((d, i) => {
             const x = getX(i);
             const y = Math.max(getY(d.adv), yZero);
             return `${x},${y}`;
         }).join(" ");
         const negPolygon = `${paddingLeft},${yZero} ${negPoints} ${getX(data.length - 1)},${yZero}`;
-
-        // Y-axis ticks
         const yTicks = [];
         const step = yMax / 3;
         for (let v = yMin; v <= yMax; v += step) {
@@ -589,7 +573,6 @@ export default function MatchDetails() {
                     }}
                     onMouseLeave={() => setHoverIdx(null)}
                 >
-                    {/* Y-axis grid lines and labels */}
                     {yTicks.map((val, i) => {
                         const y = getY(val);
                         const label = val === 0 ? "0" : val >= 1000 ? `${val / 1000}k` : val <= -1000 ? `${val / 1000}k` : val;
@@ -600,8 +583,6 @@ export default function MatchDetails() {
                             </g>
                         );
                     })}
-
-                    {/* X-axis labels */}
                     {[0, 0.2, 0.4, 0.6, 0.8, 1].map((step, i) => {
                         const x = paddingLeft + step * chartW;
                         const minIdx = Math.round(step * (data.length - 1));
@@ -612,20 +593,10 @@ export default function MatchDetails() {
                             </g>
                         );
                     })}
-
-                    {/* Zero line */}
                     <line x1={paddingLeft} y1={yZero} x2={paddingLeft + chartW} y2={yZero} stroke="rgba(255,255,255,0.25)" />
-
-                    {/* Blue (positive) area */}
                     <polygon points={posPolygon} fill="#3b82f6" fillOpacity="0.25" />
-
-                    {/* Red (negative) area */}
                     <polygon points={negPolygon} fill="#ef4444" fillOpacity="0.3" />
-
-                    {/* Line */}
                     <polyline points={points} fill="none" stroke="#ef4444" strokeWidth="2" />
-
-                    {/* Dots on every data point */}
                     {data.map((d, i) => (
                         <circle key={i}
                             cx={getX(i)} cy={getY(d.adv)} r="3"
@@ -633,8 +604,6 @@ export default function MatchDetails() {
                             stroke="rgba(0,0,0,0.5)" strokeWidth="1"
                         />
                     ))}
-
-                    {/* Hover vertical + tooltip */}
                     {hoverIdx !== null && (() => {
                         const d = data[hoverIdx];
                         const val = d.adv;
@@ -702,13 +671,11 @@ export default function MatchDetails() {
             let cumKills = 0, cumAssists = 0, cumDeaths = 0, cumWards = 0;
             return match.timeline.info.frames.map(frame => {
                 if (type === "gold") return { val: frame.participantFrames[pId]?.totalGold || 0 };
-                // Creep Score (Minions + Monsters + Wards as requested)
                 if (type === "cs") {
                     const pf = frame.participantFrames[pId];
                     frame.events.forEach(e => {
                         if (e.type === "WARD_KILL" && e.killerId === pId) cumWards++;
                     });
-                    // Neutral minions in timeline are 'jungleMinionsKilled'
                     return { val: (pf?.minionsKilled || 0) + (pf?.jungleMinionsKilled || 0) + cumWards };
                 }
                 if (type === "damage_dealt") {
@@ -719,7 +686,6 @@ export default function MatchDetails() {
                     const pf = frame.participantFrames[pId];
                     return { val: pf?.damageStats?.totalDamageTaken || 0 };
                 }
-                // kda / deaths
                 let frameKill = false, frameAssist = false;
                 frame.events.forEach(e => {
                     if (type === "kda" && e.type === "CHAMPION_KILL") {
@@ -739,7 +705,7 @@ export default function MatchDetails() {
         const data2 = raw2.map(d => d.val);
 
         const max = Math.max(...data1, ...data2, 1);
-        const yMax = Math.ceil(max / 5) * 5 || 1; // Round up for cleaner steps
+        const yMax = Math.ceil(max / 5) * 5 || 1;
 
         const width = 420;
         const height = 180;
@@ -790,8 +756,6 @@ export default function MatchDetails() {
                                 <stop offset="100%" stopColor="var(--defeat)" stopOpacity="0" />
                             </linearGradient>
                         </defs>
-
-                        {/* Grid Lines Group */}
                         <g className="chart-grid">
                             {[0, 0.25, 0.5, 0.75, 1].map((step, i) => {
                                 const y = paddingTop + chartH * (1 - step);
@@ -850,7 +814,6 @@ export default function MatchDetails() {
                                             {showRed && (() => {
                                                 const tipW = 60, tipH = 22;
                                                 const tipX = Math.min(Math.max(hoverX - tipW / 2, paddingLeft), paddingLeft + chartW - tipW);
-                                                // flip above/below based on available space
                                                 const above = cy2 - 42 < paddingTop;
                                                 const tipY = above ? cy2 + 10 : cy2 - tipH - 10;
                                                 return (
@@ -879,8 +842,6 @@ export default function MatchDetails() {
                                                     </>
                                                 );
                                             })()}
-
-                                            {/* Time Indicator on Hover */}
                                             <text x={hoverX} y={paddingTop + chartH + 15} textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize="10" fontWeight="bold">
                                                 {idx}m
                                             </text>
@@ -981,14 +942,13 @@ export default function MatchDetails() {
         const paddingRight = 15;
         const paddingBottom = 40;
         const paddingTop = 20;
-        const scaleMax = 100000; // Fixed scale as requested
+        const scaleMax = 100000;
         const chartWidth = (barWidth + gap) * 10;
 
         return (
             <div className="md-damage-chart-container glass-panel">
                 <h3>Damage Dealt</h3>
                 <svg width="100%" height={chartHeight + paddingTop + paddingBottom} viewBox={`0 0 ${chartWidth + paddingLeft + paddingRight + 80} ${chartHeight + paddingTop + paddingBottom}`}>
-                    {/* Y-axis Labels & Lines */}
                     {[0, 0.2, 0.4, 0.6, 0.8, 1].map((step, i) => {
                         const val = Math.round(scaleMax * step);
                         const y = paddingTop + chartHeight * (1 - step);
@@ -1182,68 +1142,68 @@ export default function MatchDetails() {
 
                         <div className="md-tab-content">
                             {activeTab === "fighting" && (
-                            <div className="md-fighting-stats">
-                                <div className="md-circles-row">
-                                    <CircularStat value={tfWinratePct} label="Teamfights Winrate" color="var(--victory)" />
-                                    <CircularStat value={soloWinrateVal} label="Duel Winrate (1v1)" color={parseFloat(soloWinrateVal) >= 50 ? "var(--victory)" : "var(--defeat)"} />
-                                    <CircularStat value={tfPartPct} label="Teamfights Participation" color="var(--color-primary)" />
-                                </div>
-                                <div className="md-circles-row">
-                                    <CircularStat value={soloDeathsPct} label="Solo Deaths %" color="var(--defeat)" />
-                                    <CircularStat value={adv.duels} label="Solo Kills" isRaw />
-                                    <CircularStat value={damagePct} label="Damage Share" />
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === "farming" && (
-                            <div className="md-farming-stats">
-                                <div className="md-circles-row">
-                                    <CircularStat value={activePlayer.totalMinionsKilled + (activePlayer.jungleMinionsKilled || 0)} label="Total CS" isRaw />
-                                    <CircularStat value={activePlayer.goldEarned} label="Gold Earned" isRaw />
-                                    <CircularStat value={((activePlayer.totalMinionsKilled + (activePlayer.jungleMinionsKilled || 0)) / (match.gameDuration / 60)).toFixed(1)} label="CS/Min" isRaw />
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === "objectives" && (
-                            <div className="md-objectives-stats">
-                                <div className="md-team-objectives-comparison">
-                                    <div className="md-team-col blue">
-                                        <h4>Blue Team</h4>
-                                        <div className="md-circles-row smaller">
-                                            <CircularStat value={blueObjectives.dragon || 0} label="Dragons" isRaw size={70} />
-                                            <CircularStat value={blueObjectives.baron || 0} label="Barons" isRaw size={70} />
-                                            <CircularStat value={blueObjectives.voidGrubs || 0} label="Void Grubs" isRaw size={70} />
-                                            <CircularStat value={blueObjectives.riftHerald || 0} label="Rift Heralds" isRaw size={70} />
-                                        </div>
+                                <div className="md-fighting-stats">
+                                    <div className="md-circles-row">
+                                        <CircularStat value={tfWinratePct} label="Teamfights Winrate" color="var(--victory)" />
+                                        <CircularStat value={soloWinrateVal} label="Duel Winrate (1v1)" color={parseFloat(soloWinrateVal) >= 50 ? "var(--victory)" : "var(--defeat)"} />
+                                        <CircularStat value={tfPartPct} label="Teamfights Participation" color="var(--color-primary)" />
                                     </div>
-                                    <div className="md-team-col red">
-                                        <h4>Red Team</h4>
-                                        <div className="md-circles-row smaller">
-                                            <CircularStat value={redObjectives.dragon || 0} label="Dragons" isRaw size={70} />
-                                            <CircularStat value={redObjectives.baron || 0} label="Barons" isRaw size={70} />
-                                            <CircularStat value={redObjectives.voidGrubs || 0} label="Void Grubs" isRaw size={70} />
-                                            <CircularStat value={redObjectives.riftHerald || 0} label="Rift Heralds" isRaw size={70} />
-                                        </div>
+                                    <div className="md-circles-row">
+                                        <CircularStat value={soloDeathsPct} label="Solo Deaths %" color="var(--defeat)" />
+                                        <CircularStat value={adv.duels} label="Solo Kills" isRaw />
+                                        <CircularStat value={damagePct} label="Damage Share" />
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {activeTab === "vision" && (
-                            <div className="md-vision-stats">
-                                <div className="md-circles-row">
-                                    <CircularStat value={activePlayer.visionScore} label="Vision Score" isRaw />
-                                    <CircularStat value={activePlayer.challenges?.controlWardsPlaced || 0} label="Control Wards Placed" isRaw />
-                                    <CircularStat value={activePlayer.challenges?.controlWardsDestroyed || 0} label="Control Wards Destroyed" isRaw />
+                            {activeTab === "farming" && (
+                                <div className="md-farming-stats">
+                                    <div className="md-circles-row">
+                                        <CircularStat value={activePlayer.totalMinionsKilled + (activePlayer.jungleMinionsKilled || 0)} label="Total CS" isRaw />
+                                        <CircularStat value={activePlayer.goldEarned} label="Gold Earned" isRaw />
+                                        <CircularStat value={((activePlayer.totalMinionsKilled + (activePlayer.jungleMinionsKilled || 0)) / (match.gameDuration / 60)).toFixed(1)} label="CS/Min" isRaw />
+                                    </div>
                                 </div>
-                                <div className="md-circles-row">
-                                    <CircularStat value={activePlayer.wardsPlaced} label="Wards Placed" isRaw />
-                                    <CircularStat value={activePlayer.wardsKilled} label="Wards Destroyed" isRaw />
+                            )}
+
+                            {activeTab === "objectives" && (
+                                <div className="md-objectives-stats">
+                                    <div className="md-team-objectives-comparison">
+                                        <div className="md-team-col blue">
+                                            <h4>Blue Team</h4>
+                                            <div className="md-circles-row smaller">
+                                                <CircularStat value={blueObjectives.dragon || 0} label="Dragons" isRaw size={70} />
+                                                <CircularStat value={blueObjectives.baron || 0} label="Barons" isRaw size={70} />
+                                                <CircularStat value={blueObjectives.voidGrubs || 0} label="Void Grubs" isRaw size={70} />
+                                                <CircularStat value={blueObjectives.riftHerald || 0} label="Rift Heralds" isRaw size={70} />
+                                            </div>
+                                        </div>
+                                        <div className="md-team-col red">
+                                            <h4>Red Team</h4>
+                                            <div className="md-circles-row smaller">
+                                                <CircularStat value={redObjectives.dragon || 0} label="Dragons" isRaw size={70} />
+                                                <CircularStat value={redObjectives.baron || 0} label="Barons" isRaw size={70} />
+                                                <CircularStat value={redObjectives.voidGrubs || 0} label="Void Grubs" isRaw size={70} />
+                                                <CircularStat value={redObjectives.riftHerald || 0} label="Rift Heralds" isRaw size={70} />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+
+                            {activeTab === "vision" && (
+                                <div className="md-vision-stats">
+                                    <div className="md-circles-row">
+                                        <CircularStat value={activePlayer.visionScore} label="Vision Score" isRaw />
+                                        <CircularStat value={activePlayer.challenges?.controlWardsPlaced || 0} label="Control Wards Placed" isRaw />
+                                        <CircularStat value={activePlayer.challenges?.controlWardsDestroyed || 0} label="Control Wards Destroyed" isRaw />
+                                    </div>
+                                    <div className="md-circles-row">
+                                        <CircularStat value={activePlayer.wardsPlaced} label="Wards Placed" isRaw />
+                                        <CircularStat value={activePlayer.wardsKilled} label="Wards Destroyed" isRaw />
+                                    </div>
+                                </div>
+                            )}
                             {(activeTab === "fighting" || activeTab === "farming") && <ComparisonDashboard />}
                         </div>
                     </div>
