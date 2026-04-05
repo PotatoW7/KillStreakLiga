@@ -7,7 +7,10 @@ import {
   sendEmailVerification,
   deleteUser,
   reauthenticateWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
+  reauthenticateWithPopup,
+  updatePassword,
+  linkWithCredential
 } from "firebase/auth";
 import {
   doc, updateDoc, getDoc, deleteDoc, collection,
@@ -138,7 +141,16 @@ function Profile() {
     posts: [],
     loadingPosts: true,
     backendError: false,
-    notification: { message: "", type: "", visible: false }
+    notification: { message: "", type: "", visible: false },
+    newUsername: "",
+    usernameError: "",
+    usernameSuccess: "",
+    passCurrent: "",
+    passNew: "",
+    passConfirm: "",
+    passError: "",
+    passSuccess: "",
+    accountUpdating: false
   });
 
   const showNotification = (message, type = "success") => {
@@ -364,6 +376,9 @@ function Profile() {
 
           const isFriend = userData.friends?.some(f => f.id === currentUser?.uid) || false;
           fetchUserPosts(targetUserId, currentUser?.uid, isFriend);
+        } else if (isOwn) {
+          console.log("No profile document found, redirecting to home...");
+          navigate("/");
         }
       } catch (error) {
         console.error("Error loading profile data:", error);
@@ -641,9 +656,138 @@ function Profile() {
     }
   };
 
+  const handleGoogleReauth = async () => {
+    setState(prev => ({ ...prev, deletingAccount: true }));
+    try {
+      const provider = new GoogleAuthProvider();
+      await reauthenticateWithPopup(state.user, provider);
+      await performAccountDeletion();
+    } catch (error) {
+      console.error("Google re-auth error:", error);
+      setState(prev => ({
+        ...prev,
+        deletingAccount: false,
+        reauthError: "Google re-authentication failed. Please try again."
+      }));
+    }
+  };
+
+  const handleUsernameUpdate = async () => {
+    const trimmed = state.newUsername.trim();
+    if (trimmed.length < 3 || trimmed.length > 15) {
+      return setState(prev => ({ ...prev, usernameError: "Username must be 3-15 characters." }));
+    }
+    if (trimmed.toLowerCase() === state.profileData?.usernameLowercase) {
+      return setState(prev => ({ ...prev, usernameError: "This is already your username." }));
+    }
+
+    setState(prev => ({ ...prev, accountUpdating: true, usernameError: "", usernameSuccess: "" }));
+
+    try {
+      // 14-day cooldown check
+      if (state.profileData?.lastUsernameChange) {
+        const lastChange = state.profileData.lastUsernameChange.toDate ? state.profileData.lastUsernameChange.toDate() : new Date(state.profileData.lastUsernameChange);
+        const diff = Date.now() - lastChange.getTime();
+        const cooldownDays = 14;
+        const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
+        
+        if (diff < cooldownMs) {
+          const remainingDays = Math.ceil((cooldownMs - diff) / (24 * 60 * 60 * 1000));
+          setState(prev => ({ 
+            ...prev, 
+            accountUpdating: false, 
+            usernameError: `You must wait ${remainingDays} more day${remainingDays > 1 ? 's' : ''} to change your username again.` 
+          }));
+          return;
+        }
+      }
+
+      const q = query(collection(db, "users"), where("usernameLowercase", "==", trimmed.toLowerCase()));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        setState(prev => ({ ...prev, accountUpdating: false, usernameError: "Username already taken." }));
+        return;
+      }
+
+      const userRef = doc(db, "users", state.user.uid);
+      const now = new Date();
+      await updateDoc(userRef, {
+        username: trimmed,
+        usernameLowercase: trimmed.toLowerCase(),
+        lastUsernameChange: now
+      });
+
+      setState(prev => ({
+        ...prev,
+        accountUpdating: false,
+        usernameSuccess: "Username updated!",
+        profileData: { 
+          ...prev.profileData, 
+          username: trimmed, 
+          usernameLowercase: trimmed.toLowerCase(),
+          lastUsernameChange: now 
+        },
+        newUsername: ""
+      }));
+      showNotification("Username updated successfully!");
+    } catch (err) {
+      console.error("Error updating username:", err);
+      setState(prev => ({ ...prev, accountUpdating: false, usernameError: "Failed to update. Try again." }));
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (state.passNew.length < 6) {
+      return setState(prev => ({ ...prev, passError: "New password must be at least 6 characters." }));
+    }
+    if (state.passNew !== state.passConfirm) {
+      return setState(prev => ({ ...prev, passError: "Passwords do not match." }));
+    }
+
+    setState(prev => ({ ...prev, accountUpdating: true, passError: "", passSuccess: "" }));
+
+    try {
+      const isGoogleUser = state.user.providerData.some(p => p.providerId === 'google.com');
+      const hasPassword = state.user.providerData.some(p => p.providerId === 'password');
+
+      if (hasPassword) {
+        if (!state.passCurrent) {
+          setState(prev => ({ ...prev, accountUpdating: false, passError: "Current password required." }));
+          return;
+        }
+        const credential = EmailAuthProvider.credential(state.user.email, state.passCurrent);
+        await reauthenticateWithCredential(state.user, credential);
+        await updatePassword(state.user, state.passNew);
+      } else if (isGoogleUser) {
+        const credential = EmailAuthProvider.credential(state.user.email, state.passNew);
+        await linkWithCredential(state.user, credential);
+      } else {
+        throw new Error("Unsupported account type for password update.");
+      }
+
+      setState(prev => ({
+        ...prev,
+        accountUpdating: false,
+        passSuccess: isGoogleUser && !hasPassword ? "Security password set!" : "Password updated!",
+        passCurrent: "",
+        passNew: "",
+        passConfirm: ""
+      }));
+      showNotification("Security settings updated!");
+    } catch (err) {
+      console.error("Error updating security:", err);
+      let msg = "Failed to update security. Try again.";
+      if (err.code === 'auth/wrong-password') msg = "Current password is incorrect.";
+      if (err.code === 'auth/requires-recent-login') msg = "Please log out and back in to change security.";
+      setState(prev => ({ ...prev, accountUpdating: false, passError: msg }));
+    }
+  };
+
   const performAccountDeletion = async () => {
     setState(prev => ({ ...prev, deletingAccount: true }));
     try {
+      sessionStorage.setItem('ignoringUsernameModal', 'true');
+
       const userId = state.user.uid;
 
       try {
@@ -706,10 +850,12 @@ function Profile() {
 
       await deleteDoc(doc(db, "users", userId));
       await deleteUser(state.user);
+      await auth.signOut();
 
       window.location.href = "/";
     } catch (error) {
       console.error("Error during account deletion:", error);
+      sessionStorage.removeItem('ignoringUsernameModal');
       showNotification(error.code === 'permission-denied' ? "Permission denied." :
         error.code === 'unavailable' ? "Network error." :
           "Error deleting account.", "error");
@@ -1190,6 +1336,105 @@ function Profile() {
                     </span>
                   </div>
                 )}
+
+                <div className="modal-divider" />
+
+                <div className="modal-section-title">Change Username</div>
+                <div className="modal-update-group">
+                  <input
+                    type="text"
+                    value={state.newUsername}
+                    onChange={(e) => setState(prev => ({ ...prev, newUsername: e.target.value.slice(0, 15) }))}
+                    className="modal-input"
+                    placeholder="New username..."
+                  />
+                  <button
+                    onClick={handleUsernameUpdate}
+                    disabled={state.accountUpdating || !state.newUsername.trim()}
+                    className="modal-update-btn"
+                  >
+                    Update
+                  </button>
+                </div>
+                {state.usernameError && <p className="modal-error-text">{state.usernameError}</p>}
+                {state.usernameSuccess && <p className="modal-success-text">{state.usernameSuccess}</p>}
+
+                <div className="modal-divider" />
+
+                <div className="modal-section-title">Security Settings</div>
+                {state.user?.providerData?.some(p => p.providerId === 'password') ? (
+                  <div className="modal-password-fields">
+                    <div className="modal-field-stack">
+                      <label className="modal-field-label">Current Password</label>
+                      <input
+                        type="password"
+                        value={state.passCurrent}
+                        onChange={(e) => setState(prev => ({ ...prev, passCurrent: e.target.value }))}
+                        className="modal-input"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <div className="modal-field-stack">
+                      <label className="modal-field-label">New Password</label>
+                      <input
+                        type="password"
+                        value={state.passNew}
+                        onChange={(e) => setState(prev => ({ ...prev, passNew: e.target.value }))}
+                        className="modal-input"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <div className="modal-field-stack">
+                      <label className="modal-field-label">Confirm New Password</label>
+                      <input
+                        type="password"
+                        value={state.passConfirm}
+                        onChange={(e) => setState(prev => ({ ...prev, passConfirm: e.target.value }))}
+                        className="modal-input"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <button
+                      onClick={handlePasswordUpdate}
+                      disabled={state.accountUpdating || !state.passNew || !state.passCurrent}
+                      className="modal-update-btn full"
+                    >
+                      {state.accountUpdating ? "Updating..." : "Change Password"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="modal-password-fields">
+                    <div className="modal-field-stack">
+                      <label className="modal-field-label">Set Password</label>
+                      <input
+                        type="password"
+                        value={state.passNew}
+                        onChange={(e) => setState(prev => ({ ...prev, passNew: e.target.value }))}
+                        className="modal-input"
+                        placeholder="Choose a password..."
+                      />
+                    </div>
+                    <div className="modal-field-stack">
+                      <label className="modal-field-label">Confirm Password</label>
+                      <input
+                        type="password"
+                        value={state.passConfirm}
+                        onChange={(e) => setState(prev => ({ ...prev, passConfirm: e.target.value }))}
+                        className="modal-input"
+                        placeholder="Confirm password..."
+                      />
+                    </div>
+                    <button
+                      onClick={handlePasswordUpdate}
+                      disabled={state.accountUpdating || !state.passNew}
+                      className="modal-update-btn full"
+                    >
+                      {state.accountUpdating ? "Setting..." : "Set Password"}
+                    </button>
+                  </div>
+                )}
+                {state.passError && <p className="modal-error-text">{state.passError}</p>}
+                {state.passSuccess && <p className="modal-success-text">{state.passSuccess}</p>}
               </div>
 
               <button
@@ -1255,41 +1500,57 @@ function Profile() {
               </div>
 
               <div className="security-modal-body">
-                <p className="security-desc">
-                  Enter your password to confirm account deletion.
+                <p className="security-desc" style={{ marginBottom: '1.5rem' }}>
+                  To ensure it's you, please re-authenticate before account deletion.
                 </p>
 
-                <div className="form-field">
-                  <label htmlFor="password" className="form-label">Password</label>
-                  <input
-                    id="password"
-                    type="password"
-                    value={state.password}
-                    onChange={(e) => setState(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Enter Password"
-                    className="form-input security-input"
-                  />
-                  {state.reauthError && (
-                    <div className="form-error-msg animate-shake">
-                      {state.reauthError}
-                    </div>
-                  )}
-                </div>
+                {state.user?.providerData?.some(p => p.providerId === 'google.com') && (
+                  <button
+                    onClick={handleGoogleReauth}
+                    className="auth-google-btn"
+                    style={{ marginBottom: '1.5rem', height: '3.5rem', fontSize: '0.8rem' }}
+                    disabled={state.deletingAccount}
+                  >
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="auth-google-icon" />
+                    <span>Confirm with Google</span>
+                  </button>
+                )}
 
-                <div className="modal-actions-row">
+                {state.user?.providerData?.some(p => p.providerId === 'password') && (
+                  <div className="form-field">
+                    <label htmlFor="password" className="form-label">Or use your password</label>
+                    <input
+                      id="password"
+                      type="password"
+                      value={state.password}
+                      onChange={(e) => setState(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="Enter Password"
+                      className="form-input security-input"
+                    />
+                    {state.reauthError && (
+                      <div className="form-error-msg animate-shake">
+                        {state.reauthError}
+                      </div>
+                    )}
+                    <button
+                      onClick={handleReauthentication}
+                      className="modal-confirm-btn danger"
+                      style={{ marginTop: '1rem', width: '100%' }}
+                      disabled={state.deletingAccount || !state.password}
+                    >
+                      {state.deletingAccount ? "Deleting..." : "Delete with Password"}
+                    </button>
+                  </div>
+                )}
+
+                <div className="modal-actions-row" style={{ marginTop: '1.5rem' }}>
                   <button
                     onClick={() => setState(prev => ({ ...prev, showReauthModal: false, password: "", reauthError: "" }))}
                     className="modal-abort-btn"
                     disabled={state.deletingAccount}
+                    style={{ flex: 1 }}
                   >
                     Cancel
-                  </button>
-                  <button
-                    onClick={handleReauthentication}
-                    className="modal-confirm-btn danger"
-                    disabled={state.deletingAccount || !state.password}
-                  >
-                    {state.deletingAccount ? "Deleting..." : "Delete Account"}
                   </button>
                 </div>
               </div>

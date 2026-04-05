@@ -6,6 +6,9 @@ export default defineConfig({
     react(),
   ],
   server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    },
     proxy: {
       '/summoner-info': {
         target: 'http://localhost:3000',
