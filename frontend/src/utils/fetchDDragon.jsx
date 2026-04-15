@@ -10,26 +10,66 @@ export async function fetchDDragon() {
       const versions = await versionRes.json();
       const latestVersion = versions[0];
 
-      // Fetch Champions
       const champRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
       const champData = await champRes.json();
 
-      // Fetch Items
+
       const itemRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/item.json`);
       const itemData = await itemRes.json();
 
-      // Fetch Summoner Spells
+
       const spellRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/summoner.json`);
       const spellData = await spellRes.json();
+
+      const runeRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/runesReforged.json`);
+      const runeData = await runeRes.json();
+
+      let augmentsData = {};
+      try {
+        const augmentRes = await fetch("https://raw.communitydragon.org/latest/cdragon/arena/en_us.json");
+        if (augmentRes.ok) {
+          const augmentJson = await augmentRes.json();
+          if (augmentJson.augments) {
+            augmentJson.augments.forEach(aug => {
+              augmentsData[aug.id] = {
+                name: aug.name,
+                description: aug.desc,
+                icon: aug.iconLarge,
+                // Store dataValues for parsing later if needed, or parse description here if possible. 
+                // But MatchHistory will handle parsing to keep this clean or we can do it here. 
+                // Let's pass the raw dataValues too.
+                dataValues: aug.dataValues
+              };
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to fetch Arena augments", e);
+      }
+
+      const runesData = {};
+      runeData.forEach(tree => {
+        // Process the tree itself (Domination, Precision, etc.) - usually not needed for individual rune tooltips but good to have context if needed
+        // Iterate slots/runes
+        tree.slots.forEach(slot => {
+          slot.runes.forEach(rune => {
+            runesData[rune.id] = {
+              name: rune.name,
+              description: rune.shortDesc || rune.longDesc,
+              icon: rune.icon,
+              type: 'rune'
+            };
+          });
+        });
+      });
 
       const iconMap = {};
       const champIdToName = {};
       const champNameToId = {};
 
-      // Helper to normalize names
+
       const normalize = (name) => name.toLowerCase().replace(/\s+/g, '_').replace(/['.]/g, '');
 
-      // Process Champions
       Object.values(champData.data).forEach(champ => {
         const normalized = normalize(champ.name);
         champIdToName[champ.key] = champ.id;
@@ -41,7 +81,7 @@ export async function fetchDDragon() {
         };
       });
 
-      // Process Items
+
       Object.values(itemData.data).forEach(item => {
         const normalized = normalize(item.name);
         iconMap[normalized] = {
@@ -51,8 +91,13 @@ export async function fetchDDragon() {
         };
       });
 
-      // Process Spells
+
+      const spellIdToData = {};
       Object.values(spellData.data).forEach(spell => {
+        spellIdToData[spell.key] = {
+          ...spell,
+          type: 'summoner'
+        };
         const normalized = normalize(spell.name);
         iconMap[normalized] = {
           name: spell.name,
@@ -61,10 +106,10 @@ export async function fetchDDragon() {
         };
       });
 
-      return { latestVersion, iconMap, champIdToName, champNameToId };
+      return { latestVersion, iconMap, champIdToName, champNameToId, itemsData: itemData.data, runesData, spellIdToData, augmentsData };
     } catch (error) {
       console.error("Error in fetchDDragon:", error);
-      ddragonCache = null; // Reset on error
+      ddragonCache = null;
       throw error;
     }
   })();

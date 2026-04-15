@@ -3,10 +3,6 @@ const router = express.Router();
 
 let queue = [];
 
-const QUEUE_CONFIG = {
-  MAX_WAIT_TIME: 900000,
-  CLEANUP_INTERVAL: 300000
-};
 
 const GAME_MODES = {
   solo_duo: {
@@ -28,11 +24,11 @@ const GAME_MODES = {
 
 router.post('/join', async (req, res) => {
   try {
-    const { 
-      userId, 
-      playerName, 
-      riotAccount, 
-      region, 
+    const {
+      userId,
+      playerName,
+      riotAccount,
+      region,
       preferredRoles = [],
       queueType,
       partySize = 1,
@@ -75,8 +71,8 @@ router.post('/join', async (req, res) => {
     queue.push(player);
     console.log(`Player ${playerName} joined ${queueType} queue. Queue size: ${queue.length}`);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       queueId: player.queueId,
       position: queue.length,
       estimatedWait: estimateWaitTime(queue.length)
@@ -90,12 +86,12 @@ router.post('/join', async (req, res) => {
 router.post('/leave', (req, res) => {
   try {
     const { userId } = req.body;
-    
+
     const initialLength = queue.length;
     queue = queue.filter(player => player.userId !== userId);
-    
+
     console.log(`Player ${userId} left queue. Queue was ${initialLength}, now ${queue.length}`);
-    
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error leaving queue:', error);
@@ -106,7 +102,7 @@ router.post('/leave', (req, res) => {
 router.get('/status/:userId', (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     const inQueue = queue.find(player => player.userId === userId);
 
     const queueStats = {
@@ -132,17 +128,17 @@ router.get('/status/:userId', (req, res) => {
 
 router.get('/players', (req, res) => {
   try {
-    const { excludeUserId } = req.query; 
-    
+    const { excludeUserId } = req.query;
+
     let filteredPlayers = queue;
 
     if (excludeUserId) {
       filteredPlayers = queue.filter(player => player.userId !== excludeUserId);
     }
-    
+
     res.json({
       players: filteredPlayers.map(player => ({
-        userId: player.userId, 
+        userId: player.userId,
         playerName: player.playerName,
         riotAccount: player.riotAccount,
         region: player.region,
@@ -163,18 +159,18 @@ router.get('/players', (req, res) => {
 router.get('/analytics', (req, res) => {
   try {
     const { region } = req.query;
-    
-    const filteredQueue = region && region !== 'all' && region !== 'undefined' 
-      ? queue.filter(p => p.region === region.toLowerCase()) 
+
+    const filteredQueue = region && region !== 'all' && region !== 'undefined'
+      ? queue.filter(p => p.region === region.toLowerCase())
       : queue;
-    
+
     const analytics = {
       totalPlayers: filteredQueue.length,
       averageWaitTime: calculateAverageWaitTime(filteredQueue),
       modePreferences: calculateModePreferences(filteredQueue),
       region: region || 'all'
     };
-    
+
     res.json(analytics);
   } catch (error) {
     console.error('Error getting queue analytics:', error);
@@ -208,15 +204,5 @@ function generateQueueId() {
   return 'q_' + Math.random().toString(36).substr(2, 9);
 }
 
-setInterval(() => {
-  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-  
-  const initialQueueSize = queue.length;
-  queue = queue.filter(player => player.joinedAt > fifteenMinutesAgo);
-  
-  if (initialQueueSize !== queue.length) {
-    console.log(`Cleaned up ${initialQueueSize - queue.length} old queue entries`);
-  }
-}, 5 * 60 * 1000);
 
 module.exports = router;

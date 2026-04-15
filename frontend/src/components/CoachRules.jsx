@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { auth, db } from '../firebase';
 import '../styles/componentsCSS/coaching.css';
 
 function CoachRules() {
@@ -8,7 +9,7 @@ function CoachRules() {
             <div className="coach-rules-container">
                 <div className="rules-header">
                     <h1>Coaching Guidelines & Requirements</h1>
-                    <p>Everything you need to know about becoming a Killstreak coach</p>
+                    <p>Everything you need to know about becoming a KillStreak coach</p>
                 </div>
 
                 <section className="rules-section">
@@ -19,7 +20,7 @@ function CoachRules() {
                                 <strong>Rank Requirement:</strong> You must be Platinum rank or higher in Solo/Duo or Flex queue.
                             </li>
                             <li>
-                                <strong>Verified Account:</strong> Your Riot Games account must be linked and verified on Killstreak.
+                                <strong>Verified Account:</strong> Your Riot Games account must be linked and verified on KillStreak.
                             </li>
                             <li>
                                 <strong>Good Standing:</strong> Your account must be in good standing with no recent bans or restrictions.
@@ -43,9 +44,6 @@ function CoachRules() {
                             </li>
                             <li>
                                 <strong>Punctuality:</strong> Honor your scheduled sessions and notify students of any changes in advance.
-                            </li>
-                            <li>
-                                <strong>No Boosting:</strong> Coaching means teaching, not playing on someone else's account.
                             </li>
                             <li>
                                 <strong>Constructive Feedback:</strong> Focus on improvement, not criticism. Help students grow.
@@ -86,7 +84,7 @@ function CoachRules() {
                             <span className="step-number">1</span>
                             <div>
                                 <strong>Link Your Account</strong>
-                                <p>Verify your Riot Games account on your Killstreak profile.</p>
+                                <p>Verify your Riot Games account on your KillStreak profile.</p>
                             </div>
                         </div>
                         <div className="step">

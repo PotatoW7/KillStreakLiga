@@ -1,12 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_URL || "";
 import ReactDOM from 'react-dom';
 import { auth, db } from '../firebase';
 import {
   collection, query, where, onSnapshot, addDoc,
   serverTimestamp, doc, getDoc, orderBy, deleteDoc,
-  updateDoc, arrayUnion, arrayRemove, getDocs
+  updateDoc, arrayUnion, arrayRemove, getDocs, writeBatch
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { MessageSquare, Users, Swords, Filter, Clock, ShieldCheck, ShieldX, Star, Trash2, Edit3, UserPlus, Check, X, Copy, ExternalLink, ChevronDown, PlusSquare } from 'lucide-react';
+import '../styles/componentsCSS/queue-system.css';
+
+const normalizeProfileIcon = (url) => {
+  if (!url) return url;
+  if (typeof url !== 'string') return url;
+  if (url.includes('profileicon/588.png')) {
+    return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
+  }
+  if (url.includes('ddragon.leagueoflegends.com/cdn/13.20.1/')) {
+    return url.replace('13.20.1', '14.3.1');
+  }
+  return url;
+};
 
 function QueueSystem() {
   const [isPostingGame, setIsPostingGame] = useState(false);
@@ -15,7 +30,10 @@ function QueueSystem() {
   const [filteredListings, setFilteredListings] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [userFriends, setUserFriends] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [sentFriendRequests, setSentFriendRequests] = useState([]);
+  const [processingRequests, setProcessingRequests] = useState(new Set());
+  const [selectedJoinRole, setSelectedJoinRole] = useState('fill');
+
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
@@ -45,8 +63,16 @@ function QueueSystem() {
     description: '',
   });
 
+  const [showRiotLinkModal, setShowRiotLinkModal] = useState(false);
+
   const rankDropdownRef = useRef(null);
+  const queueDropdownRef = useRef(null);
+  const regionDropdownRef = useRef(null);
+  const postQueueDropdownRef = useRef(null);
   const [showRankDropdown, setShowRankDropdown] = useState(false);
+  const [showQueueDropdown, setShowQueueDropdown] = useState(false);
+  const [showRegionDropdown, setShowRegionDropdown] = useState(false);
+  const [showPostQueueDropdown, setShowPostQueueDropdown] = useState(false);
 
   const roles = [
     { id: 'fill', name: 'Fill', icon: '/lane-icons/Fill icon.png' },
@@ -103,7 +129,8 @@ function QueueSystem() {
     { id: 'sg2', name: 'Singapore' },
     { id: 'th2', name: 'Thailand' },
     { id: 'tw2', name: 'Taiwan' },
-    { id: 'vn2', name: 'Vietnam' }
+    { id: 'vn2', name: 'Vietnam' },
+    { id: 'me1', name: 'Middle East' }
   ];
 
   const rankIconsMap = {
@@ -139,7 +166,8 @@ function QueueSystem() {
       'sg2': 'sg2',
       'th2': 'th2',
       'tw2': 'tw2',
-      'vn2': 'vn2'
+      'vn2': 'vn2',
+      'me1': 'me1'
     };
 
     return regionMap[regionFromDB.toLowerCase()] || regionFromDB.toLowerCase();
@@ -164,7 +192,8 @@ function QueueSystem() {
       'sg2': 'Singapore',
       'th2': 'Thailand',
       'tw2': 'Taiwan',
-      'vn2': 'Vietnam'
+      'vn2': 'Vietnam',
+      'me1': 'Middle East'
     };
 
     return displayMap[regionFromDB.toLowerCase()] || regionFromDB.toUpperCase();
@@ -174,6 +203,15 @@ function QueueSystem() {
     const handleClickOutside = (event) => {
       if (rankDropdownRef.current && !rankDropdownRef.current.contains(event.target)) {
         setShowRankDropdown(false);
+      }
+      if (queueDropdownRef.current && !queueDropdownRef.current.contains(event.target)) {
+        setShowQueueDropdown(false);
+      }
+      if (regionDropdownRef.current && !regionDropdownRef.current.contains(event.target)) {
+        setShowRegionDropdown(false);
+      }
+      if (postQueueDropdownRef.current && !postQueueDropdownRef.current.contains(event.target)) {
+        setShowPostQueueDropdown(false);
       }
     };
 
@@ -204,13 +242,15 @@ function QueueSystem() {
 
     updateUserRankedData();
     fetchUserProfile();
-    fetchUserFriends();
     fetchGameListings();
     fetchMyGameRequests();
 
+    const friendsUnsubscribe = fetchUserFriends();
+
     return () => {
-      const unsubscribe = fetchGameListings();
-      if (unsubscribe) unsubscribe();
+      const listingUnsubscribe = fetchGameListings();
+      if (listingUnsubscribe) listingUnsubscribe();
+      if (friendsUnsubscribe) friendsUnsubscribe();
     };
   }, []);
 
@@ -302,7 +342,7 @@ function QueueSystem() {
 
         if (userData.riotAccount && userData.riotAccount.gameName && userData.riotAccount.tagLine) {
           try {
-            const response = await fetch(`/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
+            const response = await fetch(`${API_URL}/summoner-info/${userData.riotAccount.region}/${encodeURIComponent(userData.riotAccount.gameName)}/${encodeURIComponent(userData.riotAccount.tagLine)}`);
             if (response.ok) {
               const summonerData = await response.json();
               const rankedData = summonerData.ranked || [];
@@ -418,17 +458,21 @@ function QueueSystem() {
     }
   };
 
-  const fetchUserFriends = async () => {
+  const fetchUserFriends = () => {
+    if (!auth.currentUser) return;
+
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
-      const userDoc = await getDoc(userRef);
-
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        setUserFriends(data.friends || []);
-      }
+      const unsubscribe = onSnapshot(userRef, (userDoc) => {
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setUserFriends(data.friends || []);
+          setSentFriendRequests(data.sentFriendRequests || []);
+        }
+      });
+      return unsubscribe;
     } catch (error) {
-      console.error('Error fetching user friends:', error);
+      console.error('Error fetching user friends/requests:', error);
     }
   };
 
@@ -447,7 +491,7 @@ function QueueSystem() {
           createdAt: doc.data().createdAt?.toDate() || new Date()
         }));
         setGameListings(listings);
-        setLoading(false);
+
       });
 
       return unsubscribe;
@@ -468,7 +512,7 @@ function QueueSystem() {
           .sort((a, b) => b.createdAt - a.createdAt);
 
         setGameListings(activeListings);
-        setLoading(false);
+
       });
 
       return unsubscribe;
@@ -536,29 +580,51 @@ function QueueSystem() {
       const hostFriends = hostData.friends || [];
       const applicantFriends = applicantData.friends || [];
 
-      const alreadyFriends = hostFriends.some(friend => friend.id === applicantUserId) ||
-        applicantFriends.some(friend => friend.id === hostUserId);
+      const hostHasApplicant = hostFriends.some(friend => friend.id === applicantUserId);
+      const applicantHasHost = applicantFriends.some(friend => friend.id === hostUserId);
 
-      if (!alreadyFriends) {
-        await updateDoc(hostRef, {
-          friends: arrayUnion({
+      const hostPendingToRemove = (hostData.pendingRequests || []).filter(req => req.from === applicantUserId);
+      const hostSentToRemove = (hostData.sentFriendRequests || []).filter(req => req.to === applicantUserId);
+      const applicantPendingToRemove = (applicantData.pendingRequests || []).filter(req => req.from === hostUserId);
+      const applicantSentToRemove = (applicantData.sentFriendRequests || []).filter(req => req.to === hostUserId);
+
+      const needsFriendUpdate = !hostHasApplicant || !applicantHasHost;
+      const needsRequestCleanup = hostPendingToRemove.length > 0 || hostSentToRemove.length > 0 ||
+        applicantPendingToRemove.length > 0 || applicantSentToRemove.length > 0;
+
+      if (needsFriendUpdate || needsRequestCleanup) {
+        const batch = writeBatch(db);
+
+        const hostUpdates = {};
+        if (!hostHasApplicant) {
+          hostUpdates.friends = arrayUnion({
             id: applicantUserId,
-            username: applicantName,
+            username: applicantName || applicantData.username || 'Anonymous',
             profileImage: applicantData.profileImage || null,
             addedAt: new Date()
-          })
-        });
+          });
+        }
+        if (hostPendingToRemove.length > 0) hostUpdates.pendingRequests = arrayRemove(...hostPendingToRemove);
+        if (hostSentToRemove.length > 0) hostUpdates.sentFriendRequests = arrayRemove(...hostSentToRemove);
 
-        await updateDoc(applicantRef, {
-          friends: arrayUnion({
+        if (Object.keys(hostUpdates).length > 0) batch.update(hostRef, hostUpdates);
+
+        const applicantUpdates = {};
+        if (!applicantHasHost) {
+          applicantUpdates.friends = arrayUnion({
             id: hostUserId,
-            username: hostData.username || auth.currentUser?.displayName || 'Host',
+            username: hostData.username || 'Anonymous',
             profileImage: hostData.profileImage || null,
             addedAt: new Date()
-          })
-        });
+          });
+        }
+        if (applicantPendingToRemove.length > 0) applicantUpdates.pendingRequests = arrayRemove(...applicantPendingToRemove);
+        if (applicantSentToRemove.length > 0) applicantUpdates.sentFriendRequests = arrayRemove(...applicantSentToRemove);
 
-        console.log("Auto-friended users after queue acceptance");
+        if (Object.keys(applicantUpdates).length > 0) batch.update(applicantRef, applicantUpdates);
+
+        await batch.commit();
+        console.log("Auto-friended and cleaned up requests (Atomic)");
       }
     } catch (error) {
       console.error("Error auto-friending users:", error);
@@ -566,20 +632,13 @@ function QueueSystem() {
   };
 
   const getProfileImage = (game) => {
-    if (game.userProfileImage) {
-      if (typeof game.userProfileImage === 'string' && game.userProfileImage.startsWith('data:image')) {
-        return game.userProfileImage;
-      }
-    }
-
     if (game.userId && playerProfiles[game.userId]?.profileImage) {
-      const image = playerProfiles[game.userId].profileImage;
-      if (image && typeof image === 'string' && image.startsWith('data:image')) {
-        return image;
-      }
+      return normalizeProfileIcon(playerProfiles[game.userId].profileImage);
     }
-
-    return null;
+    if (game.userProfileImage) {
+      return normalizeProfileIcon(game.userProfileImage);
+    }
+    return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
   };
 
   const getQueueData = (rankedData, queueType) => {
@@ -616,7 +675,7 @@ function QueueSystem() {
   };
 
   const getRankIcon = (tier) => {
-    if (!tier) return '/rank-icons/unranked.png';
+    if (!tier) return '/rank-icons/Rank=Unranked.png';
     const tierUpper = tier.toUpperCase();
 
     const fileName = rankIconsMap[tierUpper];
@@ -715,8 +774,7 @@ function QueueSystem() {
     }
 
     if (!userProfile?.riotAccountData) {
-      alert('Please link your Riot account first in your Profile!');
-      navigate('/profile');
+      setShowRiotLinkModal(true);
       return;
     }
 
@@ -813,6 +871,10 @@ function QueueSystem() {
   };
 
   const openJoinModal = (game) => {
+    if (!userProfile?.riotAccountData) {
+      setShowRiotLinkModal(true);
+      return;
+    }
     setSelectedGame(game);
     setJoinMessage('');
     setShowJoinModal(true);
@@ -851,7 +913,7 @@ function QueueSystem() {
         appliedAt: new Date().toISOString(),
         status: 'pending',
         message: message.trim(),
-        role: userProfile?.preferredRole || 'fill',
+        role: selectedJoinRole,
         rankedData: userProfile?.rankedData || []
       };
 
@@ -873,6 +935,15 @@ function QueueSystem() {
   };
 
   const handleAcceptRequest = async (gameId, applicantUserId, applicantName) => {
+    const requestId = `${gameId}_${applicantUserId}`;
+    if (processingRequests.has(requestId)) return;
+
+    setProcessingRequests(prev => {
+      const next = new Set(prev);
+      next.add(requestId);
+      return next;
+    });
+
     try {
       const gameRef = doc(db, 'gameListings', gameId);
       const gameDoc = await getDoc(gameRef);
@@ -911,7 +982,12 @@ function QueueSystem() {
 
       await addFriendOnAccept(gameData.userId, applicantUserId, applicantName);
 
-      alert(`Request accepted! ${applicantName} has been added as a friend.`);
+      const alreadyFriend = isAlreadyFriend(applicantUserId);
+      const successMessage = alreadyFriend
+        ? `Request accepted! You are already friends with ${applicantName}.`
+        : `Request accepted! ${applicantName} has been added as a friend.`;
+
+      alert(successMessage);
 
       setMyGameRequests(prev => prev.filter(req =>
         !(req.gameId === gameId && req.userId === applicantUserId)
@@ -919,10 +995,25 @@ function QueueSystem() {
     } catch (error) {
       console.error('Error accepting request:', error);
       alert('Error accepting request. Please try again.');
+    } finally {
+      setProcessingRequests(prev => {
+        const next = new Set(prev);
+        next.delete(requestId);
+        return next;
+      });
     }
   };
 
   const handleDeclineRequest = async (gameId, applicantUserId, applicantName) => {
+    const requestId = `${gameId}_${applicantUserId}`;
+    if (processingRequests.has(requestId)) return;
+
+    setProcessingRequests(prev => {
+      const next = new Set(prev);
+      next.add(requestId);
+      return next;
+    });
+
     try {
       const gameRef = doc(db, 'gameListings', gameId);
       const gameDoc = await getDoc(gameRef);
@@ -952,6 +1043,12 @@ function QueueSystem() {
     } catch (error) {
       console.error('Error declining request:', error);
       alert('Error declining request. Please try again.');
+    } finally {
+      setProcessingRequests(prev => {
+        const next = new Set(prev);
+        next.delete(requestId);
+        return next;
+      });
     }
   };
 
@@ -989,8 +1086,24 @@ function QueueSystem() {
       const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const targetUserRef = doc(db, 'users', userId);
 
+      const currentUserDoc = await getDoc(currentUserRef);
+      const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
+
       const targetUserDoc = await getDoc(targetUserRef);
       const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
+
+      const isAlreadyFriend = (currentUserData.friends || []).some(f => f.id === userId);
+      if (isAlreadyFriend) {
+        alert("You are already friends with this user.");
+        return;
+      }
+
+      const hasPendingRequest = (currentUserData.sentFriendRequests || []).some(req => req.to === userId);
+      if (hasPendingRequest) {
+        alert("A friend request is already pending.");
+        return;
+      }
+
       const targetUsername = targetUserData.username || 'Anonymous';
       const targetProfileImage = targetUserData.profileImage || null;
 
@@ -1009,13 +1122,17 @@ function QueueSystem() {
       };
 
 
-      await updateDoc(targetUserRef, {
+      const batch = writeBatch(db);
+
+      batch.update(targetUserRef, {
         pendingRequests: arrayUnion(requestData)
       });
 
-      await updateDoc(currentUserRef, {
+      batch.update(currentUserRef, {
         sentFriendRequests: arrayUnion(sentRequestData)
       });
+
+      await batch.commit();
     } catch (error) {
       console.error('Error sending friend request:', error);
       alert('Error sending friend request: ' + error.message);
@@ -1033,6 +1150,10 @@ function QueueSystem() {
 
   const isAlreadyFriend = (userId) => {
     return userFriends.some(friend => friend.id === userId);
+  };
+
+  const hasRequestSent = (userId) => {
+    return sentFriendRequests.some(req => req.to === userId);
   };
 
   const handleCancelEdit = () => {
@@ -1112,24 +1233,153 @@ function QueueSystem() {
     return getDisplayRegion(game.userRiotAccountObject.region);
   };
 
-  if (loading) {
+  const renderGameForm = (isEditMode) => {
     return (
-      <div className="queue-container">
-        <div className="queue-loading">
-          <div className="spinner">Loading...</div>
-          <p>Loading game listings...</p>
+      <div className={isEditMode ? "" : "post-lobby-panel"}>
+        {!isEditMode && (
+          <div className="post-panel-header">
+            <div className="status-icon-wrap primary">
+              <PlusSquare className="icon-md" />
+            </div>
+            <h3 className="post-panel-title">Post a New Game</h3>
+          </div>
+        )}
+
+        <div className="post-form-grid">
+          <div className="form-field-group">
+            <label className="form-field-label">My Role</label>
+            <div className="role-filter-row">
+              {roles.map(role => (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() => setGameData(prev => ({ ...prev, role: role.id }))}
+                  className={`role-btn ${gameData.role === role.id ? 'active' : ''}`}
+                  title={role.name}
+                >
+                  <img src={role.icon} alt={role.name} />
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-field-group">
+            <label className="form-field-label">Queue System</label>
+            <div className="filter-select-wrapper" ref={postQueueDropdownRef}>
+              <button
+                type="button"
+                className="filter-custom-select u-flex-between filter-btn-queue"
+                onClick={() => setShowPostQueueDropdown(!showPostQueueDropdown)}
+              >
+                <div className="u-flex-center u-gap-3">
+                  <span className="queue-icon-dot"></span>
+                  <span className="font-medium">
+                    {queueTypes.find(q => q.id === gameData.queueType)?.name || 'Select Queue'}
+                  </span>
+                </div>
+                <ChevronDown className={`icon-sm transition-transform duration-300 ${showPostQueueDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showPostQueueDropdown && (
+                <div className="filter-dropdown-menu filter-dropdown-queue">
+                  {queueTypes.filter(q => q.id !== 'all').map(queue => (
+                    <button
+                      key={queue.id}
+                      type="button"
+                      className={`dropdown-item ${gameData.queueType === queue.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setGameData(prev => ({ ...prev, queueType: queue.id }));
+                        setShowPostQueueDropdown(false);
+                      }}
+                    >
+                      <span className="queue-dot-small"></span>
+                      <span className="font-medium">{queue.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="form-field-group">
+            <label className="form-field-label">Communication</label>
+            <div className="comm-type-grid">
+              {communicationTypes.map(comm => (
+                <button
+                  key={comm.id}
+                  type="button"
+                  onClick={() => handleCommunicationSelect(comm.id)}
+                  className={`comm-btn ${gameData.communication === comm.id ? 'active' : ''}`}
+                >
+                  {comm.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-field-group">
+            <label className="form-field-label">Searching For</label>
+            <div className="role-filter-row">
+              {roles.map(role => (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() => setGameData(prev => ({ ...prev, preferredDuoRole: role.id }))}
+                  className={`role-btn ${gameData.preferredDuoRole === role.id ? 'active' : ''}`}
+                  title={role.name}
+                >
+                  <img src={role.icon} alt={role.name} />
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-field-group" style={{ gridColumn: '1 / -1' }}>
+            <label className="form-field-label">Description (Optional)</label>
+            <textarea
+              name="description"
+              value={gameData.description}
+              onChange={(e) => {
+                handleInputChange(e);
+                handleTextareaResize(e);
+              }}
+              placeholder="Tell your potential duo something about yourself or your goals..."
+              className="post-form-textarea"
+              maxLength={200}
+            />
+          </div>
+        </div>
+
+        <div className="post-panel-footer">
+          <button
+            type="button"
+            className="btn-discard"
+            onClick={isEditMode ? handleCancelEdit : () => setIsPostingGame(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn-publish"
+            onClick={isEditMode ? handleUpdateGame : handlePostGame}
+          >
+            {isEditMode ? 'Update Lobby' : 'Publish Lobby'}
+          </button>
         </div>
       </div>
     );
-  }
+  };
+
+
 
   if (!auth.currentUser) {
     return (
-      <div className="queue-container">
-        <div className="queue-warning">
-          <div className="warning-icon">⚠️</div>
-          <p>Please login to use the queue system</p>
-          <button onClick={() => navigate('/login')} className="link-profile-btn">
+      <div className="lobby-hub-page auth-denied">
+        <div className="glass-panel text-center-panel">
+          <div className="status-icon-wrap error">
+            <ShieldCheck className="icon-xxl" />
+          </div>
+          <h2 className="filters-title">Access Denied</h2>
+          <p className="lobby-subtitle">Please login to access the Queue finder and find your perfect duo partner.</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="btn-publish w-full"
+          >
             Go to Login
           </button>
         </div>
@@ -1138,369 +1388,238 @@ function QueueSystem() {
   }
 
   return (
-    <div className="queue-container">
-      <div className="queue-header">
-        <h1>Find League Teammates</h1>
-        <p>Post your game or join others to find the perfect duo partner</p>
-
-        <div className="header-actions">
+    <div className="lobby-hub-page">
+      <div className="lobby-hub-header">
+        <div className="lobby-title-group">
+          <h1>Queue finder</h1>
+          <p className="lobby-subtitle">
+            Find your perfect duo or group. Filter by rank, role, and region to dominate the Rift.
+          </p>
+        </div>
+        <div className="lobby-header-actions">
           <button
-            className="post-game-btn"
+            className="post-lobby-btn"
             onClick={() => {
-              setIsEditingGame(null);
-              setIsPostingGame(!isPostingGame);
+              if (!isPostingGame && !userProfile?.riotAccountData) {
+                setShowRiotLinkModal(true);
+              } else {
+                setIsPostingGame(!isPostingGame);
+              }
             }}
           >
-            {isPostingGame ? 'Cancel' : 'Post a Game'}
+            {isPostingGame ? <X className="icon-md" /> : <PlusSquare className="icon-md" />}
+            {isPostingGame ? 'Cancel Post' : 'Post a Game'}
           </button>
 
-          {myGameRequests.length > 0 && (
-            <button
-              className="manage-requests-btn"
-              onClick={handleManageRequests}
-            >
-              Manage Requests ({myGameRequests.length})
-            </button>
-          )}
+          <button
+            className="manage-requests-btn"
+            onClick={handleManageRequests}
+          >
+            <Users className="icon-md" />
+            Manage Requests ({myGameRequests.length})
+          </button>
         </div>
       </div>
+      <div className="lobby-filters-panel">
+        <div className="filters-accent-bar"></div>
 
-      <div className="filter-section">
-        <h3>Filter Games</h3>
+        <div className="filters-header">
+          <div className="status-icon-wrap primary">
+            <Filter className="icon-md u-text-cyan" />
+          </div>
+          <h3 className="filters-title">Advanced Search</h3>
+        </div>
+
         <div className="filters-grid">
           <div className="filter-group">
-            <label className="filter-label">Role</label>
-            <div className="filter-buttons">
+            <label className="filter-label">Select Roles</label>
+            <div className="role-filter-row">
               {roles.map(role => (
                 <button
                   key={role.id}
-                  type="button"
-                  className={`filter-btn ${filters.roles.includes(role.id) ? 'active' : ''}`}
                   onClick={() => handleRoleToggle(role.id)}
+                  className={`role-btn ${filters.roles.includes(role.id) ? 'active' : ''}`}
+                  title={role.name}
                 >
-                  <img
-                    src={role.icon}
-                    alt={role.name}
-                    className="filter-icon-img"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                  <span className="filter-text">{role.name}</span>
+                  <img src={role.icon} alt={role.name} />
                 </button>
               ))}
             </div>
           </div>
-
           <div className="filter-group">
-            <label className="filter-label">Rank</label>
-            <div className="rank-filter-wrapper" ref={rankDropdownRef}>
-              <div
-                className="rank-filter-display"
+            <label className="filter-label">Skill Level</label>
+            <div className="filter-select-wrapper" ref={rankDropdownRef}>
+              <button
+                className="filter-custom-select u-flex-between filter-btn-rank"
                 onClick={() => setShowRankDropdown(!showRankDropdown)}
               >
-                <div className="rank-filter-display-content">
-                  <img
-                    src={getRankIconForFilter(filters.rank)}
-                    alt={rankTiers.find(r => r.id === filters.rank)?.name}
-                    className="rank-filter-display-icon"
-                    onError={(e) => {
-                      console.error('Failed to load rank icon:', e.target.src);
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                  <span>{rankTiers.find(r => r.id === filters.rank)?.name}</span>
+                <div className="u-flex-center u-gap-3">
+                  <img src={getRankIconForFilter(filters.rank)} alt="" className="icon-sm" />
+                  <span className="font-medium">{rankTiers.find(r => r.id === filters.rank)?.name}</span>
                 </div>
-                <span className={`rank-filter-chevron ${showRankDropdown ? 'open' : ''}`}>▼</span>
-              </div>
+                <ChevronDown className={`icon-sm transition-transform duration-300 ${showRankDropdown ? 'rotate-180' : ''}`} />
+              </button>
 
               {showRankDropdown && (
-                <div className="rank-filter-dropdown">
+                <div className="filter-dropdown-menu">
                   {rankTiers.map(rank => (
-                    <div
+                    <button
                       key={rank.id}
-                      className={`rank-filter-option ${filters.rank === rank.id ? 'active' : ''}`}
+                      className={`dropdown-item ${filters.rank === rank.id ? 'active' : ''}`}
                       onClick={() => {
                         handleFilterChange('rank', rank.id);
                         setShowRankDropdown(false);
                       }}
                     >
-                      <img
-                        src={getRankIconForFilter(rank.id)}
-                        alt={rank.name}
-                        className="rank-filter-option-icon"
-                        onError={(e) => {
-                          console.error('Failed to load rank icon:', e.target.src);
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                      <span>{rank.name}</span>
-                    </div>
+                      <img src={getRankIconForFilter(rank.id)} alt="" className="icon-md" />
+                      <span className="font-medium">{rank.name}</span>
+                    </button>
                   ))}
                 </div>
               )}
             </div>
           </div>
-
           <div className="filter-group">
-            <label className="filter-label">Queue Type</label>
-            <select
-              value={filters.queueType}
-              onChange={(e) => handleFilterChange('queueType', e.target.value)}
-              className="filter-select"
-            >
-              {queueTypes.map(queue => (
-                <option key={queue.id} value={queue.id}>
-                  {queue.name}
-                </option>
-              ))}
-            </select>
+            <label className="filter-label">Queue System</label>
+            <div className="filter-select-wrapper" ref={queueDropdownRef}>
+              <button
+                className="filter-custom-select u-flex-between filter-btn-queue"
+                onClick={() => setShowQueueDropdown(!showQueueDropdown)}
+              >
+                <div className="u-flex-center u-gap-3">
+                  <span className="queue-icon-dot"></span>
+                  <span className="font-medium">{queueTypes.find(q => q.id === filters.queueType)?.name}</span>
+                </div>
+                <ChevronDown className={`icon-sm transition-transform duration-300 ${showQueueDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showQueueDropdown && (
+                <div className="filter-dropdown-menu filter-dropdown-queue">
+                  {queueTypes.map(queue => (
+                    <button
+                      key={queue.id}
+                      className={`dropdown-item ${filters.queueType === queue.id ? 'active' : ''}`}
+                      onClick={() => { handleFilterChange('queueType', queue.id); setShowQueueDropdown(false); }}
+                    >
+                      <span className="queue-dot-small"></span>
+                      <span className="font-medium">{queue.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-
           <div className="filter-group">
-            <label className="filter-label">Region</label>
-            <select
-              value={filters.region}
-              onChange={(e) => handleFilterChange('region', e.target.value)}
-              className="filter-select"
-            >
-              {regions.map(region => (
-                <option key={region.id} value={region.id}>
-                  {region.name}
-                </option>
-              ))}
-            </select>
+            <label className="filter-label">Server Region</label>
+            <div className="filter-select-wrapper" ref={regionDropdownRef}>
+              <button
+                className="filter-custom-select u-flex-between filter-btn-region"
+                onClick={() => setShowRegionDropdown(!showRegionDropdown)}
+              >
+                <div className="u-flex-center u-gap-3">
+                  <span className="region-icon-dot"></span>
+                  <span className="font-medium">{regions.find(r => r.id === filters.region)?.name}</span>
+                </div>
+                <ChevronDown className={`icon-sm transition-transform duration-300 ${showRegionDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showRegionDropdown && (
+                <div className="filter-dropdown-menu filter-dropdown-region dropdown-below">
+                  {regions.map(region => (
+                    <button
+                      key={region.id}
+                      className={`dropdown-item ${filters.region === region.id ? 'active active-region' : ''}`}
+                      onClick={() => { handleFilterChange('region', region.id); setShowRegionDropdown(false); }}
+                    >
+                      <span className="font-medium">{region.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
         {(filters.roles.length > 0 || filters.rank !== 'all' || filters.queueType !== 'all' || filters.region !== 'all') && (
-          <div className="active-filters">
-            <div className="active-filters-header">
-              <span className="active-filters-label">Active Filters:</span>
-              <button
-                className="reset-filters-btn-small"
-                onClick={resetFilters}
-              >
-                Reset
-              </button>
-            </div>
-            <div className="filter-tags-container">
-              {filters.roles.length > 0 && filters.roles.map(roleId => {
-                const role = roles.find(r => r.id === roleId);
-                return role && (
-                  <span key={roleId} className="filter-tag">
-                    Role: {role.name}
-                    <button
-                      className="remove-filter-btn"
-                      onClick={() => handleRoleToggle(roleId)}
-                    >
-                      ✕
-                    </button>
-                  </span>
-                );
-              })}
+          <div className="active-filters-row">
+            <div className="active-tags-container">
+              {filters.roles.map(roleId => (
+                <span key={roleId} className="filter-active-tag cyan">
+                  {roles.find(r => r.id === roleId)?.name}
+                  <X className="icon-xs cursor-pointer" onClick={() => handleRoleToggle(roleId)} />
+                </span>
+              ))}
               {filters.rank !== 'all' && (
-                <span className="filter-tag" data-rank={filters.rank}>
-                  Rank: {rankTiers.find(r => r.id === filters.rank)?.name}
-                  <button
-                    className="remove-filter-btn"
-                    onClick={() => handleFilterChange('rank', 'all')}
-                  >
-                    ✕
-                  </button>
+                <span key="rank-tag" className="filter-active-tag gold">
+                  {rankTiers.find(r => r.id === filters.rank)?.name}
+                  <X className="icon-xs cursor-pointer" onClick={() => handleFilterChange('rank', 'all')} />
                 </span>
               )}
               {filters.queueType !== 'all' && (
-                <span className="filter-tag">
-                  Queue: {queueTypes.find(q => q.id === filters.queueType)?.name}
-                  <button
-                    className="remove-filter-btn"
-                    onClick={() => handleFilterChange('queueType', 'all')}
-                  >
-                    ✕
-                  </button>
+                <span key="queue-tag" className="filter-active-tag purple">
+                  {queueTypes.find(q => q.id === filters.queueType)?.name}
+                  <X className="icon-xs cursor-pointer" onClick={() => handleFilterChange('queueType', 'all')} />
                 </span>
               )}
               {filters.region !== 'all' && (
-                <span className="filter-tag">
-                  Region: {regions.find(r => r.id === filters.region)?.name}
-                  <button
-                    className="remove-filter-btn"
-                    onClick={() => handleFilterChange('region', 'all')}
-                  >
-                    ✕
-                  </button>
+                <span key="region-tag" className="filter-active-tag green">
+                  {regions.find(r => r.id === filters.region)?.name}
+                  <X className="icon-xs cursor-pointer" onClick={() => handleFilterChange('region', 'all')} />
                 </span>
               )}
+              <button onClick={resetFilters} className="reset-filters-btn"><X className="icon-xs" /> Clear All</button>
             </div>
           </div>
         )}
       </div>
 
-      {(isPostingGame || isEditingGame) && (
-        <div className="compact-post-form">
-          <h3>{isEditingGame ? 'Edit Your Game Post' : 'Create New Game Post'}</h3>
 
-          <div className="form-grid-compact">
-            <div className="form-group-compact">
-              <label className="form-label-compact">Your Riot Account</label>
-              <div className="riot-account-compact">
-                <span className="riot-account-text">
-                  {userProfile?.riotAccountData ? userProfile.riotAccount : 'Not linked'}
-                </span>
-                {!userProfile?.riotAccountData && (
-                  <button
-                    className="link-account-btn-compact"
-                    onClick={() => navigate('/profile')}
-                  >
-                    Link Account
-                  </button>
-                )}
+      {isPostingGame && !isEditingGame && renderGameForm(false)}
+
+
+      <div className="active-lobbies-section">
+        {!userProfile?.riotAccountData && (
+          <div className="unlinked-warning-banner">
+            <div className="warning-banner-content">
+              <ShieldX className="warning-banner-icon color-error" />
+              <div className="warning-banner-text">
+                <h4>You have not connected Riot account</h4>
+                <p>You need to link your Riot Games account to join or post lobbies. This ensures fair matchmaking and verification.</p>
               </div>
             </div>
-
-            <div className="form-group-compact">
-              <label className="form-label-compact">Queue Type</label>
-              <select
-                name="queueType"
-                value={gameData.queueType}
-                onChange={handleInputChange}
-                className="select-compact"
-              >
-                {queueTypes.filter(q => q.id !== 'all').map(queue => (
-                  <option key={queue.id} value={queue.id}>
-                    {queue.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="form-group-compact">
-            <label className="form-label-compact">My Role</label>
-            <div className="role-grid-compact">
-              {roles.filter(r => r.id !== 'all').map(role => (
-                <button
-                  key={role.id}
-                  type="button"
-                  className={`role-btn-compact ${gameData.role === role.id ? 'active' : ''}`}
-                  onClick={() => handleInputChange({ target: { name: 'role', value: role.id } })}
-                >
-                  <img
-                    src={role.icon}
-                    alt={role.name}
-                    className="role-icon-img-compact"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                  <span>{role.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group-compact">
-            <label className="form-label-compact">Looking For Role</label>
-            <div className="role-grid-compact">
-              {roles.filter(r => r.id !== 'all').map(role => (
-                <button
-                  key={role.id}
-                  type="button"
-                  className={`role-btn-compact ${gameData.preferredDuoRole === role.id ? 'active' : ''}`}
-                  onClick={() => handleInputChange({ target: { name: 'preferredDuoRole', value: role.id } })}
-                >
-                  <img
-                    src={role.icon}
-                    alt={role.name}
-                    className="role-icon-img-compact"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                  <span>{role.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-grid-compact">
-            <div className="form-group-compact">
-              <label className="form-label-compact">Communication</label>
-              <div className="comm-buttons-compact">
-                {communicationTypes.map(comm => (
-                  <button
-                    key={comm.id}
-                    type="button"
-                    className={`comm-btn-compact ${gameData.communication === comm.id ? 'active' : ''}`}
-                    onClick={() => handleCommunicationSelect(comm.id)}
-                  >
-                    <span>{comm.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="form-group-compact">
-              <label className="form-label-compact">
-                Description ({gameData.description.length}/200)
-              </label>
-              <textarea
-                name="description"
-                value={gameData.description}
-                onChange={(e) => {
-                  handleInputChange(e);
-                  handleTextareaResize(e);
-                }}
-                placeholder="Brief description about your playstyle..."
-                className="textarea-compact"
-                maxLength={200}
-                rows="1"
-              />
-              <div className="char-counter-compact">
-                {gameData.description.length}/200
-              </div>
-            </div>
-          </div>
-
-          <div className="form-actions-compact">
             <button
-              className="cancel-btn-compact"
-              onClick={isEditingGame ? handleCancelEdit : () => setIsPostingGame(false)}
+              className="btn-publish compact-btn"
+              onClick={() => navigate('/profile')}
             >
-              Cancel
-            </button>
-            <button
-              className="submit-btn-compact"
-              onClick={isEditingGame ? handleUpdateGame : handlePostGame}
-              disabled={!gameData.description.trim() || !userProfile?.riotAccountData}
-            >
-              {isEditingGame ? 'Update Post' : 'Create Post'}
+              Connect Now
             </button>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="listings-container">
-        <h3 className="listings-title">
-          Available Games ({filteredListings.length})
+        <div className="active-lobbies-header">
+          <h3 className="active-lobbies-title">
+            Active Lobbies
+            <span className="lobby-count-badge">
+              {filteredListings.length}
+            </span>
+          </h3>
           {filteredListings.length !== gameListings.length && (
-            <span className="filtered-count">
-              (Filtered from {gameListings.length} total)
+            <span className="filtered-status-text">
+              Filtered from {gameListings.length} total
             </span>
           )}
-        </h3>
+        </div>
 
         {filteredListings.length === 0 ? (
-          <div className="no-listings">
-            <p>
+          <div className="glass-panel text-center-panel big-padding">
+            <div className="status-icon-wrap secondary mx-auto">
+              <Swords className="icon-xxl" />
+            </div>
+            <p className="lobby-subtitle u-text-sm u-mb-8">
               {gameListings.length === 0
-                ? "No games posted yet. Be the first to post!"
-                : "No games match your filters. Try adjusting your criteria."}
+                ? "The Rift is quiet. Be the first to start a lobby!"
+                : "No lobbies match your specific search criteria."}
             </p>
             {gameListings.length > 0 && (
               <button
-                className="reset-filters-inline"
+                className="btn-discard"
                 onClick={resetFilters}
               >
                 Reset All Filters
@@ -1508,10 +1627,19 @@ function QueueSystem() {
             )}
           </div>
         ) : (
-          <div className="game-cards-grid">
+          <div className="lobbies-stack">
             {filteredListings.map(game => {
+              if (isEditingGame === game.id) {
+                return (
+                  <div key={game.id} className="lobby-card-inline-edit">
+                    {renderGameForm(true)}
+                  </div>
+                );
+              }
+
               const isOwnGame = game.userId === auth.currentUser?.uid;
               const isFriend = isAlreadyFriend(game.userId);
+              const requestSent = hasRequestSent(game.userId);
 
               const rankedData = game.userRankedData || [];
               const soloQueue = getQueueData(rankedData, 'RANKED_SOLO_5x5');
@@ -1519,13 +1647,11 @@ function QueueSystem() {
 
               const soloWinRate = calculateWinRate(soloQueue);
               const flexWinRate = calculateWinRate(flexQueue);
-
               const soloGames = soloQueue ? soloQueue.wins + soloQueue.losses : 0;
               const flexGames = flexQueue ? flexQueue.wins + flexQueue.losses : 0;
 
               const soloRankIcon = getRankIcon(soloQueue?.tier);
               const flexRankIcon = getRankIcon(flexQueue?.tier);
-
               const soloRankText = formatRankDisplay(soloQueue);
               const flexRankText = formatRankDisplay(flexQueue);
 
@@ -1539,196 +1665,137 @@ function QueueSystem() {
               );
 
               return (
-                <div key={game.id} className="game-card-compact">
-                  <div className="card-left-section">
-                    <div className="user-info-compact">
-                      <div className="user-avatar-small">
-                        {profileImage && profileImage.startsWith('data:image') ? (
+                <div key={game.id} className="lobby-card">
+                  {isOwnGame && <div className="own-lobby-indicator"></div>}
+                  <div className="lobby-author-area">
+                    <div className="author-main-info">
+                      <div className="author-pfp-container">
+                        <div className="pfp-glow"></div>
+                        <div className="author-pfp-circle">
                           <img
-                            src={profileImage}
-                            alt={game.userDisplayName}
-                            className="avatar-img-small"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                            }}
+                            src={profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                            alt=""
+                            className="author-pfp-img"
                           />
+                        </div>
+                      </div>
+                      <div className="author-meta-text">
+                        <div className="author-name">{game.userDisplayName}</div>
+                        <div className="author-sub-meta">
+                          <span className="region-tag">{region}</span>
+                          <span className="riot-id-text">{game.userRiotAccount}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rank-summaries">
+                      <div className="rank-mini-card">
+                        <img src={soloRankIcon} alt="" className="rank-mini-icon" />
+                        <div className="rank-mini-details">
+                          <div className="rank-type-label solo">Solo/Duo</div>
+                          <div className="rank-tier-text">{soloRankText}</div>
+                          <div className="rank-wr-text">WR: <span>{soloWinRate}</span> • {soloGames}G</div>
+                        </div>
+                      </div>
+
+                      <div className="rank-mini-card">
+                        <img src={flexRankIcon} alt="" className="rank-mini-icon" />
+                        <div className="rank-mini-details">
+                          <div className="rank-type-label flex">Flex</div>
+                          <div className="rank-tier-text">{flexRankText}</div>
+                          <div className="rank-wr-text">WR: <span>{flexWinRate}</span> • {flexGames}G</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="lobby-main-content">
+                    <div>
+                      <div className="lobby-tags-row">
+                        <span className="queue-type-tag">
+                          {getQueueTypeName(game.queueType)}
+                        </span>
+                        {game.communication === 'voice' ? (
+                          <span className="comm-tag voice">VC ENABLED</span>
                         ) : (
-                          <img
-                            src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
-                            alt={game.userDisplayName}
-                            className="avatar-img-small"
-                          />
+                          <span className="comm-tag text">TEXT ONLY</span>
                         )}
+                        <span className="time-ago-wrapper">
+                          <Clock className="time-ago-icon" />
+                          {formatTimeAgo(game.createdAt)}
+                        </span>
                       </div>
-                      <div className="user-text-small">
-                        <div className="user-name-small">
-                          {game.userDisplayName}
-                          <span className="region-badge" title={`Region: ${region}`}>
-                            Region: {region}
-                          </span>
-                        </div>
-                        <div className="riot-account-with-copy">
-                          <span className="riot-account-small">{game.userRiotAccount}</span>
-                          {game.userRiotAccount && game.userRiotAccount !== 'Not linked' &&
-                            game.userRiotAccount !== 'Linked (no name)' && game.userRiotAccount !== 'Linked' && (
-                              <button
-                                className="copy-riot-btn"
-                                onClick={() => handleCopyRiotAccount(game.userRiotAccount)}
-                                title="Copy Riot ID"
-                              >
-                                Copy
-                              </button>
-                            )}
-                        </div>
-                        {game.userAboutMe && (
-                          <div className="user-about-me-small" title={game.userAboutMe}>
-                            {game.userAboutMe.length > 50 ? game.userAboutMe.substring(0, 50) + '...' : game.userAboutMe}
-                          </div>
-                        )}
 
-                        <div className="rank-info-container">
-                          <div className="rank-info-item">
-                            {soloRankIcon && (
-                              <img
-                                src={soloRankIcon}
-                                alt={soloRankText}
-                                className="rank-icon-small"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            )}
-                            <div className="rank-details">
-                              <div className="rank-queue">Solo/Duo</div>
-                              <div className="rank-tier">{soloRankText}</div>
-                              <div className="rank-stats">
-                                <span className="winrate">{soloWinRate}</span>
-                                {soloGames > 0 && (
-                                  <span className="games">{soloGames}G</span>
-                                )}
-                              </div>
-                            </div>
+                      <div className="roles-focus-grid">
+                        <div className="role-focus-box">
+                          <div className="role-focus-icon-wrap my-role">
+                            <img src={roleIcon} alt="" className="w-full h-full object-contain" />
                           </div>
-
-                          <div className="rank-info-item">
-                            {flexRankIcon && (
-                              <img
-                                src={flexRankIcon}
-                                alt={flexRankText}
-                                className="rank-icon-small"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            )}
-                            <div className="rank-details">
-                              <div className="rank-queue">Flex</div>
-                              <div className="rank-tier">{flexRankText}</div>
-                              <div className="rank-stats">
-                                <span className="winrate">{flexWinRate}</span>
-                                {flexGames > 0 && (
-                                  <span className="games">{flexGames}G</span>
-                                )}
-                              </div>
-                            </div>
+                          <div className="role-focus-details">
+                            <div className="role-focus-label">Playing</div>
+                            <div className="role-focus-val">{roles.find(r => r.id === game.role)?.name}</div>
+                          </div>
+                        </div>
+                        <div className="role-focus-box">
+                          <div className="role-focus-icon-wrap search-role">
+                            <img src={preferredRoleIcon} alt="" className="w-full h-full object-contain" />
+                          </div>
+                          <div className="role-focus-details">
+                            <div className="role-focus-label">Searching</div>
+                            <div className="role-focus-val">{roles.find(r => r.id === game.preferredDuoRole)?.name}</div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="time-ago-compact">
-                      {formatTimeAgo(game.createdAt)}
+
+                      <div className="lobby-description">
+                        "{game.description}"
+                      </div>
                     </div>
                   </div>
-
-                  <div className="card-middle-section">
-                    <div className="roles-grid-compact">
-                      <div className="role-tag">
-                        <img
-                          src={roleIcon}
-                          alt="My Role"
-                          className="role-icon-small"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            if (game.role === 'support') {
-                              e.target.src = '/lane-icons/sup icon.png';
-                              e.target.style.display = 'block';
-                            }
-                          }}
-                        />
-                        <span>My Role: {roles.find(r => r.id === game.role)?.name}</span>
-                      </div>
-                      <div className="role-tag">
-                        <img
-                          src={preferredRoleIcon}
-                          alt="Looking For"
-                          className="role-icon-small"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            if (game.preferredDuoRole === 'support') {
-                              e.target.src = '/lane-icons/sup icon.png';
-                              e.target.style.display = 'block';
-                            }
-                          }}
-                        />
-                        <span>Looking For: {roles.find(r => r.id === game.preferredDuoRole)?.name}</span>
-                      </div>
-                      <div className="role-tag">
-                        <span>{getQueueTypeName(game.queueType)}</span>
-                      </div>
-                      <div className="role-tag">
-                        <span>{game.communication === 'voice' ? 'Voice' : 'Text'}</span>
-                      </div>
-                    </div>
-                    <div className="description-compact">
-                      {game.description}
-                    </div>
-                  </div>
-
-                  <div className="card-right-section">
-                    <div className="actions-container">
-                      {isOwnGame ? (
-                        <div className="owner-actions-compact">
-                          <div className="action-row">
-                            <button
-                              className="edit-btn-compact"
-                              onClick={() => handleEditGame(game)}
-                            >
-                              Edit
-                            </button>
-                          </div>
-                          <div className="action-row">
-                            <button
-                              className="delete-btn-compact"
-                              onClick={() => handleDeleteListing(game.id)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="actions-compact">
-                          <div className="action-row">
-                            <button
-                              className="join-btn-compact"
-                              onClick={() => openJoinModal(game)}
-                              disabled={alreadyApplied}
-                            >
-                              {alreadyApplied ? 'Already Sent' : 'Request to Join'}
-                            </button>
-                          </div>
-                          <div className="action-row">
-                            <button
-                              className="friend-btn-compact"
-                              onClick={() => handleAddFriend(game.userId)}
-                              disabled={isFriend}
-                            >
-                              {isFriend ? 'Already Friends' : 'Add Friend'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                  <div className="lobby-actions-area">
+                    {isOwnGame ? (
+                      <>
+                        <button
+                          onClick={() => handleEditGame(game)}
+                          className="icon-only-btn"
+                          title="Edit Post"
+                        >
+                          <Edit3 className="icon-md" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteListing(game.id)}
+                          className="icon-only-btn"
+                          title="Delete Post"
+                        >
+                          <Trash2 className="icon-md" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => openJoinModal(game)}
+                          disabled={alreadyApplied}
+                          className="join-lobby-btn"
+                        >
+                          {alreadyApplied ? <Check className="icon-sm" /> : <Swords className="icon-sm" />}
+                          {alreadyApplied ? 'Applied' : 'Join lobby'}
+                        </button>
+                        <button
+                          onClick={() => handleAddFriend(game.userId)}
+                          disabled={isFriend || requestSent}
+                          className={`add-friend-btn ${isFriend ? 'is-friend' : ''}`}
+                        >
+                          {isFriend || requestSent ? <Check className="icon-sm" /> : <UserPlus className="icon-sm" />}
+                          {isFriend ? 'Friends' : requestSent ? 'Sent' : 'Add friend'}
+                        </button>
+                        <button
+                          onClick={() => handleCopyRiotAccount(game.userRiotAccount)}
+                          className="icon-only-btn"
+                          title="Copy Riot ID"
+                        >
+                          <Copy className="icon-md" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               );
@@ -1737,230 +1804,301 @@ function QueueSystem() {
         )}
       </div>
 
-      {showJoinModal && (
-        <div className="join-modal-overlay">
-          <div className="join-modal-content">
-            <div className="join-modal-header">
-              <h3>Request to Join Game</h3>
-              <button className="modal-close-btn" onClick={() => setShowJoinModal(false)}>
-                ✕
-              </button>
-            </div>
-            <div className="join-modal-body">
-              {selectedGame && (
-                <>
-                  <p>You're requesting to join <strong>{selectedGame.userDisplayName}'s</strong> game:</p>
-                  <div className="game-info-preview">
-                    <div className="info-row">
-                      <span>Queue:</span>
-                      <span>{getQueueTypeName(selectedGame.queueType)}</span>
+      {
+        showJoinModal && (
+          <div className="lobby-modal-overlay" onClick={() => setShowJoinModal(false)}>
+            <div className="lobby-modal-card" onClick={e => e.stopPropagation()}>
+              <div className="post-panel-header panel-padding u-border-b">
+                <div className="status-icon-wrap primary">
+                  <Swords className="icon-md" />
+                </div>
+                <h3 className="post-panel-title">Apply to Join</h3>
+                <button onClick={() => setShowJoinModal(false)} className="icon-only-btn u-ml-auto">
+                  <X className="icon-md" />
+                </button>
+              </div>
+
+              <div className="panel-padding">
+                <div className="form-field-group">
+                  <label className="form-field-label">Lobby Lead</label>
+                  <div className="linked-account-card">
+                    <div className="account-info-bundle">
+                      <div className="account-pfp-wrapper">
+                        <img
+                          src={selectedGame?.userProfileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                          alt=""
+                          className="account-pfp"
+                          onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
+                        />
+                      </div>
+                      <div className="account-names">
+                        <div className="account-username">{selectedGame?.userDisplayName}</div>
+                        <div className="account-riot-id">{selectedGame?.userRiotAccount}</div>
+                      </div>
                     </div>
-                    <div className="info-row">
-                      <span>Host Role:</span>
-                      <span>{roles.find(r => r.id === selectedGame.role)?.name}</span>
-                    </div>
-                    <div className="info-row">
-                      <span>Looking For:</span>
-                      <span>{roles.find(r => r.id === selectedGame.preferredDuoRole)?.name}</span>
-                    </div>
-                    <div className="info-row">
-                      <span>Region:</span>
-                      <span>{getRegionFromGame(selectedGame)}</span>
+                    <div className="u-flex-col u-gap-1 u-text-right">
+                      <span className="form-field-label">Region</span>
+                      <span className="region-tag">{selectedGame?.region || 'EUW'}</span>
                     </div>
                   </div>
-                </>
-              )}
 
-              <div className="message-input-container">
-                <label htmlFor="joinMessage">Add a message (optional):</label>
-                <textarea
-                  id="joinMessage"
-                  value={joinMessage}
-                  onChange={(e) => setJoinMessage(e.target.value)}
-                  placeholder="Tell the host why you want to join their game..."
-                  maxLength={200}
-                  rows={3}
-                />
-                <div className="char-counter">
-                  {joinMessage.length}/200
+                  <div className="u-flex-between u-mb-3">
+                    <label className="form-field-label">Battle Cry (Optional)</label>
+                    <span className={`char-counter ${joinMessage.length >= 200 ? 'error' : ''}`}>
+                      {joinMessage.length}/200
+                    </span>
+                  </div>
+                  <textarea
+                    value={joinMessage}
+                    onChange={(e) => setJoinMessage(e.target.value)}
+                    placeholder="Why should you join this lobby? (e.g. 'Emerald peak, maining Vayne')"
+                    className="post-form-textarea"
+                    maxLength={200}
+                  />
+
+                  <div className="u-mt-4">
+                    <label className="form-field-label u-mb-3">My Role for this game</label>
+                    <div className="role-selector-row">
+                      {roles.map((role) => (
+                        <button
+                          key={role.id}
+                          className={`role-select-btn ${selectedJoinRole === role.id ? 'active' : ''}`}
+                          onClick={() => setSelectedJoinRole(role.id)}
+                          title={role.name}
+                        >
+                          <img src={role.icon} alt={role.name} />
+                          <span className="role-tooltip">{role.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="post-panel-footer panel-padding u-bg-black-20">
+                <button
+                  className="btn-discard"
+                  onClick={() => setShowJoinModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-publish"
+                  onClick={() => handleJoinQueue(selectedGame.id, joinMessage)}
+                  disabled={!selectedGame}
+                >
+                  Send Request
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        showRequestModal && (
+          <div className="lobby-modal-overlay" onClick={() => setShowRequestModal(false)}>
+            <div className="lobby-modal-card" style={{ maxWidth: '48rem' }} onClick={e => e.stopPropagation()}>
+              <div className="post-panel-header panel-padding u-border-b">
+                <div className="status-icon-wrap primary">
+                  <Users className="icon-md" />
+                </div>
+                <h3 className="post-panel-title">Incoming Requests</h3>
+                <button onClick={() => setShowRequestModal(false)} className="icon-only-btn u-ml-auto">
+                  <X className="icon-md" />
+                </button>
+              </div>
+
+              <div className="panel-padding u-max-h-modal u-overflow-y-auto u-bg-black-10">
+                {myGameRequests.length === 0 ? (
+                  <div className="text-center u-py-20">
+                    <p className="empty-requests-message">NO ACTIVE APPLICANTS YET</p>
+                  </div>
+                ) : (
+                  <div className="lobbies-stack">
+                    {myGameRequests.map(request => {
+                      const soloQueue = getQueueData(request.rankedData, 'RANKED_SOLO_5x5');
+                      const rankText = soloQueue ? formatRankDisplay(soloQueue) : 'Unranked';
+                      const rankIcon = getRankIcon(soloQueue?.tier);
+                      const isProcessing = processingRequests.has(`${request.gameId}_${request.userId}`);
+
+                      return (
+                        <div key={request.id} className="lobby-card">
+                          <div className="author-main-info u-flex u-items-center u-gap-4" style={{ width: '100%' }}>
+                            <div className="author-pfp-circle icon-xxl">
+                              <img src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"} alt="" className="author-pfp-img" />
+                            </div>
+
+                            <div className="u-flex u-flex-1 u-items-center u-justify-between u-gap-6">
+                              <div className="player-identity-group">
+                                <h4
+                                  className="author-name cursor-pointer hover:text-primary transition-colors u-mb-1"
+                                  onClick={() => handleViewProfile(request.userId)}
+                                >
+                                  {request.displayName}
+                                </h4>
+                                <div className="u-flex u-items-center u-gap-2">
+                                  <div className="riot-id-text">{request.riotAccount}</div>
+                                  <button
+                                    className="icon-only-btn-xs"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(request.riotAccount);
+                                    }}
+                                    title="Copy Riot ID"
+                                  >
+                                    <Copy className="icon-2xs" />
+                                  </button>
+                                  {isAlreadyFriend(request.userId) && (
+                                    <span className="comm-tag voice u-ml-2">FRIEND</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="rank-summaries u-flex u-gap-3" style={{ width: 'auto', flexDirection: 'row' }}>
+                                <div className="rank-mini-card compact">
+                                  <img src={rankIcon} alt="" className="rank-mini-icon" />
+                                  <div className="rank-mini-details">
+                                    <div className="rank-tier-text">{rankText}</div>
+                                  </div>
+                                </div>
+                                {getQueueData(request.rankedData, 'RANKED_FLEX_SR') && (
+                                  <div className="rank-mini-card compact">
+                                    <img
+                                      src={getRankIcon(getQueueData(request.rankedData, 'RANKED_FLEX_SR')?.tier)}
+                                      alt=""
+                                      className="rank-mini-icon"
+                                    />
+                                    <div className="rank-mini-details">
+                                      <div className="rank-tier-text">{formatRankDisplay(getQueueData(request.rankedData, 'RANKED_FLEX_SR'))}</div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="lobby-details-row u-mt-4 u-flex u-gap-4 u-items-center">
+                            <div className="role-mini-display-card" title={`Selected Role: ${roles.find(r => r.id === (request.role?.toLowerCase() || 'fill'))?.name}`}>
+                              <img src={getRoleImage(request.role)} alt="" />
+                            </div>
+                            <div className="u-flex-1">
+                              <div className="u-flex-between u-items-center u-mb-2">
+                                <span className="queue-type-tag">{getQueueTypeName(request.gameQueueType)}</span>
+                                <span className="time-ago-wrapper">Received {formatTimeAgo(new Date(request.appliedAt))}</span>
+                              </div>
+                              {request.message && (
+                                <div className="lobby-description-inner">
+                                  "{request.message}"
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="lobby-card-actions-row compact-actions">
+                            <div className="main-actions u-ml-auto">
+                              <button
+                                className="btn-discard"
+                                onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
+                                disabled={isProcessing}
+                              >
+                                DECLINE
+                              </button>
+                              <button
+                                className="btn-publish"
+                                onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
+                                disabled={isProcessing || isAlreadyFriend(request.userId)}
+                              >
+                                {isAlreadyFriend(request.userId) ? 'ACCEPTED' : 'ACCEPT'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="post-panel-footer panel-padding">
+                <button
+                  className="post-lobby-btn u-w-full u-flex-center"
+                  onClick={() => setShowRequestModal(false)}
+                >
+                  Return to Hub
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        showDeleteConfirm && ReactDOM.createPortal(
+          <div className="lobby-modal-overlay">
+            <div className="lobby-modal-card" style={{ maxWidth: '28rem' }}>
+              <div className="panel-padding text-center">
+                <div className="status-icon-wrap error u-mx-auto u-mb-6">
+                  <Trash2 className="icon-xl" />
+                </div>
+                <h3 className="post-panel-title u-mb-2">Delete Lobby?</h3>
+                <p className="lobby-subtitle u-text-sm u-mb-8">This operation is irreversible. You will lose all active applications.</p>
+
+                <div className="u-flex-row u-gap-4">
+                  <button
+                    className="btn-discard u-flex-1"
+                    onClick={cancelDeleteListing}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn-publish u-flex-1"
+                    style={{ background: '#ef4444', color: 'white' }}
+                    onClick={confirmDeleteListing}
+                  >
+                    Confirm
+                  </button>
                 </div>
               </div>
             </div>
-            <div className="join-modal-footer">
-              <button className="cancel-btn" onClick={() => setShowJoinModal(false)}>
-                Cancel
-              </button>
-              <button
-                className="submit-btn"
-                onClick={() => handleJoinQueue(selectedGame.id, joinMessage)}
-                disabled={!selectedGame}
-              >
-                Send Request
-              </button>
+          </div>,
+          document.body
+        )
+      }
+
+      {showRiotLinkModal && (
+        <div className="lobby-modal-overlay" onClick={() => setShowRiotLinkModal(false)}>
+          <div className="lobby-modal-card" style={{ maxWidth: '32rem' }} onClick={e => e.stopPropagation()}>
+            <div className="panel-padding text-center">
+              <div className="status-icon-wrap error u-mx-auto u-mb-6">
+                <ExternalLink className="icon-xl" />
+              </div>
+              <h3 className="post-panel-title u-mb-2">Riot Account Required</h3>
+              <p className="lobby-subtitle u-text-sm u-mb-8">
+                To maintain a safe and competitive environment, all players must link their Riot Games account before joining or posting lobbies.
+              </p>
+
+              <div className="u-flex-row u-gap-4">
+                <button
+                  className="btn-discard u-flex-1"
+                  onClick={() => setShowRiotLinkModal(false)}
+                >
+                  Close
+                </button>
+                <button
+                  className="btn-publish u-flex-1"
+                  onClick={() => {
+                    setShowRiotLinkModal(false);
+                    navigate('/profile');
+                  }}
+                >
+                  Link Account
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
-      {showRequestModal && (
-        <div className="request-management-modal">
-          <div className="request-modal-content">
-            <div className="request-modal-header">
-              <h3 className="request-modal-title">
-                Manage Game Requests ({myGameRequests.length})
-              </h3>
-              <button className="request-modal-close" onClick={() => setShowRequestModal(false)}>
-                ✕
-              </button>
-            </div>
-
-            <div className="request-modal-body">
-              {myGameRequests.length === 0 ? (
-                <div className="no-requests">
-                  <p>No pending requests</p>
-                  <p style={{ fontSize: '14px', color: '#7f8c8d' }}>
-                    Players who request to join your games will appear here
-                  </p>
-                </div>
-              ) : (
-                <div className="request-list">
-                  {myGameRequests.map(request => {
-                    const soloQueue = getQueueData(request.rankedData, 'RANKED_SOLO_5x5');
-                    const rankText = soloQueue ? formatRankDisplay(soloQueue) : 'Unranked';
-                    const rankIcon = getRankIcon(soloQueue?.tier);
-
-                    return (
-                      <div key={request.id} className="request-card-new">
-                        <div className="request-card-top">
-                          <div className="request-profile-section">
-                            <div className="request-avatar-wrapper">
-                              {request.profileImage && request.profileImage.startsWith('data:image') ? (
-                                <img
-                                  src={request.profileImage}
-                                  alt={request.displayName}
-                                  className="request-avatar"
-                                  onError={(e) => {
-                                    e.target.src = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png";
-                                  }}
-                                />
-                              ) : (
-                                <img
-                                  src="https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
-                                  alt={request.displayName}
-                                  className="request-avatar"
-                                />
-                              )}
-                            </div>
-                            <div className="request-user-info-main">
-                              <div className="name-status-row">
-                                <span className="request-name-text">{request.displayName}</span>
-                                <span className="request-badge">Pending</span>
-                              </div>
-                              <div className="request-riot-id">
-                                {request.riotAccount || 'No Riot account linked'}
-                              </div>
-                              <div className="request-rank-display">
-                                <img
-                                  src={rankIcon}
-                                  alt={rankText}
-                                  className="req-rank-icon"
-                                  onError={(e) => e.target.style.display = 'none'}
-                                />
-                                <span className="req-rank-text">{rankText}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="request-details-section">
-                            <div className="request-tags-group">
-                              <span className="req-tag queue-tag">
-                                {getQueueTypeName(request.gameQueueType)}
-                              </span>
-                              <span className="req-tag role-tag-new">
-                                <img
-                                  src={getRoleImage(request.role || 'fill')}
-                                  alt={request.role || 'fill'}
-                                  className="tag-icon"
-                                  onError={(e) => e.target.style.display = 'none'}
-                                />
-                                {roles.find(r => r.id === (request.role || 'fill'))?.name || 'Fill'}
-                              </span>
-                            </div>
-                            <div className="request-time-text">
-                              Applied {formatTimeAgo(new Date(request.appliedAt))}
-                            </div>
-                          </div>
-
-                          <div className="request-actions-section">
-                            <button
-                              className="btn-view-profile"
-                              onClick={() => handleViewProfile(request.userId)}
-                            >
-                              View Profile
-                            </button>
-                            <button
-                              className="btn-decline"
-                              onClick={() => handleDeclineRequest(request.gameId, request.userId, request.displayName)}
-                            >
-                              Decline
-                            </button>
-                            <button
-                              className="btn-accept"
-                              onClick={() => handleAcceptRequest(request.gameId, request.userId, request.displayName)}
-                            >
-                              Accept
-                            </button>
-                          </div>
-                        </div>
-
-                        {request.message && (
-                          <div className="request-message-block">
-                            <span className="quote-mark">"</span>
-                            <span className="message-content">{request.message}</span>
-                            <span className="quote-mark">"</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="request-modal-footer">
-              <button
-                className="btn-modal-close"
-                onClick={() => setShowRequestModal(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showDeleteConfirm && ReactDOM.createPortal(
-        <div className="delete-confirm-overlay">
-          <div className="delete-confirm-modal">
-            <div className="delete-confirm-header">
-              <h3>Confirm Deletion</h3>
-            </div>
-            <div className="delete-confirm-body">
-              <p>Are you sure you want to delete this game listing?</p>
-              <p className="delete-confirm-note">This action cannot be undone.</p>
-            </div>
-            <div className="delete-confirm-actions">
-              <button className="delete-cancel-btn" onClick={cancelDeleteListing}>
-                Cancel
-              </button>
-              <button className="delete-accept-btn" onClick={confirmDeleteListing}>
-                Accept
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
+    </div >
   );
 }
 

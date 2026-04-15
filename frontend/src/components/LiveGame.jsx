@@ -3,7 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { fetchDDragon } from '../utils/fetchDDragon';
+import ItemTooltip from './ItemTooltip';
 import '../styles/componentsCSS/livegame.css';
+
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_URL || "";
 
 function LiveGame() {
     const [liveData, setLiveData] = useState(null);
@@ -13,6 +16,11 @@ function LiveGame() {
     const [champIdToName, setChampIdToName] = useState({});
     const [championRoles, setChampionRoles] = useState({});
     const [version, setVersion] = useState('');
+    const [runesData, setRunesData] = useState(null);
+    const [spellIdToData, setSpellIdToData] = useState(null);
+    const [hoveredItem, setHoveredItem] = useState(null);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
     const timerRef = useRef(null);
     const location = useLocation();
     const navigate = useNavigate();
@@ -30,9 +38,11 @@ function LiveGame() {
             }
 
             try {
-                const { latestVersion, champIdToName: cMap } = await fetchDDragon();
-                setVersion(latestVersion);
-                setChampIdToName(cMap);
+                const ddragon = await fetchDDragon();
+                setVersion(ddragon.latestVersion);
+                setChampIdToName(ddragon.champIdToName);
+                setRunesData(ddragon.runesData);
+                setSpellIdToData(ddragon.spellIdToData);
 
                 try {
                     const rolesSnapshot = await getDocs(collection(db, "champions"));
@@ -47,7 +57,7 @@ function LiveGame() {
                     console.warn('Live game will still work, but role sorting may be less accurate.');
                 }
 
-                const res = await fetch(`/summoner-info/spectator/${region}/${puuid}`);
+                const res = await fetch(`${API_URL}/summoner-info/spectator/${region}/${puuid}`);
                 if (!res.ok) throw new Error('Failed to fetch live game data');
 
                 const data = await res.json();
@@ -99,59 +109,47 @@ function LiveGame() {
             '430': "Normal Blind",
             '440': "Ranked Flex",
             '450': "ARAM",
-            '480': "Swiftplay",
-            '490': "Swiftplay",
             '700': "Clash",
+            '830': "Co-op vs AI",
+            '840': "Co-op vs AI",
+            '850': "Co-op vs AI",
             '900': "URF",
-            '1020': "One For All",
+            '1020': "One for All",
             '1300': "Nexus Blitz",
             '1400': "Ultimate Spellbook",
             '1700': "Arena",
-            '1900': "URF",
+            '1900': "Pick URF",
             '2000': "Tutorial",
             '2010': "Tutorial",
             '2020': "Tutorial"
         };
-
-        const qId = String(queueId);
-        if (modes[qId]) return modes[qId];
-
-        const modeLabels = {
-            CLASSIC: "Summoner's Rift",
-            ARAM: 'ARAM',
-            URF: 'URF',
-            CHERRY: 'Arena',
-            ONEFORALL: 'One For All',
-            NEXUSBLITZ: 'Nexus Blitz',
-            ULTBOOK: 'Ultimate Spellbook',
-            PRACTICETOOL: 'Practice Tool',
-            TUTORIAL: 'Tutorial'
-        };
-        return modeLabels[gameMode] || gameMode || "Live Game";
+        return modes[queueId?.toString()] || gameMode || 'Unknown Mode';
     };
 
     const getRuneIconPath = (perkId) => {
         const runeMap = {
             8100: 'Domination/7200_Domination', 8112: 'Domination/Electrocute',
-            8128: 'Domination/DarkHarvest', 9923: 'Domination/HailOfBlades',
-            8126: 'Domination/CheapShot', 8139: 'Domination/GreenTerror_TasteOfBlood',
-            8143: 'Domination/SuddenImpact', 8137: 'Domination/SixthSense',
-            8140: 'Domination/GrislyMementos', 8141: 'Domination/DeepWard',
-            8135: 'Domination/TreasureHunter', 8105: 'Domination/RelentlessHunter',
+            8124: 'Domination/Predator', 8128: 'Domination/DarkHarvest',
+            9923: 'Domination/HailOfBlades', 8126: 'Domination/GreenTerror_TasteOfBlood',
+            8139: 'Domination/CheapShot', 8143: 'Domination/SuddenImpact',
+            8136: 'Domination/GrislyMementos', 8120: 'Domination/DeepWard',
+            8138: 'Domination/EyeballCollection', 8135: 'Domination/TreasureHunter',
+            8134: 'Domination/IngeniousHunter', 8105: 'Domination/RelentlessHunter',
             8106: 'Domination/UltimateHunter',
 
             8000: 'Precision/7201_Precision', 8005: 'Precision/PressTheAttack',
             8008: 'Precision/LethalTempoTemp', 8021: 'Precision/FleetFootwork',
-            8010: 'Precision/Conqueror', 9101: 'Precision/AbsorbLife', 9111: 'Precision/Triumph',
-            8009: 'Precision/PresenceOfMind', 9104: 'Precision/LegendAlacrity',
-            9105: 'Precision/LegendHaste', 9103: 'Precision/LegendBloodline',
-            8014: 'Precision/CoupDeGrace', 8017: 'Precision/CutDown', 8299: 'Precision/LastStand',
+            8010: 'Precision/Conqueror', 9101: 'Precision/Overheal',
+            9111: 'Precision/Triumph', 8009: 'Precision/PresenceOfMind',
+            9104: 'Precision/LegendAlacrity', 9105: 'Precision/LegendTenacity',
+            9103: 'Precision/LegendBloodline', 8014: 'Precision/CoupDeGrace',
+            8017: 'Precision/CutDown', 8299: 'Precision/LastStand',
 
-            8200: 'Sorcery/7202_Sorcery', 8214: 'Sorcery/SummonAery', 8229: 'Sorcery/ArcaneComet',
-            8230: 'Sorcery/PhaseRush', 8224: 'Sorcery/Axiom_Arcanist', 8226: 'Sorcery/ManaflowBand',
-            8275: 'Sorcery/NimbusCloak', 8210: 'Sorcery/Transcendence', 8234: 'Sorcery/CelerityTemp',
-            8233: 'Sorcery/AbsoluteFocus', 8237: 'Sorcery/Scorch', 8232: 'Sorcery/Waterwalking',
-            8236: 'Sorcery/GatheringStorm',
+            8200: 'Sorcery/7202_Sorcery', 8214: 'Sorcery/SummonAery',
+            8229: 'Sorcery/ArcaneComet', 8230: 'Sorcery/PhaseRush', 8224: 'Sorcery/Axiom_Arcanist',
+            8226: 'Sorcery/ManaflowBand', 8275: 'Sorcery/NimbusCloak', 8210: 'Sorcery/Transcendence',
+            8234: 'Sorcery/CelerityTemp', 8233: 'Sorcery/AbsoluteFocus', 8237: 'Sorcery/Scorch',
+            8232: 'Sorcery/Waterwalking', 8236: 'Sorcery/GatheringStorm',
 
             8400: 'Resolve/7204_Resolve', 8437: 'Resolve/GraspOfTheUndying',
             8439: 'Resolve/VeteranAftershock', 8465: 'Resolve/Guardian',
@@ -352,6 +350,23 @@ function LiveGame() {
         }
     };
 
+    const handleHoverEnter = (item, event) => {
+        if (item) {
+            setHoveredItem(item);
+            setTooltipPos({ x: event.clientX, y: event.clientY });
+        }
+    };
+
+    const handleHoverMove = (event) => {
+        if (hoveredItem) {
+            setTooltipPos({ x: event.clientX, y: event.clientY });
+        }
+    };
+
+    const handleHoverLeave = () => {
+        setHoveredItem(null);
+    };
+
     const renderPlayerRunes = (player) => {
         if (!player.perks || !player.perks.perkIds || player.perks.perkIds.length === 0) {
             return null;
@@ -369,6 +384,9 @@ function LiveGame() {
                     src={getRuneIconPath(keystoneId)}
                     alt="Keystone"
                     className="live-rune-keystone"
+                    onMouseEnter={(e) => handleHoverEnter(runesData?.[keystoneId], e)}
+                    onMouseMove={handleHoverMove}
+                    onMouseLeave={handleHoverLeave}
                     onError={(e) => (e.target.src = "/runes/unknown.png")}
                 />
                 {secondaryStyle && (
@@ -376,6 +394,9 @@ function LiveGame() {
                         src={getRuneIconPath(secondaryStyle)}
                         alt="Secondary Style"
                         className="live-rune-secondary"
+                        onMouseEnter={(e) => handleHoverEnter(runesData?.[secondaryStyle], e)}
+                        onMouseMove={handleHoverMove}
+                        onMouseLeave={handleHoverLeave}
                         onError={(e) => (e.target.src = "/runes/unknown.png")}
                     />
                 )}
@@ -421,8 +442,22 @@ function LiveGame() {
                                 </div>
                             )}
                             <div className="card-spells">
-                                <img src={spell1} alt="Spell 1" className="card-spell-icon" />
-                                <img src={spell2} alt="Spell 2" className="card-spell-icon" />
+                                <img
+                                    src={spell1}
+                                    alt="Spell 1"
+                                    className="card-spell-icon"
+                                    onMouseEnter={(e) => handleHoverEnter(spellIdToData?.[player.spell1Id], e)}
+                                    onMouseMove={handleHoverMove}
+                                    onMouseLeave={handleHoverLeave}
+                                />
+                                <img
+                                    src={spell2}
+                                    alt="Spell 2"
+                                    className="card-spell-icon"
+                                    onMouseEnter={(e) => handleHoverEnter(spellIdToData?.[player.spell2Id], e)}
+                                    onMouseMove={handleHoverMove}
+                                    onMouseLeave={handleHoverLeave}
+                                />
                             </div>
                             <div className="card-runes">
                                 {renderPlayerRunes(player)}
@@ -490,59 +525,77 @@ function LiveGame() {
 
     return (
         <div className="live-game-page">
-            <div className="live-sidebar-nav">
-                <button onClick={() => navigate(-1)} className="live-back-btn">← Back to Profile</button>
-            </div>
-
-            <div className="live-game-content">
-                <div className="live-game-header-simple">
-                    <span className="header-mode-text">
-                        {getGameModeName(liveData.gameMode, liveData.gameQueueConfigId)}
-                    </span>
-                    <span className="header-timer-text">{formatTime(elapsedTime)}</span>
+            <div className="profile-max-width">
+                <div className="live-sidebar-nav">
+                    <button onClick={() => navigate(-1)} className="live-back-btn">← Back to Profile</button>
                 </div>
 
-                <div className="live-main-grid">
-                    {renderTeam(100, 'blue-team')}
-
-                    <div className="live-bans-bar">
-                        {!isRolelessMode() && <div className="team-ban-label">BLUE TEAM BANS</div>}
-                        <div className="team-bans blue-bans">
-                            {!isRolelessMode() && blueTeamBans.map((ban, idx) => {
-                                const champName = champIdToName[ban.championId];
-                                return champName && ban.championId !== -1 ? (
-                                    <div key={idx} className="ban-item">
-                                        <img
-                                            src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
-                                            className="ban-icon-mini"
-                                            alt={`Ban ${champName}`}
-                                        />
-                                    </div>
-                                ) : <div key={idx} className="ban-placeholder-mini"></div>;
-                            })}
+                <div className="live-game-content glass-panel">
+                    <div className="profile-header-row">
+                        <div className="profile-header-left">
+                            <div className="profile-title">
+                                {getGameModeName(liveData.gameMode, liveData.gameQueueConfigId)}
+                            </div>
+                            <div className="header-timer-text">{formatTime(elapsedTime)}</div>
                         </div>
-
-                        <div className="vs-logo">VS</div>
-                        <div className="team-bans red-bans">
-                            {!isRolelessMode() && redTeamBans.map((ban, idx) => {
-                                const champName = champIdToName[ban.championId];
-                                return champName && ban.championId !== -1 ? (
-                                    <div key={idx} className="ban-item">
-                                        <img
-                                            src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
-                                            className="ban-icon-mini"
-                                            alt={`Ban ${champName}`}
-                                        />
-                                    </div>
-                                ) : <div key={idx} className="ban-placeholder-mini"></div>;
-                            })}
-                        </div>
-                        {!isRolelessMode() && <div className="team-ban-label">RED TEAM BANS</div>}
                     </div>
 
-                    {renderTeam(200, 'red-team')}
+                    <div className="live-main-grid">
+                        <div className="live-team-section">
+                            <div className="live-section-header blue">
+                                <div className="mh-team-dot blue"></div>
+                                <span className="mh-team-name blue">Blue Team</span>
+                            </div>
+                            {renderTeam(100, 'blue-team')}
+                        </div>
+
+                        <div className="live-bans-bar glass-panel">
+                            {!isRolelessMode() && <div className="team-ban-label">BLUE BANS</div>}
+                            <div className="team-bans blue-bans">
+                                {!isRolelessMode() && blueTeamBans.map((ban, idx) => {
+                                    const champName = champIdToName[ban.championId];
+                                    return champName && ban.championId !== -1 ? (
+                                        <div key={idx} className="ban-item">
+                                            <img
+                                                src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
+                                                className="ban-icon-mini"
+                                                alt={`Ban ${champName}`}
+                                            />
+                                        </div>
+                                    ) : <div key={idx} className="ban-placeholder-mini"></div>;
+                                })}
+                            </div>
+
+                            <div className="vs-logo text-gradient">VS</div>
+
+                            <div className="team-bans red-bans">
+                                {!isRolelessMode() && redTeamBans.map((ban, idx) => {
+                                    const champName = champIdToName[ban.championId];
+                                    return champName && ban.championId !== -1 ? (
+                                        <div key={idx} className="ban-item">
+                                            <img
+                                                src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`}
+                                                className="ban-icon-mini"
+                                                alt={`Ban ${champName}`}
+                                            />
+                                        </div>
+                                    ) : <div key={idx} className="ban-placeholder-mini"></div>;
+                                })}
+                            </div>
+                            {!isRolelessMode() && <div className="team-ban-label">RED BANS</div>}
+                        </div>
+
+                        <div className="live-team-section">
+                            <div className="live-section-header red">
+                                <div className="mh-team-dot red"></div>
+                                <span className="mh-team-name red">Red Team</span>
+                            </div>
+                            {renderTeam(200, 'red-team')}
+                        </div>
+                    </div>
                 </div>
             </div>
+            {hoveredItem && <ItemTooltip item={hoveredItem} position={tooltipPos} version={version} />}
         </div>
     );
 }

@@ -1,83 +1,28 @@
-/* ===== ENHANCED RESPONSIVE BREAKPOINTS ===== */
+/* ===== RESPONSIVE / LAYOUT OVERRIDES ===== */
+/* Shared responsive utilities that apply across multiple components */
 
-/* Large laptops (1200px and up) */
-@media (min-width: 1200px) {
-  .app-container {
-    max-width: 1400px;
-  }
-}
-
-/* Standard laptops (1024px to 1199px) */
-@media (max-width: 1199px) {
-  .app-container {
-    max-width: 1000px;
-  }
-}
-
-/* Small laptops (768px to 1023px) */
+/* Hidden below breakpoint */
 @media (max-width: 1023px) {
-  .app-container {
-    max-width: 900px;
-    padding: 0 var(--space-md);
-  }
-  
-  .profile-card,
-  .match-card {
-    max-width: 700px;
-  }
+    .desktop-only {
+        display: none !important;
+    }
 }
 
-/* Tablets (768px and down) */
-@media (max-width: 768px) {
-  html {
-    font-size: 15px;
-  }
-  
-  .app-container {
-    padding: 0 var(--space-sm);
-  }
-  
-  .profile-card {
-    flex-direction: column;
-    text-align: center;
-    padding: var(--space-md);
-  }
-  
-  .profile-icon-container {
-    width: 70px;
-    height: 70px;
-  }
+@media (max-width: 767px) {
+    .tablet-only {
+        display: none !important;
+    }
 }
 
-/* Mobile devices (480px and down) */
-@media (max-width: 480px) {
-  html {
-    font-size: 14px;
-  }
-  
-  .app-container {
-    padding: 0 var(--space-xs);
-  }
-  
-  .social-container {
-    width: 95vw;
-    height: 70vh;
-    right: 2.5vw;
-    bottom: 2.5vh;
-  }
-  
-  .floating-chat-btn {
-    width: 45px;
-    height: 45px;
-    font-size: var(--font-size-base);
-    bottom: 15px;
-    right: 15px;
-  }
+/* Hidden above breakpoint */
+@media (min-width: 1024px) {
+    .mobile-only {
+        display: none !important;
+    }
 }
 
-/* Prevent zoom on mobile inputs */
-@media (max-width: 768px) {
-  input, select, textarea {
-    font-size: 16px;
-  }
+@media (min-width: 768px) {
+    .phone-only {
+        display: none !important;
+    }
 }

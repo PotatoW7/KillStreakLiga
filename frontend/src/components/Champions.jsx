@@ -10,7 +10,6 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { fetchDDragon } from '../utils/fetchDDragon';
-import '../styles/componentsCSS/champions.css';
 
 const ROLE_LABELS = {
     TOP: 'Top',
@@ -49,7 +48,7 @@ function Champions() {
                 const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
                 if (userDoc.exists()) {
                     const role = userDoc.data().role || 'user';
-                    if (['owner', 'admin', 'coach'].includes(role)) {
+                    if (['admin', 'coach'].includes(role)) {
                         setUserRole(role);
                     } else {
                         navigate('/');
@@ -75,7 +74,7 @@ function Champions() {
 
         const loadData = async () => {
             try {
-                const { latestVersion, champIdToName, champNameToId } = await fetchDDragon();
+                const { latestVersion, champIdToName } = await fetchDDragon();
                 setVersion(latestVersion);
 
                 const champList = Object.entries(champIdToName).map(([id, name]) => ({
@@ -221,10 +220,9 @@ function Champions() {
                     <div className="header-actions">
                         <div className="role-indicator">
                             <span className={`role-badge ${userRole}`}>
-                                {userRole === 'owner' ? 'Owner' : userRole === 'admin' ? 'Admin' : 'Coach'}
+                                {userRole === 'admin' ? 'Admin' : 'Coach'}
                             </span>
                         </div>
-
                     </div>
                 </div>
 
@@ -236,17 +234,17 @@ function Champions() {
 
                 <div className="priority-legend">
                     <div className="legend-item main">
-                        <span className="legend-dot"></span>
+                        <span className="legend-dot" />
                         <span>Main Role</span>
                         <span className="legend-priority">Highest Priority</span>
                     </div>
                     <div className="legend-item secondary">
-                        <span className="legend-dot"></span>
+                        <span className="legend-dot" />
                         <span>Secondary</span>
                         <span className="legend-priority">Medium Priority</span>
                     </div>
                     <div className="legend-item offmeta">
-                        <span className="legend-dot"></span>
+                        <span className="legend-dot" />
                         <span>Off-Meta</span>
                         <span className="legend-priority">Lowest Priority</span>
                     </div>
@@ -287,10 +285,11 @@ function Champions() {
                         <div className="champions-grid">
                             {filteredChampions.map(champ => {
                                 const isSelected = selectedChampion?.id === champ.id;
+                                const status = getChampionStatus(champ.name);
                                 return (
                                     <div
                                         key={champ.id}
-                                        className={`champion-card ${getChampionStatus(champ.name)} ${isSelected ? 'selected' : ''}`}
+                                        className={`champion-card ${status} ${isSelected ? 'selected' : ''}`}
                                         onClick={() => handleSelectChampion(champ)}
                                     >
                                         <img
@@ -300,7 +299,7 @@ function Champions() {
                                             onError={(e) => (e.target.src = '/placeholder-champ.png')}
                                         />
                                         <span className="champion-name">{champ.name}</span>
-                                        <span className={`status-indicator ${getChampionStatus(champ.name)}`}></span>
+                                        <span className={`status-indicator ${status}`} />
 
                                         {roleFilter !== 'ALL' && roleFilter !== 'UNSET' &&
                                             championRoles[champ.name]?.secondaryRoles?.includes(roleFilter) && (
@@ -413,7 +412,7 @@ function Champions() {
                             </>
                         ) : (
                             <div className="no-selection">
-                                <div className="no-selection-icon"></div>
+                                <div className="no-selection-icon" />
                                 <p>Select a champion to assign roles</p>
                                 <span>Click any champion from the grid</span>
                             </div>

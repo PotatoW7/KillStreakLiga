@@ -22,9 +22,31 @@ function Register() {
     e.preventDefault();
 
     if (form.password !== form.confirm)
-      return setError("Passwords don't match");
+      return setError("Error: Passwords do not match.");
     if (form.password.length < 6)
-      return setError("Password must be at least 6 characters");
+      return setError("Error: Password must be at least 6 characters.");
+    if (form.username.length > 15)
+      return setError("Error: Username cannot exceed 15 characters.");
+    if (form.username.length < 3)
+      return setError("Error: Username must be at least 3 characters.");
+
+    const DISPOSABLE_DOMAINS = [
+      "tempmail.com", "10minutemail.com", "guerrillamail.com", "mailinator.com",
+      "dispostable.com", "getairmail.com", "throwawaymail.com", "maildrop.cc",
+      "yopmail.com", "sendoutapp.com", "sharklasers.com", "guerrillamailblock.com",
+      "guerrillamail.net", "guerrillamail.org", "guerrillamail.biz", "spam4.me",
+      "grr.la", "pokemail.net", "vmani.com", "dropmail.me", "anonymbox.com"
+    ];
+
+    const emailParts = form.email.split("@");
+    const emailPrefix = emailParts[0] || "";
+    const emailDomain = emailParts[1] || "";
+
+    if (emailPrefix.length < 6 || emailPrefix.length > 30)
+      return setError("Error: Email prefix must be between 6 and 30 characters.");
+
+    if (DISPOSABLE_DOMAINS.includes(emailDomain.toLowerCase()))
+      return setError("Error: Temporary or disposable email addresses are not allowed.");
 
     setLoading(true);
     setError("");
@@ -37,7 +59,7 @@ function Register() {
       const usernameSnapshot = await getDocs(usernameQuery);
 
       if (!usernameSnapshot.empty) {
-        setError("Username already in use");
+        setError("Error: Username already exists.");
         setLoading(false);
         return;
       }
@@ -54,27 +76,29 @@ function Register() {
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, {
         username: form.username.trim(),
+        usernameLowercase: form.username.trim().toLowerCase(),
         email: form.email.trim().toLowerCase(),
         createdAt: new Date(),
         friends: [],
         pendingRequests: [],
-        emailVerificationSent: false
+        emailVerificationSent: false,
+        profileImage: "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"
       });
 
       navigate("/profile");
     } catch (error) {
       console.error("Error registering:", error);
 
-      let message = "Something went wrong. Please try again.";
+      let message = "Error: Account creation failed. Please try again.";
       switch (error.code) {
         case "auth/email-already-in-use":
-          message = "Email already in use";
+          message = "Error: Email address already registered.";
           break;
         case "auth/invalid-email":
-          message = "Invalid email address";
+          message = "Invalid email address format.";
           break;
         case "auth/weak-password":
-          message = "Password too weak";
+          message = "Error: Password is too weak.";
           break;
         default:
           message = error.message.replace("Firebase: ", "").split("(")[0].trim();
@@ -87,55 +111,103 @@ function Register() {
   };
 
   return (
-    <div className="register-page">
-      <div className="auth-container">
-        <h2>Join Killstreak</h2>
-        <p>Create your account</p>
+    <div className="auth-page">
 
-        {error && <div className="auth-error">{error}</div>}
+      <div className="auth-bg-blob-2" />
+      <div className="auth-bg-blob-1" />
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <input
-            type="text"
-            placeholder="Username"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            className="auth-input"
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="auth-input"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="auth-input"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={form.confirm}
-            onChange={(e) => setForm({ ...form, confirm: e.target.value })}
-            className="auth-input"
-            required
-          />
+      <div className="auth-card-wrapper">
+        <div className="auth-card glass-panel">
+          <div className="auth-card-inner">
+            <div className="auth-header">
+              <div className="auth-header-inner">
+                <div className="auth-title-row">
+                  <div className="auth-title-bar" />
+                  <h2 className="auth-title">Join KillStreak</h2>
+                </div>
+                <p className="auth-subtitle">User Registration</p>
+              </div>
+            </div>
 
-          <button disabled={loading} className="auth-button">
-            {loading ? "Creating Account..." : "Register"}
-          </button>
+            {error && (
+              <div className="auth-error">
+                {error}
+              </div>
+            )}
 
-          <div className="auth-footer">
-            <p>Want to share your skills? <Link to="/become-coach" className="auth-link">Become a Coach</Link></p>
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="auth-field">
+                <p className="auth-label">Username</p>
+                <input
+                  type="text"
+                  placeholder="Type a username..."
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  className="auth-input"
+                  maxLength={15}
+                  required
+                />
+              </div>
+
+              <div className="auth-field">
+                <p className="auth-label">Email Address</p>
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="auth-input"
+                  required
+                />
+              </div>
+
+              <div className="register-grid">
+                <div className="auth-field">
+                  <p className="auth-label">Password</p>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="auth-input auth-input-password"
+                    required
+                  />
+                </div>
+                <div className="auth-field">
+                  <p className="auth-label">Confirm Password</p>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={form.confirm}
+                    onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+                    className="auth-input auth-input-password"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button disabled={loading} className="auth-submit">
+                <span>{loading ? "Creating Account..." : "Sign Up"}</span>
+                <div className="auth-submit-shine" />
+              </button>
+            </form>
+
+            <div className="auth-footer">
+              <div className="auth-footer-group">
+                <p className="auth-footer-text">Already have an account?</p>
+                <Link to="/login" className="auth-footer-link">
+                  Login to Account
+                </Link>
+              </div>
+              <div className="auth-footer-group">
+                <p className="auth-footer-text-sm">Become a Coach?</p>
+                <Link to="/become-coach" className="auth-footer-link-subtle">
+                  Apply for Coach Certification
+                </Link>
+              </div>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

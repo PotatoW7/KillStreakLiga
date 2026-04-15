@@ -1,13 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { auth, db } from "../firebase";
-import { collection, query, where, onSnapshot, getDoc, doc } from "firebase/firestore";
+import { auth, db, rtdb } from "../firebase";
+import { collection, query, onSnapshot, getDoc, doc } from "firebase/firestore";
+import { ref, onValue } from "firebase/database";
 import ProfilePosts from "./ProfilePosts";
-import "../styles/componentsCSS/Feeds.css";
+import { Award, TrendingUp, Clock, Search, ChevronDown, Users, Bell, Zap, Activity, Lock, ChevronRight } from "lucide-react";
+
+const normalizeProfileIcon = (url) => {
+    if (!url) return url;
+    if (typeof url !== 'string') return url;
+    if (url.includes('profileicon/588.png')) {
+        return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
+    }
+    if (url.includes('ddragon.leagueoflegends.com/cdn/13.20.1/')) {
+        return url.replace('13.20.1', '14.3.1');
+    }
+    return url;
+};
 
 function Feeds() {
     const [user, setUser] = useState(null);
     const [profileImage, setProfileImage] = useState(null);
     const [posts, setPosts] = useState([]);
+    const [liveProfileImages, setLiveProfileImages] = useState({});
     const [loading, setLoading] = useState(true);
     const [likesLeaderboard, setLikesLeaderboard] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -51,7 +65,7 @@ function Feeds() {
                         userLikesMap[post.userId] = {
                             userId: post.userId,
                             username: post.username || "Unknown",
-                            profileImage: post.userProfileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png",
+                            profileImage: post.userProfileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png",
                             totalLikes: 0
                         };
                     }
@@ -63,9 +77,28 @@ function Feeds() {
                 .filter(u => u.totalLikes > 0)
                 .sort((a, b) => b.totalLikes - a.totalLikes)
                 .slice(0, 5);
+            const uniqueAuthorIds = [...new Set(filteredPosts.map(p => p.userId).filter(Boolean))];
+            const enrichPostsAndLeaderboard = async () => {
+                const liveMap = {};
+                await Promise.all(uniqueAuthorIds.map(async (authorId) => {
+                    try {
+                        const authorDoc = await getDoc(doc(db, "users", authorId));
+                        if (authorDoc.exists()) {
+                            liveMap[authorId] = normalizeProfileIcon(authorDoc.data().profileImage) || null;
+                        }
+                    } catch (err) {
+                        console.error("Error fetching live author data:", err);
+                    }
+                }));
+                setLiveProfileImages(liveMap);
 
-            const enrichLeaderboard = async () => {
                 const enriched = await Promise.all(leaderboard.map(async (entry) => {
+                    if (liveMap[entry.userId]) {
+                        return {
+                            ...entry,
+                            profileImage: liveMap[entry.userId]
+                        };
+                    }
                     try {
                         const userDoc = await getDoc(doc(db, "users", entry.userId));
                         if (userDoc.exists()) {
@@ -73,18 +106,18 @@ function Feeds() {
                             return {
                                 ...entry,
                                 username: userData.username || entry.username,
-                                profileImage: userData.profileImage || entry.profileImage
+                                profileImage: normalizeProfileIcon(userData.profileImage) || entry.profileImage
                             };
                         }
                     } catch (err) {
                         console.error("Error fetching live user data for leaderboard:", err);
                     }
-                    return entry;
+                    return { ...entry, profileImage: normalizeProfileIcon(entry.profileImage) };
                 }));
                 setLikesLeaderboard(enriched);
             };
 
-            enrichLeaderboard();
+            enrichPostsAndLeaderboard();
 
             if (activeTab === "recent") {
                 filteredPosts.sort((a, b) => {
@@ -95,8 +128,8 @@ function Feeds() {
             } else {
                 filteredPosts.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
             }
-
             setPosts(filteredPosts);
+
             setLoading(false);
         }, (error) => {
             console.error("Error fetching public posts:", error);
@@ -106,76 +139,77 @@ function Feeds() {
         return () => unsubscribe();
     }, [activeTab]);
 
+
     const filteredPostsBySearch = posts.filter(post =>
         post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         post.username?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const getRankIcon = (tier) => {
-        if (!tier) return "/rank-icons/Rank=Unranked.png";
-        return `/rank-icons/Rank=${tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()}.png`;
-    };
-
-    if (!user) {
-        return (
-            <div className="feeds-page">
-                <div className="feeds-container single-col">
-                    <div className="auth-message">
-                        <h2>Welcome to Feeds</h2>
-                        <p>Join the community to share your highlights, find teammates, and stay updated.</p>
-                        <button onClick={() => window.location.href = "/"} className="login-btn">Log In to Participate</button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="feeds-page">
             <div className="feeds-layout">
                 <main className="feeds-main">
                     <div className="feeds-hero">
-                        <h1>Community Feed</h1>
-                        <p>Share your journey and connect with other summoners</p>
+                        <div className="feeds-hero-glow" />
+                        <div className="feeds-hero-content">
+                            <div className="feeds-hero-badge">
+                                <Zap className="feeds-hero-badge-icon" />
+                                <span className="feeds-hero-badge-text">Live Community Feed</span>
+                            </div>
+                            <h1 className="feeds-hero-title">
+                                COMMUNITY<br /><span className="highlight">FEED</span>
+                            </h1>
+                            <p className="feeds-hero-desc">
+                                Curating community highlights, top discussions, and global KillStreak activity.
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="feed-controls">
-                        <div className="feed-tabs">
+                    <div className="feeds-toolbar glass-panel">
+                        <div className="feeds-tabs">
                             <button
-                                className={`feed-tab ${activeTab === 'recent' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('recent')}
+                                className={`feeds-tab ${activeTab === 'recent' ? 'active' : ''}`}
                             >
-                                Recent
+                                Latest
                             </button>
                             <button
-                                className={`feed-tab ${activeTab === 'trending' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('trending')}
+                                className={`feeds-tab ${activeTab === 'trending' ? 'active' : ''}`}
                             >
-                                Top Posts
+                                Trending
                             </button>
                         </div>
-                        <div className="feed-search">
+
+                        <div className="feeds-search-wrapper">
                             <input
                                 type="text"
-                                placeholder="Search posts or users..."
+                                placeholder="Search community posts..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                className="feeds-search-input"
                             />
                         </div>
                     </div>
 
                     {loading ? (
-                        <div className="loading-posts">
-                            <div className="loader"></div>
-                            <p>Loading the latest updates...</p>
+                        <div className="feeds-loading">
+                            <div className="feeds-loading-icon-wrapper">
+                                <Activity className="feeds-loading-icon" />
+                                <div className="feeds-loading-glow" />
+                            </div>
+                            <p className="feeds-loading-text">Loading Community Feed...</p>
                         </div>
                     ) : (
-                        <div className="feed-content">
+                        <div className="animate-slide-up-sm">
                             <ProfilePosts
                                 user={user}
                                 profileImage={profileImage}
                                 posts={filteredPostsBySearch}
                                 isOwnProfile={true}
+                                isFeedsPage={true}
+                                liveProfileImages={liveProfileImages}
                                 onPostCreated={() => { }}
                             />
                         </div>
@@ -183,40 +217,56 @@ function Feeds() {
                 </main>
 
                 <aside className="feeds-sidebar">
-                    <div className="sidebar-section likes-leaderboard">
-                        <div className="section-header">
-                            <h3>Likes Leaderboard</h3>
-                            <div className="section-icon-container">
-                                <img src="/project-icons/Feeds icons/leaderboard.png" alt="" className="section-icon-img" />
+                    <div className="feeds-leaderboard glass-panel">
+                        <div className="feeds-leaderboard-header">
+                            <div className="feeds-leaderboard-title-row">
+                                <h3 className="feeds-leaderboard-title">TOP PERFORMERS</h3>
+                                <img src="/project-icons/Feeds icons/leaderboard.png" alt="" className="feeds-leaderboard-icon" />
                             </div>
+                            <p className="feeds-leaderboard-subtitle">Highest Community Engagement</p>
                         </div>
-                        <p className="section-subtitle">Most engaged summoners</p>
-                        <div className="leaderboard-list">
+                        <div className="feeds-leaderboard-list">
                             {likesLeaderboard.map((leader, index) => (
-                                <div key={leader.userId} className="leader-card" onClick={() => window.location.href = `/profile/${leader.userId}`}>
-                                    <div className="leader-rank-box">
-                                        <span className={`rank-num rank-${index + 1}`}>#{index + 1}</span>
-                                    </div>
-                                    <img src={leader.profileImage} alt="" className="leader-avatar" />
-                                    <div className="leader-info">
-                                        <span className="leader-name">{leader.username}</span>
-                                        <div className="leader-stats">
-                                            <span className="like-count">{leader.totalLikes}</span>
-                                            <span className="like-label">Likes Received</span>
+                                <button
+                                    key={leader.userId}
+                                    onClick={() => window.location.href = `/profile/${leader.userId}`}
+                                    className="feeds-leader-btn"
+                                >
+                                    <div className="feeds-leader-avatar-wrapper">
+                                        <div className={`feeds-leader-avatar ${index === 0 ? 'first' : ''}`}>
+                                            <img src={leader.profileImage} alt="" />
+                                        </div>
+                                        <div className="feeds-leader-medal">
+                                            {index === 0 && <img src="/project-icons/Feeds icons/medal first.png" alt="" />}
+                                            {index === 1 && <img src="/project-icons/Feeds icons/medal second.png" alt="" />}
+                                            {index === 2 && <img src="/project-icons/Feeds icons/medal third.png" alt="" />}
+                                            {index > 2 && (
+                                                <div className="feeds-leader-rank-badge">
+                                                    #{index + 1}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="leader-medal">
-                                        {index === 0 && <img src="/project-icons/Feeds icons/medal first.png" alt="First" className="medal-icon-img" />}
-                                        {index === 1 && <img src="/project-icons/Feeds icons/medal second.png" alt="Second" className="medal-icon-img" />}
-                                        {index === 2 && <img src="/project-icons/Feeds icons/medal third.png" alt="Third" className="medal-icon-img" />}
+                                    <div className="feeds-leader-info">
+                                        <h4 className="feeds-leader-name">
+                                            {leader.username}
+                                        </h4>
+                                        <div className="feeds-leader-stats">
+                                            <span className="feeds-leader-stats-text">{leader.totalLikes} Likes</span>
+                                        </div>
                                     </div>
-                                </div>
+                                    <ChevronRight className="feeds-leader-chevron" />
+                                </button>
                             ))}
                             {likesLeaderboard.length === 0 && (
-                                <p className="no-data">No interactions yet.</p>
+                                <div className="feeds-leaderboard-empty">
+                                    <Activity className="feeds-leaderboard-empty-icon" />
+                                    <p className="feeds-leaderboard-empty-text">No community activity detected</p>
+                                </div>
                             )}
                         </div>
                     </div>
+
                 </aside>
             </div>
         </div>

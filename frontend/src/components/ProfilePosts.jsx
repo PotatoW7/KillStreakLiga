@@ -2,18 +2,26 @@ import React, { useState, useRef, useEffect } from "react";
 import { db } from "../firebase";
 import {
     collection, addDoc, updateDoc, deleteDoc, doc,
-    serverTimestamp, arrayUnion, arrayRemove
+    serverTimestamp, arrayUnion, arrayRemove,
+    onSnapshot, query, orderBy, increment
 } from "firebase/firestore";
 import IconRenderer, { LoLSuggestions } from "./IconRenderer";
+import { X, ChevronDown, Lock, Send, Image as ImageIcon, Loader2 } from "lucide-react";
 import "../styles/componentsCSS/ProfilePosts.css";
 
-function ProfilePosts({
-    user,
-    profileImage,
-    posts = [],
-    isOwnProfile,
-    onPostCreated
-}) {
+const normalizeProfileIcon = (url) => {
+    if (!url) return url;
+    if (typeof url !== 'string') return url;
+    if (url.includes('profileicon/588.png')) {
+        return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
+    }
+    if (url.includes('ddragon.leagueoflegends.com/cdn/13.20.1/')) {
+        return url.replace('13.20.1', '14.3.1');
+    }
+    return url;
+};
+
+function ProfilePosts({ user, profileImage, posts = [], isOwnProfile, onPostCreated, isFeedsPage, liveProfileImages = {}, loadingPosts }) {
     const [state, setState] = useState({
         newPostContent: "",
         newPostImages: [],
@@ -34,19 +42,25 @@ function ProfilePosts({
         suggestionIndex: 0,
         suggestionType: null,
         activeCommentId: null,
-        suggestionCoords: { top: 0, left: 0 }
+        suggestionCoords: { top: 0, left: 0 },
+        showAuthPrompt: false,
+        subComments: {},
+        isDragging: false,
+        postToDelete: null
     });
 
     const postImageInputRef = useRef(null);
+    const commentsRef = useRef(null);
+    const editPostInputRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (!state.showSuggestions) return;
 
             const isInput = event.target.closest('.post-textarea') ||
-                event.target.closest('.comment-input') ||
-                event.target.closest('.edit-post-textarea') ||
-                event.target.closest('.edit-comment-input');
+                event.target.closest('.comment-box-field') ||
+                event.target.closest('.edit-textarea') ||
+                event.target.closest('.comment-edit-input');
             const isDropdown = event.target.closest('.suggestion-dropdown');
 
             if (!isInput && !isDropdown) {
@@ -57,18 +71,40 @@ function ProfilePosts({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [state.showSuggestions]);
+    useEffect(() => {
+        if (!state.openCommentsPostId) return;
 
-    const fileToBase64 = (file) => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = (err) => reject(err);
-    });
+        const postId = state.openCommentsPostId;
+        const commentsQuery = query(
+            collection(db, "posts", postId, "comments"),
+            orderBy("createdAt", "asc")
+        );
+
+        const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
+            const comments = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    ...data,
+                    id: doc.id,
+                    localId: data.id
+                };
+            });
+            setState(prev => ({
+                ...prev,
+                subComments: { ...prev.subComments, [postId]: comments }
+            }));
+        });
+
+        return () => unsubscribe();
+    }, [state.openCommentsPostId]);
+
+
 
     const getSocialPreview = (content) => {
-        const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-        const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[\w.-]+\/video\/\d+|vt\.tiktok\.com\/\w+)/;
+        const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/(?:v\/|e(?:mbed)\/|shorts\/|watch\?v=)|youtu\.be\/|youtube-nocookie\.com\/(?:v|e(?:mbed)\/))([a-zA-Z0-9_-]{11})/;
+        const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[\w.-]+\/video\/(\d+)|vt\.tiktok\.com\/(\w+))/;
         const instagramRegex = /(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/(?:p|reels|reel)\/([\w-]+))/;
+        const xRegex = /(?:https?:\/\/)?(?:www\.)?(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)/;
 
         const ytMatch = content.match(youtubeRegex);
         if (ytMatch) {
@@ -77,12 +113,18 @@ function ProfilePosts({
 
         const ttMatch = content.match(tiktokRegex);
         if (ttMatch) {
-            return { type: 'tiktok', thumbnail: '/project-icons/social-placeholders/tiktok-preview.png' };
+            const videoId = ttMatch[1] || ttMatch[2];
+            return { type: 'tiktok', id: videoId, thumbnail: 'https://cdn-icons-png.flaticon.com/512/3046/3046121.png' };
         }
 
         const igMatch = content.match(instagramRegex);
         if (igMatch) {
-            return { type: 'instagram', thumbnail: '/project-icons/social-placeholders/instagram-preview.png' };
+            return { type: 'instagram', id: igMatch[1], thumbnail: 'https://cdn-icons-png.flaticon.com/512/174/174855.png' };
+        }
+
+        const xMatch = content.match(xRegex);
+        if (xMatch) {
+            return { type: 'x', id: xMatch[1], thumbnail: 'https://cdn-icons-png.flaticon.com/512/5968/5968830.png' };
         }
 
         return null;
@@ -127,7 +169,7 @@ function ProfilePosts({
 
         const cursorPosition = textarea?.selectionStart || 0;
         const textBeforeCursor = value.substring(0, cursorPosition);
-        const match = textBeforeCursor.match(/:([a-z0-9_']*)$/i);
+        const match = textBeforeCursor.match(/:([a-z0-9_\']*)$/i);
 
         if (match) {
             const query = match[1];
@@ -171,7 +213,7 @@ function ProfilePosts({
         const textAfterCursor = value.substring(cursorPosition);
         const lastColonIndex = textBeforeCursor.lastIndexOf(':');
 
-        const newValue = textBeforeCursor.substring(0, lastColonIndex) + `:${icon.name.toLowerCase().replace(/\s+/g, '_').replace(/['.]/g, '')}: ` + textAfterCursor;
+        const newValue = textBeforeCursor.substring(0, lastColonIndex) + `:${icon.name.toLowerCase().replace(/\s+/g, '_').replace(/[\'.]/g, '')}: ` + textAfterCursor;
 
         if (type === 'post') {
             setState(prev => ({ ...prev, newPostContent: newValue, showSuggestions: false }));
@@ -207,8 +249,37 @@ function ProfilePosts({
         }
     };
 
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!state.isDragging) setState(prev => ({ ...prev, isDragging: true }));
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setState(prev => ({ ...prev, isDragging: false }));
+    };
+
+    const handleDrop = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setState(prev => ({ ...prev, isDragging: false }));
+
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            const imagePromises = imageFiles.map(file => fileToBase64(file));
+            const base64Images = await Promise.all(imagePromises);
+            setState(prev => ({ ...prev, newPostImages: [...prev.newPostImages, ...base64Images] }));
+        }
+    };
+
     const createPost = async () => {
-        if (!user || !state.newPostContent.trim() || state.creatingPost) return;
+        if (!user) {
+            setState(prev => ({ ...prev, showAuthPrompt: true }));
+            return;
+        }
 
         try {
             setState(prev => ({ ...prev, creatingPost: true }));
@@ -218,7 +289,7 @@ function ProfilePosts({
             const postData = {
                 userId: user.uid,
                 username: user.displayName || "Anonymous User",
-                userProfileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png",
+                userProfileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png",
                 content: state.newPostContent.trim(),
                 createdAt: serverTimestamp(),
                 likes: [],
@@ -230,6 +301,13 @@ function ProfilePosts({
                 visibility: state.postVisibility
             };
 
+            const estimatedSize = JSON.stringify(postData).length;
+            if (estimatedSize > 1040000) {
+                alert(`Post is too large (${Math.round(estimatedSize / 1024)}KB). Please use fewer or smaller images.`);
+                setState(prev => ({ ...prev, creatingPost: false }));
+                return;
+            }
+
             await addDoc(collection(db, "posts"), postData);
 
             setState(prev => ({
@@ -237,27 +315,39 @@ function ProfilePosts({
                 newPostContent: "",
                 newPostImages: [],
                 creatingPost: false,
-                postVisibility: "public"
+                postVisibility: "public",
+                postSuccess: true
             }));
 
-            alert("Post created successfully!");
             if (onPostCreated) onPostCreated();
+
+            setTimeout(() => {
+                setState(prev => ({ ...prev, postSuccess: false }));
+            }, 3000);
         } catch (error) {
             console.error("Error creating post:", error);
-            alert("Failed to create post. Please try again.");
+            alert("Failed to create post.");
             setState(prev => ({ ...prev, creatingPost: false }));
         }
     };
 
-    const deletePost = async (postId) => {
-        if (!window.confirm("Are you sure you want to delete this post?")) return;
+    const confirmDeletePost = (postId) => {
+        setState(prev => ({ ...prev, postToDelete: postId }));
+    };
 
+    const cancelDeletePost = () => {
+        setState(prev => ({ ...prev, postToDelete: null }));
+    };
+
+    const executeDeletePost = async () => {
+        if (!state.postToDelete) return;
         try {
-            await deleteDoc(doc(db, "posts", postId));
-            alert("Post deleted successfully!");
+            await deleteDoc(doc(db, "posts", state.postToDelete));
+            setState(prev => ({ ...prev, postToDelete: null }));
         } catch (error) {
             console.error("Error deleting post:", error);
             alert("Failed to delete post.");
+            setState(prev => ({ ...prev, postToDelete: null }));
         }
     };
 
@@ -265,7 +355,8 @@ function ProfilePosts({
         setState(prev => ({
             ...prev,
             editingPostId: post.id,
-            editContent: post.content
+            editContent: post.content,
+            editVisibility: post.visibility || "public"
         }));
     };
 
@@ -283,8 +374,11 @@ function ProfilePosts({
         try {
             setState(prev => ({ ...prev, updatingPost: true }));
             const postRef = doc(db, "posts", postId);
+            const socialPreview = getSocialPreview(state.editContent);
             await updateDoc(postRef, {
                 content: state.editContent.trim(),
+                socialPreview: socialPreview || null,
+                visibility: state.editVisibility,
                 updatedAt: serverTimestamp()
             });
 
@@ -292,10 +386,9 @@ function ProfilePosts({
                 ...prev,
                 editingPostId: null,
                 editContent: "",
+                editVisibility: "public",
                 updatingPost: false
             }));
-
-            if (editPostInputRef.current) editPostInputRef.current.clear();
         } catch (error) {
             console.error("Error updating post:", error);
             alert("Failed to update post.");
@@ -304,18 +397,21 @@ function ProfilePosts({
     };
 
     const handleLike = async (post) => {
-        if (!user) return;
+        if (!user) {
+            setState(prev => ({ ...prev, showAuthPrompt: true }));
+            return;
+        }
         const postRef = doc(db, "posts", post.id);
         const userId = user.uid;
 
         const userData = {
-            uid: userId,
+            userId: userId,
             username: user.displayName || "Anonymous User",
-            profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
+            profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"
         };
 
-        const existingLike = post.likes?.find(l => l.uid === userId);
-        const existingDislike = post.dislikes?.find(d => d.uid === userId);
+        const existingLike = post.likes?.find(l => (l.userId === userId || l.uid === userId));
+        const existingDislike = post.dislikes?.find(d => (d.userId === userId || d.uid === userId));
 
         try {
             if (existingLike) {
@@ -334,18 +430,21 @@ function ProfilePosts({
     };
 
     const handleDislike = async (post) => {
-        if (!user) return;
+        if (!user) {
+            setState(prev => ({ ...prev, showAuthPrompt: true }));
+            return;
+        }
         const postRef = doc(db, "posts", post.id);
         const userId = user.uid;
 
         const userData = {
-            uid: userId,
+            userId: userId,
             username: user.displayName || "Anonymous User",
-            profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"
+            profileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"
         };
 
-        const existingLike = post.likes?.find(l => l.uid === userId);
-        const existingDislike = post.dislikes?.find(d => d.uid === userId);
+        const existingLike = post.likes?.find(l => (l.userId === userId || l.uid === userId));
+        const existingDislike = post.dislikes?.find(d => (d.userId === userId || d.uid === userId));
 
         try {
             if (existingDislike) {
@@ -364,8 +463,12 @@ function ProfilePosts({
     };
 
     const handleAddComment = async (postId) => {
+        if (!user) {
+            setState(prev => ({ ...prev, showAuthPrompt: true }));
+            return;
+        }
         const commentText = state.newCommentText[postId]?.trim();
-        if (!user || !commentText || state.postingCommentId === postId) return;
+        if (!commentText) return;
 
         try {
             setState(prev => ({ ...prev, postingCommentId: postId }));
@@ -374,14 +477,19 @@ function ProfilePosts({
                 id: Date.now().toString(),
                 userId: user.uid,
                 username: user.displayName || "Anonymous User",
-                userProfileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png",
+                userProfileImage: profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png",
                 text: commentText,
                 createdAt: new Date().toISOString()
             };
 
-            await updateDoc(postRef, {
-                comments: arrayUnion(newComment)
-            });
+            await addDoc(collection(db, "posts", postId, "comments"), newComment);
+            try {
+                await updateDoc(postRef, {
+                    commentCount: increment(1)
+                });
+            } catch (ruleErr) {
+                console.warn("Could not update commentCount. Check Firestore rules.", ruleErr);
+            }
 
             setState(prev => ({
                 ...prev,
@@ -390,10 +498,56 @@ function ProfilePosts({
             }));
         } catch (error) {
             console.error("Error adding comment:", error);
+            alert("Failed to add comment.");
             setState(prev => ({ ...prev, postingCommentId: null }));
         }
     };
 
+    const deleteComment = async (postId, commentId) => {
+        if (!window.confirm("Delete this comment?")) return;
+
+        console.log("Starting deletion for comment:", commentId, "in post:", postId);
+
+        try {
+            setState(prev => ({ ...prev, deletingCommentId: commentId }));
+
+            const isSubComment = state.subComments[postId]?.some(c => c.id === commentId);
+            const postRef = doc(db, "posts", postId);
+            const post = posts.find(p => p.id === postId);
+            const currentCount = post?.commentCount || 0;
+
+            console.log("Detection - isSubComment:", isSubComment);
+
+            if (isSubComment) {
+                console.log("Deleting from sub-collection...");
+                await deleteDoc(doc(db, "posts", postId, "comments", commentId));
+                console.log("Updating post commentCount...");
+                if (currentCount > 0) {
+                    await updateDoc(postRef, {
+                        commentCount: increment(-1)
+                    });
+                }
+            } else {
+                console.log("Deleting from legacy array...");
+                const commentToDelete = post?.comments?.find(c => c.id === commentId);
+                if (commentToDelete) {
+                    await updateDoc(postRef, {
+                        comments: arrayRemove(commentToDelete),
+                        commentCount: currentCount > 0 ? increment(-1) : 0
+                    });
+                } else {
+                    console.warn("Comment not found in legacy array.");
+                }
+            }
+
+            console.log("Deletion successful.");
+            setState(prev => ({ ...prev, deletingCommentId: null }));
+        } catch (error) {
+            console.error("Detailed Deletion Error:", error);
+            alert(`Failed to delete comment: ${error.message || "Unknown error"}`);
+            setState(prev => ({ ...prev, deletingCommentId: null }));
+        }
+    };
     const startEditingComment = (comment) => {
         setState(prev => ({
             ...prev,
@@ -415,18 +569,30 @@ function ProfilePosts({
 
         try {
             setState(prev => ({ ...prev, updatingComment: true }));
-            const postRef = doc(db, "posts", postId);
-            const post = posts.find(p => p.id === postId);
 
-            if (!post) throw new Error("Post not found");
+            const isSubComment = state.subComments[postId]?.some(c => c.id === commentId);
 
-            const updatedComments = post.comments.map(comment =>
-                comment.id === commentId
-                    ? { ...comment, text: state.editCommentText.trim(), updatedAt: new Date().toISOString() }
-                    : comment
-            );
+            if (isSubComment) {
+                const commentRef = doc(db, "posts", postId, "comments", commentId);
+                await updateDoc(commentRef, {
+                    text: state.editCommentText.trim(),
+                    updatedAt: serverTimestamp()
+                });
+            } else {
+                const postRef = doc(db, "posts", postId);
+                const post = posts.find(p => p.id === postId);
+                const oldComment = post?.comments?.find(c => c.id === commentId);
 
-            await updateDoc(postRef, { comments: updatedComments });
+                if (oldComment) {
+                    const updatedComment = { ...oldComment, text: state.editCommentText.trim(), updatedAt: new Date().toISOString() };
+                    await updateDoc(postRef, {
+                        comments: arrayRemove(oldComment)
+                    });
+                    await updateDoc(postRef, {
+                        comments: arrayUnion(updatedComment)
+                    });
+                }
+            }
 
             setState(prev => ({
                 ...prev,
@@ -441,115 +607,88 @@ function ProfilePosts({
         }
     };
 
-    const deleteComment = async (postId, commentId) => {
-        if (!window.confirm("Are you sure you want to delete this comment?")) return;
-
-        try {
-            setState(prev => ({ ...prev, deletingCommentId: commentId }));
-            const postRef = doc(db, "posts", postId);
-            const post = posts.find(p => p.id === postId);
-
-            if (!post) throw new Error("Post not found");
-
-            const updatedComments = post.comments.filter(comment => comment.id !== commentId);
-
-            await updateDoc(postRef, { comments: updatedComments });
-
-            setState(prev => ({ ...prev, deletingCommentId: null }));
-        } catch (error) {
-            console.error("Error deleting comment:", error);
-            alert("Failed to delete comment.");
-            setState(prev => ({ ...prev, deletingCommentId: null }));
+    const handleImageUpload = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length + state.newPostImages.length > 4) {
+            alert("Maximum 4 images allowed per post.");
+            return;
         }
+
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setState(prev => ({
+                    ...prev,
+                    newPostImages: [...prev.newPostImages, reader.result]
+                }));
+            };
+            reader.readAsDataURL(file);
+        });
     };
 
-    const removePostImage = (index) => {
+    const removeImage = (index) => {
         setState(prev => ({
             ...prev,
             newPostImages: prev.newPostImages.filter((_, i) => i !== index)
         }));
     };
 
-    const handlePostImageSelect = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.size > 2 * 1024 * 1024) return alert("Image too large (Max 2MB)");
-
-        try {
-            const base64 = await fileToBase64(file);
-            setState(prev => ({
-                ...prev,
-                newPostImages: [...prev.newPostImages, base64]
-            }));
-        } catch (err) {
-            alert("Error processing image");
-        }
-    };
-
-    const handlePaste = async (e) => {
-        const items = e.clipboardData.items;
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf("image") !== -1) {
-                const file = items[i].getAsFile();
-                if (file) {
-                    if (file.size > 2 * 1024 * 1024) {
-                        alert("Pasted image too large (Max 2MB)");
-                        continue;
-                    }
-                    try {
-                        const base64 = await fileToBase64(file);
-                        setState(prev => ({
-                            ...prev,
-                            newPostImages: [...prev.newPostImages, base64]
-                        }));
-                        e.preventDefault();
-                    } catch (err) {
-                        console.error("Paste error:", err);
-                    }
-                }
-            }
-        }
-    };
-
     const formatPostTime = (timestamp) => {
-        if (!timestamp) return "";
-        const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+        if (!timestamp) return "Just now";
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
         const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
+        const diffInSeconds = Math.max(0, Math.floor((now - date) / 1000));
 
-        if (diffMins < 1) return "Just now";
-        if (diffMins < 60) return `${diffMins}m ago`;
-        const diffHours = Math.floor(diffMins / 60);
-        if (diffHours < 24) return `${diffHours}h ago`;
-        const diffDays = Math.floor(diffHours / 24);
-        if (diffDays < 7) return `${diffDays}d ago`;
-        return date.toLocaleDateString();
+        if (diffInSeconds < 60) return "Just now";
+        if (diffInSeconds < 3600) {
+            const mins = Math.floor(diffInSeconds / 60);
+            return `${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
+        }
+        if (diffInSeconds < 86400) {
+            const hours = Math.floor(diffInSeconds / 3600);
+            return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+        }
+        if (diffInSeconds < 2592000) {
+            const days = Math.floor(diffInSeconds / 86400);
+            return `${days} ${days === 1 ? 'day' : 'days'}`;
+        }
+        if (diffInSeconds < 31536000) {
+            const months = Math.floor(diffInSeconds / 2592000);
+            return `${months} ${months === 1 ? 'month' : 'months'}`;
+        }
+        const years = Math.floor(diffInSeconds / 31536000);
+        return `${years} ${years === 1 ? 'year' : 'years'}`;
     };
 
     return (
-        <div className="profile-posts-container">
+        <div className={`profile-posts-container ${isFeedsPage ? 'feeds-layout-variant' : ''}`}>
             {isOwnProfile && (
-                <div className="make-post-container">
-                    <h4>Create a Post</h4>
-                    <div className="post-input-wrapper">
+                <div className={`post-creator-box glass-panel ${state.showSuggestions && state.suggestionType === 'post' ? 'has-active-suggestions' : ''}`}>
+                    <div className="creator-header">
+                        <div className="creator-title-bar" />
+                        <h4 className="creator-title">Share something...</h4>
+                        {state.postSuccess && <span className="success-message-text">Post was created!</span>}
+                    </div>
+
+                    <div
+                        className={`post-textarea-wrapper ${state.isDragging ? 'dragging' : ''} ${state.showSuggestions && state.suggestionType === 'post' ? 'has-active-suggestions' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
                         <textarea
-                            placeholder="Share something with the community... (Links to Youtube/TikTok/Instagram supported)"
                             className="post-textarea"
+                            placeholder="What's happening in the Rift? (Type :name: for icons, or drag images here)"
                             value={state.newPostContent}
                             onChange={(e) => handleTextareaChange(e.target.value, 'post')}
                             onKeyDown={handleKeyDown}
-                            onPaste={handlePaste}
                             maxLength={500}
-                        ></textarea>
+                        />
 
                         {state.showSuggestions && state.suggestionType === 'post' && (
-                            <div className="post-suggestions-wrapper" style={{
-                                position: 'absolute',
+                            <div className="post-suggestion-popover animate-fade-in" style={{
                                 top: state.suggestionCoords.top,
-                                left: state.suggestionCoords.left,
-                                zIndex: 4001
+                                left: state.suggestionCoords.left
                             }}>
                                 <LoLSuggestions
                                     query={state.suggestionQuery}
@@ -559,361 +698,482 @@ function ProfilePosts({
                             </div>
                         )}
 
-                        <div className="post-char-counter">
-                            {state.newPostContent.length}/500 characters
+                        <div className="post-char-count">
+                            {state.newPostContent.length}/500
                         </div>
+                    </div>
 
-                        <div className="visibility-selector">
-                            <label htmlFor="post-visibility">Visibility:</label>
-                            <select
-                                id="post-visibility"
-                                value={state.postVisibility}
-                                onChange={(e) => setState(prev => ({ ...prev, postVisibility: e.target.value }))}
-                                className="visibility-select"
-                            >
-                                <option value="public">Public - Visible in feeds</option>
-                                <option value="profile-only">Profile Only - Visible on profile page</option>
-                                <option value="private">Private - Friends only</option>
-                            </select>
+                    {state.newPostImages.length > 0 && (
+                        <div className="attached-media-row">
+                            {state.newPostImages.map((img, idx) => (
+                                <div key={idx} className="media-preview-item">
+                                    <img src={img} alt="" className="media-preview-img" />
+                                    <button className="remove-media-btn" onClick={() => removeImage(idx)}><X size={10} /></button>
+                                </div>
+                            ))}
                         </div>
+                    )}
 
-                        {state.newPostImages.length > 0 && (
-                            <div className="post-images-preview-grid">
-                                {state.newPostImages.map((img, index) => (
-                                    <div key={index} className="post-image-preview-container">
-                                        <img src={img} alt={`Preview ${index}`} className="post-image-preview" />
-                                        <button
-                                            className="remove-post-image-btn"
-                                            onClick={() => removePostImage(index)}
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                ))}
+                    <div className="creator-actions-row">
+                        <div className="creator-left-tools">
+                            <div className="visibility-select-wrapper">
+                                <select
+                                    className="visibility-select"
+                                    value={state.postVisibility}
+                                    onChange={(e) => setState(prev => ({ ...prev, postVisibility: e.target.value }))}
+                                >
+                                    <option value="public">Public</option>
+                                    <option value="friends only">Friends Only</option>
+                                    <option value="profile only">Profile Only</option>
+                                </select>
                             </div>
-                        )}
-
-                        <div className="post-actions">
+                        </div>
+                        <div className="creator-right-tools">
+                            <button
+                                className="attach-media-btn"
+                                onClick={() => postImageInputRef.current.click()}
+                                title="Attach Media"
+                            >
+                                <img
+                                    src="/project-icons/Friends and Chat icons/addimage.png"
+                                    alt=""
+                                    className="post-add-image-icon"
+                                />
+                                <span className="btn-label-text">Add Image</span>
+                            </button>
                             <input
                                 type="file"
                                 ref={postImageInputRef}
-                                onChange={handlePostImageSelect}
+                                className="hidden-file-input"
+                                multiple
                                 accept="image/*"
-                                style={{ display: "none" }}
+                                onChange={handleImageUpload}
                             />
+
                             <button
-                                className="post-media-btn"
-                                onClick={() => postImageInputRef.current?.click()}
-                            >
-                                Add Image
-                            </button>
-                            <button
-                                className="post-submit-btn"
+                                className="submit-post-btn"
+                                disabled={state.creatingPost || !state.newPostContent.trim()}
                                 onClick={createPost}
-                                disabled={!state.newPostContent.trim() || state.creatingPost}
                             >
-                                {state.creatingPost ? "Posting..." : "Post to Feed"}
+                                {state.creatingPost ? "Drafting..." : "Publish Post"}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className="profile-social-feed">
-                <h4>Activity Feed</h4>
-                {posts.length === 0 ? (
-                    <div className="no-posts-message">
-                        <p>No posts yet. Share something with the community!</p>
+            <div className="post-list-section">
+                {isFeedsPage && (
+                    <div className="post-list-header">
+                        <div className="header-bar-glow" />
+                        <h2 className="header-title-feeds">Community Feed</h2>
+                    </div>
+                )}
+
+                {loadingPosts ? (
+                    <div className="posts-loading-container" style={{ display: 'flex', justifyContent: 'center', padding: '4rem', opacity: 0.7 }}>
+                        <Loader2 className="animate-spin" style={{ width: '3rem', height: '3rem', color: 'var(--color-primary, #eab308)' }} />
+                    </div>
+                ) : posts.length === 0 ? (
+                    <div className="empty-profile-posts">
+                        <h4>No posts to display yet.</h4>
+                        {isOwnProfile && <p>Be the first to share something with your friends!</p>}
                     </div>
                 ) : (
-                    <div className="feed-posts">
+                    <div className="posts-grid-feed">
                         {posts.map(post => (
-                            <div key={post.id} className={`feed-post-wrapper ${state.openCommentsPostId === post.id ? 'comments-open' : ''}`}>
-                                <div className="feed-post">
-                                    <div className="post-header">
-                                        <img
-                                            src={post.userProfileImage || profileImage}
-                                            alt="Poster"
-                                            className="post-avatar"
-                                        />
-                                        <div className="post-meta">
-                                            <span className="post-author">
-                                                {post.username || user?.displayName || "Anonymous User"}
-                                            </span>
-                                            <div className="post-meta-right">
-                                                <span className="post-date">
-                                                    {formatPostTime(post.createdAt)}
-                                                </span>
-                                                {post.visibility && post.visibility !== "public" && (
-                                                    <span className={`visibility-badge ${post.visibility}`}>
-                                                        {post.visibility === "profile-only" && "Profile Only"}
-                                                        {post.visibility === "private" && "Private"}
-                                                    </span>
-                                                )}
-                                                {isOwnProfile && post.userId === user?.uid && (
-                                                    <div className="post-mgmt-btns">
-                                                        <button
-                                                            className="mgmt-btn edit-btn"
-                                                            onClick={() => startEditingPost(post)}
-                                                            title="Edit Post"
-                                                        >
-                                                            <img src="/project-icons/Profile icons/edit.png" alt="Edit" />
-                                                        </button>
-                                                        <button
-                                                            className="mgmt-btn delete-btn"
-                                                            onClick={() => deletePost(post.id)}
-                                                            title="Delete Post"
-                                                        >
-                                                            <span>×</span>
-                                                        </button>
+                            <div key={post.id} className={`post-card-outer animate-fade-in ${state.showSuggestions && state.activeCommentId === post.id ? 'has-active-suggestions' : ''}`}>
+                                <div className={`post-card-inner ${state.openCommentsPostId === post.id ? 'active-comments' : ''}`}>
+                                    <div className="post-columns">
+                                        <div className="post-main-content">
+                                            <div className="post-padding">
+                                                <div className="post-header-row">
+                                                    <div className="post-author-block">
+                                                        <div className="author-avatar-wrapper">
+                                                            <img
+                                                                src={liveProfileImages[post.userId] || normalizeProfileIcon(post.userProfileImage || profileImage)}
+                                                                alt=""
+                                                                className="author-avatar"
+                                                                onClick={() => post.userId && (window.location.href = `/profile/${post.userId}`)}
+                                                            />
+                                                        </div>
+                                                        <h5 className="author-name-text" onClick={() => post.userId && (window.location.href = `/profile/${post.userId}`)}>
+                                                            {post.username || "Anonymous User"}
+                                                        </h5>
+                                                        <div className="post-time-row">
+                                                            <span className="post-timestamp">
+                                                                <span className="timestamp-dot">•</span>
+                                                                {formatPostTime(post.createdAt)}
+                                                            </span>
+                                                            <span className="post-visibility-pill">
+                                                                {post.visibility || "public"}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {isOwnProfile && (post.userId === user?.uid || post.uid === user?.uid) && (
+                                                        <div className="post-actions-menu">
+                                                            <button
+                                                                className="action-btn"
+                                                                onClick={() => startEditingPost(post)}
+                                                                title="Edit Post"
+                                                            >
+                                                                <img src="/project-icons/Profile icons/edit.png" alt="" />
+                                                            </button>
+                                                            <button
+                                                                className="action-btn delete"
+                                                                onClick={() => confirmDeletePost(post.id)}
+                                                                title="Delete Post"
+                                                            >
+                                                                <X />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="post-content-container">
+                                                    {state.editingPostId === post.id ? (
+                                                        <div className="edit-textarea-container">
+                                                            <textarea
+                                                                className="edit-textarea"
+                                                                value={state.editContent}
+                                                                onChange={(e) => setState(prev => ({ ...prev, editContent: e.target.value }))}
+                                                            />
+
+                                                            <div className="edit-actions-row">
+                                                                <div className="visibility-select-wrapper">
+                                                                    <select
+                                                                        className="visibility-select"
+                                                                        value={state.editVisibility}
+                                                                        onChange={(e) => setState(prev => ({ ...prev, editVisibility: e.target.value }))}
+                                                                    >
+                                                                        <option value="public">Public</option>
+                                                                        <option value="friends only">Friends Only</option>
+                                                                        <option value="profile only">Profile Only</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div className="edit-buttons-group">
+                                                                    <button className="cancel-edit-btn" onClick={cancelEditingPost}>
+                                                                        Cancel
+                                                                    </button>
+                                                                    <button className="save-edit-btn" onClick={() => updatePost(post.id)} disabled={state.updatingPost || !state.editContent.trim()}>
+                                                                        {state.updatingPost ? "..." : "Save"}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="post-text">
+                                                            <IconRenderer text={post.content} />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {(post.socialPreview || (post.postImages && post.postImages.length > 0)) && (
+                                                    <div className="post-media-box">
+                                                        {post.socialPreview && (
+                                                            <div className={`social-embed-frame ${post.socialPreview.type === 'tiktok' ? 'tiktok-frame' : ''}`}>
+                                                                {post.socialPreview.type === 'youtube' && (
+                                                                    <iframe
+                                                                        width="100%"
+                                                                        height="100%"
+                                                                        src={`https://www.youtube.com/embed/${post.socialPreview.id}`}
+                                                                        title="YouTube player"
+                                                                        frameBorder="0"
+                                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                        allowFullScreen
+                                                                    />
+                                                                )}
+                                                                {post.socialPreview.type === 'tiktok' && (
+                                                                    <iframe
+                                                                        className="social-iframe-tiktok"
+                                                                        src={`https://www.tiktok.com/embed/v2/${post.socialPreview.id}?rel=0&loop=1`}
+                                                                        scrolling="no"
+                                                                        allowFullScreen
+                                                                        width="100%"
+                                                                        height="100%"
+                                                                        title="TikTok player"
+                                                                    />
+                                                                )}
+                                                                {post.socialPreview.type === 'instagram' && (
+                                                                    <iframe
+                                                                        src={`https://www.instagram.com/p/${post.socialPreview.id}/embed`}
+                                                                        width="100%"
+                                                                        height="100%"
+                                                                        frameBorder="0"
+                                                                        scrolling="no"
+                                                                        allowTransparency="true"
+                                                                        title="Instagram player"
+                                                                    />
+                                                                )}
+                                                                {post.socialPreview.type === 'x' && (
+                                                                    <iframe
+                                                                        border="0"
+                                                                        frameBorder="0"
+                                                                        height="100%"
+                                                                        width="100%"
+                                                                        src={`https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&frame=false&hideCard=false&hideThread=false&id=${post.socialPreview.id}&lang=en&origin=${window.location.origin}&theme=dark`}
+                                                                        title="X player"
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {post.postImages && post.postImages.length > 0 && (
+                                                            <div className={`post-images-grid ${post.postImages.length > 1 ? 'multi' : 'single'}`}>
+                                                                {post.postImages.map((img, idx) => (
+                                                                    <div key={idx} className="post-img-wrapper">
+                                                                        <img src={img} alt="" className="post-img-content" />
+                                                                        <div className="img-overlay-tint" />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <div className="post-content">
-                                        {state.editingPostId === post.id ? (
-                                            <div className="edit-post-container">
-                                                <textarea
-                                                    className="edit-post-textarea"
-                                                    value={state.editContent}
-                                                    onChange={(e) => setState(prev => ({ ...prev, editContent: e.target.value }))}
-                                                    rows={3}
-                                                />
-                                                <div className="edit-actions">
+                                                <div className="engagement-row">
                                                     <button
-                                                        className="edit-save-btn"
-                                                        onClick={() => updatePost(post.id)}
-                                                        disabled={state.updatingPost || !state.editContent.trim()}
+                                                        className={`engagement-btn ${post.likes?.some(l => (l.userId === user?.uid || l.uid === user?.uid)) ? 'active-like' : ''}`}
+                                                        onClick={() => handleLike(post)}
                                                     >
-                                                        {state.updatingPost ? "Saving..." : "Save"}
+                                                        <img
+                                                            src="/project-icons/Profile icons/thumbs-up.png"
+                                                            alt=""
+                                                        />
+                                                        <span className="engagement-count">{post.likes?.length || 0}</span>
                                                     </button>
+
                                                     <button
-                                                        className="edit-cancel-btn"
-                                                        onClick={cancelEditingPost}
-                                                        disabled={state.updatingPost}
+                                                        className={`engagement-btn ${post.dislikes?.some(d => (d.userId === user?.uid || d.uid === user?.uid)) ? 'active-dislike' : ''}`}
+                                                        onClick={() => handleDislike(post)}
                                                     >
-                                                        Cancel
+                                                        <img
+                                                            src="/project-icons/Profile icons/dislike.png"
+                                                            alt=""
+                                                        />
+                                                        <span className="engagement-count">{post.dislikes?.length || 0}</span>
+                                                    </button>
+
+                                                    <button
+                                                        className={`engagement-btn comment-trigger-btn ${state.openCommentsPostId === post.id ? 'active-comments' : ''}`}
+                                                        onClick={() => setState(prev => ({
+                                                            ...prev,
+                                                            openCommentsPostId: prev.openCommentsPostId === post.id ? null : post.id
+                                                        }))}
+                                                    >
+                                                        <img
+                                                            src="/project-icons/Profile icons/comments.png"
+                                                            alt=""
+                                                        />
+                                                        <span className="engagement-count">Comments ({post.commentCount || (post.comments?.length || 0)})</span>
                                                     </button>
                                                 </div>
                                             </div>
-                                        ) : (
-                                            <IconRenderer text={post.content} />
+                                        </div>
+
+                                        {state.openCommentsPostId === post.id && (
+                                            <div className="comments-container-open" ref={commentsRef}>
+                                                <div className="comments-header-row">
+                                                    <div className="comments-header-inner">
+                                                        <div className="comment-title-bar" />
+                                                        <h5 className="comment-title-text">Comments</h5>
+                                                    </div>
+                                                    <button
+                                                        className="close-comments-btn"
+                                                        onClick={() => setState(prev => ({ ...prev, openCommentsPostId: null }))}
+                                                    >
+                                                        Close
+                                                    </button>
+                                                </div>
+
+                                                <div className="comment-list-scroll custom-scrollbar">
+                                                    {((post.comments || []).length > 0 || (state.subComments[post.id] || []).length > 0) ? (
+                                                        <>
+                                                            {[...(post.comments || []), ...(state.subComments[post.id] || [])]
+                                                                .sort((a, b) => {
+                                                                    const timeA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+                                                                    const timeB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                                                                    return timeA - timeB;
+                                                                })
+                                                                .map((comment) => {
+                                                                    const isCommentOwner = user?.uid === comment.userId || user?.uid === comment.uid;
+                                                                    const isPostOwner = user?.uid === post.userId || user?.uid === post.uid;
+                                                                    const canEdit = isCommentOwner;
+                                                                    const canDelete = isCommentOwner || isPostOwner;
+
+                                                                    return (
+                                                                        <div key={comment.id} className="comment-item-card">
+                                                                            <img src={liveProfileImages[comment.userId] || normalizeProfileIcon(comment.userProfileImage)} alt="" className="comment-avatar" />
+                                                                            <div className="comment-content-block">
+                                                                                <div className="comment-meta-row">
+                                                                                    <div className="comment-author-info">
+                                                                                        <span className="comment-author-name">{comment.username}</span>
+                                                                                        <span className="comment-time-text">{formatPostTime(comment.createdAt)}</span>
+                                                                                    </div>
+                                                                                    {(canEdit || canDelete) && state.editingCommentId !== comment.id && (
+                                                                                        <div className="comment-actions-menu">
+                                                                                            <button
+                                                                                                className="comment-action-btn"
+                                                                                                onClick={() => startEditingComment(comment)}
+                                                                                            >
+                                                                                                <img src="/project-icons/Profile icons/edit.png" alt="" />
+                                                                                            </button>
+                                                                                            {canDelete && (
+                                                                                                <button
+                                                                                                    className="comment-action-btn"
+                                                                                                    onClick={() => deleteComment(post.id, comment.id)}
+                                                                                                    disabled={state.deletingCommentId === comment.id}
+                                                                                                >
+                                                                                                    <X size={12} />
+                                                                                                </button>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                                {state.editingCommentId === comment.id ? (
+                                                                                    <div className="comment-edit-wrapper">
+                                                                                        <div className="comment-edit-relative">
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                className="comment-edit-input"
+                                                                                                value={state.editCommentText}
+                                                                                                onChange={(e) => setState(prev => ({ ...prev, editCommentText: e.target.value }))}
+                                                                                                onKeyPress={(e) => e.key === 'Enter' && updateComment(post.id, comment.id)}
+                                                                                                maxLength={250}
+                                                                                            />
+                                                                                            <div className="comment-edit-char-counter">
+                                                                                                {state.editCommentText.length}/250
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="comment-edit-actions">
+                                                                                            <button
+                                                                                                className="cancel-edit-btn"
+                                                                                                onClick={cancelEditingComment}
+                                                                                            >
+                                                                                                Cancel
+                                                                                            </button>
+                                                                                            <button
+                                                                                                className="save-edit-btn"
+                                                                                                onClick={() => updateComment(post.id, comment.id)}
+                                                                                                disabled={state.updatingComment || !state.editCommentText.trim()}
+                                                                                            >
+                                                                                                Save
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div className="comment-text-content">
+                                                                                        <IconRenderer text={comment.text} />
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                        </>
+                                                    ) : (
+                                                        <div className="empty-comments-state">
+                                                            <p className="empty-comments-text">No comments yet...</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="new-comment-input-row">
+                                                    <div className="comment-input-field-wrapper">
+                                                        <div className={`comment-input-relative ${state.showSuggestions && state.suggestionType === 'comment' && state.activeCommentId === post.id ? 'has-active-suggestions' : ''}`}>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Write a comment..."
+                                                                className={`comment-box-field comment-input-${post.id}`}
+                                                                value={state.newCommentText[post.id] || ""}
+                                                                onChange={(e) => handleTextareaChange(e.target.value, 'comment', post.id)}
+                                                                onKeyDown={handleKeyDown}
+                                                                onKeyPress={(e) => e.key === 'Enter' && !state.showSuggestions && handleAddComment(post.id)}
+                                                                maxLength={250}
+                                                            />
+
+                                                            <div className="comment-char-counter">
+                                                                {(state.newCommentText[post.id] || "").length}/250
+                                                            </div>
+
+                                                            {state.showSuggestions && state.suggestionType === 'comment' && state.activeCommentId === post.id && (
+                                                                <div className="post-suggestion-popover animate-fade-in">
+                                                                    <LoLSuggestions
+                                                                        query={state.suggestionQuery}
+                                                                        activeIndex={state.suggestionIndex}
+                                                                        onSelect={insertSuggestion}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            className="send-comment-btn"
+                                                            onClick={() => handleAddComment(post.id)}
+                                                            disabled={!state.newCommentText[post.id]?.trim() || state.postingCommentId === post.id}
+                                                        >
+                                                            {state.postingCommentId === post.id ? (
+                                                                <div className="icon-sm border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                            ) : (
+                                                                <Send className="icon-sm" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
 
-                                    {post.socialPreview && (
-                                        <div className="social-preview-container">
-                                            {post.socialPreview.type === 'youtube' ? (
-                                                <div className="yt-embed-wrapper">
-                                                    <iframe
-                                                        width="100%"
-                                                        height="315"
-                                                        src={`https://www.youtube.com/embed/${post.socialPreview.id}`}
-                                                        title="YouTube video player"
-                                                        frameBorder="0"
-                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                        allowFullScreen
-                                                    ></iframe>
+                                    {state.postToDelete === post.id && (
+                                        <div className="delete-confirm-overlay animate-fade-in">
+                                            <div className="delete-confirm-box">
+                                                <h4>Delete Post?</h4>
+                                                <p>Are you sure you want to delete this post? This action cannot be undone.</p>
+                                                <div className="delete-confirm-actions">
+                                                    <button className="delete-cancel-btn" onClick={cancelDeletePost}>Cancel</button>
+                                                    <button className="delete-confirm-btn" onClick={executeDeletePost}>Delete</button>
                                                 </div>
-                                            ) : (
-                                                <div className="generic-social-preview">
-                                                    <img src={post.socialPreview.thumbnail} alt="Preview" className="social-thumb" />
-                                                    <div className="social-info">
-                                                        <span className="social-type">{post.socialPreview.type.toUpperCase()} PREVIEW</span>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {post.postImages && post.postImages.length > 0 && (
-                                        <div className={`post-media-content ${post.postImages.length > 1 ? 'multi-image' : 'single-image'}`}>
-                                            {post.postImages.map((img, idx) => (
-                                                <img key={idx} src={img} alt={`Post ${idx}`} className="post-uploaded-image" />
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {post.mediaUrls && post.mediaUrls.length > 0 && (
-                                        <div className="post-media">
-                                            {post.mediaUrls.map((url, index) => (
-                                                <a
-                                                    key={index}
-                                                    href={url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="media-link"
-                                                >
-                                                    {url}
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <div className="post-interactions">
-                                        <button
-                                            className={`interaction-btn count-btn ${post.likes?.some(l => l.uid === user?.uid) ? 'active liked' : ''}`}
-                                            onClick={() => handleLike(post)}
-                                        >
-                                            <img src="/project-icons/Profile icons/thumbs-up.png" alt="Like" className="interaction-icon" />
-                                            <span>{post.likes?.length || 0}</span>
-                                        </button>
-                                        <button
-                                            className={`interaction-btn count-btn ${post.dislikes?.some(d => d.uid === user?.uid) ? 'active disliked' : ''}`}
-                                            onClick={() => handleDislike(post)}
-                                        >
-                                            <img src="/project-icons/Profile icons/dislike.png" alt="Dislike" className="interaction-icon" />
-                                            <span>{post.dislikes?.length || 0}</span>
-                                        </button>
-                                        <button
-                                            className={`interaction-btn count-btn ${state.openCommentsPostId === post.id ? 'active' : ''}`}
-                                            onClick={() => setState(prev => ({
-                                                ...prev,
-                                                openCommentsPostId: prev.openCommentsPostId === post.id ? null : post.id
-                                            }))}
-                                        >
-                                            <img src="/project-icons/Profile icons/comments.png" alt="Comment" className="interaction-icon" />
-                                            <span>{post.comments?.length || 0}</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {state.openCommentsPostId === post.id && (
-                                    <div className="post-comments-sidebar">
-                                        <div className="sidebar-header">
-                                            <h5>Comments</h5>
-                                            <button
-                                                className="close-sidebar-btn"
-                                                onClick={() => setState(prev => ({ ...prev, openCommentsPostId: null }))}
-                                            >
-                                                ×
-                                            </button>
-                                        </div>
-                                        <div className="comments-list-container">
-                                            {post.comments && post.comments.length > 0 ? (
-                                                <div className="comments-list">
-                                                    {post.comments.map((comment) => {
-                                                        const isCommentOwner = user?.uid === comment.userId;
-                                                        const isPostOwner = user?.uid === post.userId;
-                                                        const canEdit = isCommentOwner;
-                                                        const canDelete = isCommentOwner || isPostOwner;
-
-                                                        return (
-                                                            <div key={comment.id} className="comment-item">
-                                                                <img src={comment.userProfileImage} alt={comment.username} className="comment-avatar" />
-                                                                <div className="comment-body">
-                                                                    <div className="comment-header">
-                                                                        <span className="comment-author">{comment.username}</span>
-                                                                        <div className="comment-header-right">
-                                                                            <span className="comment-date">{formatPostTime(comment.createdAt)}</span>
-                                                                            {(canEdit || canDelete) && state.editingCommentId !== comment.id && (
-                                                                                <div className="comment-actions">
-                                                                                    {canEdit && (
-                                                                                        <button
-                                                                                            className="comment-action-btn edit-comment-btn"
-                                                                                            onClick={() => startEditingComment(comment)}
-                                                                                            title="Edit Comment"
-                                                                                        >
-                                                                                            <img src="/project-icons/Profile icons/edit.png" alt="Edit" />
-                                                                                        </button>
-                                                                                    )}
-                                                                                    {canDelete && (
-                                                                                        <button
-                                                                                            className="comment-action-btn delete-comment-btn"
-                                                                                            onClick={() => deleteComment(post.id, comment.id)}
-                                                                                            disabled={state.deletingCommentId === comment.id}
-                                                                                            title="Delete Comment"
-                                                                                        >
-                                                                                            <span>{state.deletingCommentId === comment.id ? "..." : "×"}</span>
-                                                                                        </button>
-                                                                                    )}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                    {state.editingCommentId === comment.id ? (
-                                                                        <div className="edit-comment-container">
-                                                                            <input
-                                                                                type="text"
-                                                                                className="edit-comment-input"
-                                                                                value={state.editCommentText}
-                                                                                onChange={(e) => setState(prev => ({ ...prev, editCommentText: e.target.value }))}
-                                                                                onKeyPress={(e) => e.key === 'Enter' && updateComment(post.id, comment.id)}
-                                                                            />
-                                                                            <div className="edit-comment-actions">
-                                                                                <button
-                                                                                    className="edit-comment-save-btn"
-                                                                                    onClick={() => updateComment(post.id, comment.id)}
-                                                                                    disabled={state.updatingComment || !state.editCommentText.trim()}
-                                                                                >
-                                                                                    {state.updatingComment ? "..." : "Save"}
-                                                                                </button>
-                                                                                <button
-                                                                                    className="edit-comment-cancel-btn"
-                                                                                    onClick={cancelEditingComment}
-                                                                                    disabled={state.updatingComment}
-                                                                                >
-                                                                                    Cancel
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <IconRenderer text={comment.text} className="comment-text" />
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ) : (
-                                                <div className="no-comments">
-                                                    <p>No comments yet. Be the first!</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="add-comment-container">
-                                            <div className="comment-input-wrapper" style={{ position: 'relative', flex: 1 }}>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Write a comment..."
-                                                    className={`comment-input comment-input-${post.id}`}
-                                                    value={state.newCommentText[post.id] || ""}
-                                                    onChange={(e) => handleTextareaChange(e.target.value, 'comment', post.id)}
-                                                    onKeyDown={handleKeyDown}
-                                                    onKeyPress={(e) => e.key === 'Enter' && !state.showSuggestions && handleAddComment(post.id)}
-                                                />
-                                                {state.showSuggestions && state.suggestionType === 'comment' && state.activeCommentId === post.id && (
-                                                    <div style={{
-                                                        position: 'absolute',
-                                                        bottom: 'calc(100% + 8px)',
-                                                        left: '0',
-                                                        top: 'auto',
-                                                        zIndex: 9999,
-                                                        width: '100%',
-                                                        minWidth: '200px'
-                                                    }}>
-                                                        <LoLSuggestions
-                                                            query={state.suggestionQuery}
-                                                            activeIndex={state.suggestionIndex}
-                                                            onSelect={insertSuggestion}
-                                                        />
-                                                    </div>
-                                                )}
                                             </div>
-                                            <button
-                                                className="add-comment-btn"
-                                                onClick={() => handleAddComment(post.id)}
-                                                disabled={!state.newCommentText[post.id]?.trim() || state.postingCommentId === post.id}
-                                            >
-                                                {state.postingCommentId === post.id ? "..." : "Post"}
-                                            </button>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+
+                                </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {state.showAuthPrompt && (
+                    <div className="auth-prompt-overlay">
+                        <div className="auth-prompt-backdrop" onClick={() => setState(prev => ({ ...prev, showAuthPrompt: false }))}></div>
+                        <div className="auth-prompt-card glass-panel">
+                            <div className="auth-icon-box">
+                                <Lock />
+                            </div>
+                            <h2 className="auth-prompt-title">Authentication Required</h2>
+                            <p className="auth-prompt-desc">Please log in or register to interact with the KillStreak community feed.</p>
+
+                            <div className="auth-actions-group">
+                                <button
+                                    onClick={() => (window.location.href = "/login")}
+                                    className="auth-login-btn"
+                                >
+                                    Log In
+                                </button>
+                                <button
+                                    onClick={() => (window.location.href = "/register")}
+                                    className="auth-register-btn"
+                                >
+                                    Create Account
+                                </button>
+                                <button
+                                    onClick={() => setState(prev => ({ ...prev, showAuthPrompt: false }))}
+                                    className="auth-close-btn"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

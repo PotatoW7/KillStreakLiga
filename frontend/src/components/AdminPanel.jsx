@@ -13,7 +13,8 @@ import {
     serverTimestamp,
     orderBy
 } from 'firebase/firestore';
-import '../styles/componentsCSS/admin.css';
+
+
 
 function AdminPanel() {
     const [user, setUser] = useState(null);
@@ -22,9 +23,16 @@ function AdminPanel() {
     const [activeTab, setActiveTab] = useState('admin-requests');
     const [adminRequests, setAdminRequests] = useState([]);
     const [coachApplications, setCoachApplications] = useState([]);
+    const [currentAdmins, setCurrentAdmins] = useState([]);
+    const [currentCoaches, setCurrentCoaches] = useState([]);
+    const [adminsMetadata, setAdminsMetadata] = useState({});
+    const [staffUsernames, setStaffUsernames] = useState({});
     const [processingId, setProcessingId] = useState(null);
+    const [demotingId, setDemotingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [showRejectModal, setShowRejectModal] = useState(null);
+    const [showConfirmModal, setShowConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
@@ -42,25 +50,12 @@ function AdminPanel() {
                 if (userDoc.exists()) {
                     const role = userDoc.data().role || 'user';
 
-                    if (role === 'owner') {
-                        setUserRole('owner');
+                    if (role === 'admin') {
+                        setUserRole('admin');
                         setActiveTab('admin-requests');
                         setLoading(false);
                         return;
-                    } else if (role === 'admin') {
-                        setUserRole('admin');
-                        setActiveTab('coach-applications');
-                        setLoading(false);
-                        return;
                     }
-                }
-
-                const ownerDoc = await getDoc(doc(db, "owners", firebaseUser.uid));
-                if (ownerDoc.exists()) {
-                    setUserRole('owner');
-                    setActiveTab('admin-requests');
-                    setLoading(false);
-                    return;
                 }
 
                 const adminDoc = await getDoc(doc(db, "admins", firebaseUser.uid));
@@ -84,7 +79,7 @@ function AdminPanel() {
     }, [navigate]);
 
     useEffect(() => {
-        if (userRole === 'owner' || userRole === 'admin') {
+        if (userRole === 'admin') {
             fetchData();
         }
     }, [userRole]);
@@ -92,40 +87,38 @@ function AdminPanel() {
     const fetchData = async () => {
         setError(null);
         try {
-            if (userRole === 'owner') {
-                try {
+            try {
+                const adminQuery = query(
+                    collection(db, "adminApplications"),
+                    where("status", "==", "pending"),
+                    orderBy("submittedAt", "desc")
+                );
+                const adminSnapshot = await getDocs(adminQuery);
+                const adminData = adminSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setAdminRequests(adminData);
+            } catch (indexError) {
+                if (indexError.code === 'failed-precondition') {
+                    console.log('Index not ready, falling back to client-side sorting');
                     const adminQuery = query(
                         collection(db, "adminApplications"),
-                        where("status", "==", "pending"),
-                        orderBy("submittedAt", "desc")
+                        where("status", "==", "pending")
                     );
                     const adminSnapshot = await getDocs(adminQuery);
                     const adminData = adminSnapshot.docs.map(doc => ({
                         id: doc.id,
                         ...doc.data()
                     }));
+                    adminData.sort((a, b) => {
+                        const dateA = a.submittedAt?.toDate?.() || new Date(a.submittedAt || 0);
+                        const dateB = b.submittedAt?.toDate?.() || new Date(b.submittedAt || 0);
+                        return dateB - dateA;
+                    });
                     setAdminRequests(adminData);
-                } catch (indexError) {
-                    if (indexError.code === 'failed-precondition') {
-                        console.log('Index not ready, falling back to client-side sorting');
-                        const adminQuery = query(
-                            collection(db, "adminApplications"),
-                            where("status", "==", "pending")
-                        );
-                        const adminSnapshot = await getDocs(adminQuery);
-                        const adminData = adminSnapshot.docs.map(doc => ({
-                            id: doc.id,
-                            ...doc.data()
-                        }));
-                        adminData.sort((a, b) => {
-                            const dateA = a.submittedAt?.toDate?.() || new Date(a.submittedAt || 0);
-                            const dateB = b.submittedAt?.toDate?.() || new Date(b.submittedAt || 0);
-                            return dateB - dateA;
-                        });
-                        setAdminRequests(adminData);
-                    } else {
-                        throw indexError;
-                    }
+                } else {
+                    throw indexError;
                 }
             }
 
@@ -152,6 +145,39 @@ function AdminPanel() {
                     );
                 setCoachApplications(coachData);
             }
+            const adminsQuery = query(collection(db, "users"), where("role", "==", "admin"));
+            const adminsSnap = await getDocs(adminsQuery);
+            setCurrentAdmins(adminsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const coachesQuery = query(collection(db, "users"), where("role", "==", "coach"));
+            const coachesSnap = await getDocs(coachesQuery);
+            setCurrentCoaches(coachesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const metaSnap = await getDocs(collection(db, "admins"));
+            const metaMap = {};
+            metaSnap.forEach(doc => {
+                metaMap[doc.id] = doc.data();
+            });
+            setAdminsMetadata(metaMap);
+            const staffIds = new Set();
+            Object.values(metaMap).forEach(m => {
+                if (m.promotedBy) staffIds.add(m.promotedBy);
+            });
+            coachesSnap.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.coachApplication?.reviewedBy) staffIds.add(data.coachApplication.reviewedBy);
+            });
+
+            if (staffIds.size > 0) {
+                const staffMap = {};
+                const userDocs = await Promise.all(
+                    Array.from(staffIds).map(id => getDoc(doc(db, "users", id)))
+                );
+                userDocs.forEach(d => {
+                    if (d.exists()) {
+                        staffMap[d.id] = d.data().username;
+                    }
+                });
+                setStaffUsernames(staffMap);
+            }
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -163,7 +189,7 @@ function AdminPanel() {
     };
 
     const handleApproveAdmin = async (applicationId, userId) => {
-        if (userRole !== 'owner') return;
+        if (userRole !== 'admin') return;
         setProcessingId(applicationId);
 
         try {
@@ -199,17 +225,17 @@ function AdminPanel() {
             });
 
             setAdminRequests(prev => prev.filter(req => req.id !== applicationId));
-            alert('User has been promoted to Admin!');
+            setNotification({ show: true, message: 'User has been promoted to Admin!', type: 'success' });
         } catch (error) {
             console.error('Error approving admin:', error);
-            alert(`Failed to approve admin request: ${error.message}`);
+            setNotification({ show: true, message: `Failed to approve admin request: ${error.message}`, type: 'error' });
         }
 
         setProcessingId(null);
     };
 
     const handleRejectAdmin = async (applicationId) => {
-        if (userRole !== 'owner') return;
+        if (userRole !== 'admin') return;
         setProcessingId(applicationId);
 
         try {
@@ -230,10 +256,10 @@ function AdminPanel() {
             setAdminRequests(prev => prev.filter(req => req.id !== applicationId));
             setShowRejectModal(null);
             setRejectionReason('');
-            alert('Admin request has been rejected. User can reapply in 5 months.');
+            setNotification({ show: true, message: 'Admin request has been rejected.', type: 'success' });
         } catch (error) {
             console.error('Error rejecting admin:', error);
-            alert(`Failed to reject admin request: ${error.message}`);
+            setNotification({ show: true, message: `Failed to reject admin request: ${error.message}`, type: 'error' });
         }
 
         setProcessingId(null);
@@ -266,10 +292,10 @@ function AdminPanel() {
             });
 
             setCoachApplications(prev => prev.filter(app => app.id !== userId));
-            alert('User has been approved as a Coach!');
+            setNotification({ show: true, message: 'User has been approved as a Coach!', type: 'success' });
         } catch (error) {
             console.error('Error approving coach:', error);
-            alert(`Failed to approve coach application: ${error.message}`);
+            setNotification({ show: true, message: `Failed to approve coach application: ${error.message}`, type: 'error' });
         }
 
         setProcessingId(null);
@@ -296,13 +322,54 @@ function AdminPanel() {
             setCoachApplications(prev => prev.filter(app => app.id !== userId));
             setShowRejectModal(null);
             setRejectionReason('');
-            alert('Coach application has been rejected.');
+            setNotification({ show: true, message: 'Coach application has been rejected.', type: 'success' });
         } catch (error) {
             console.error('Error rejecting coach:', error);
-            alert(`Failed to reject coach application: ${error.message}`);
+            setNotification({ show: true, message: `Failed to reject coach application: ${error.message}`, type: 'error' });
         }
 
         setProcessingId(null);
+    };
+
+    const handleDemote = async (userId, currentRole) => {
+        setShowConfirmModal({
+            show: true,
+            title: `Demote ${currentRole}`,
+            message: `Are you sure you want to demote this ${currentRole} to a regular user?`,
+            onConfirm: async () => {
+                setShowConfirmModal(prev => ({ ...prev, show: false }));
+                setDemotingId(userId);
+
+                try {
+                    const userRef = doc(db, "users", userId);
+                    await updateDoc(userRef, {
+                        role: 'user'
+                    });
+
+                    if (currentRole === 'admin') {
+                        await updateDoc(doc(db, "admins", userId), {
+                            demotedAt: serverTimestamp(),
+                            demotedBy: user.uid
+                        });
+                    }
+
+                    if (currentRole === 'coach') {
+                        await updateDoc(userRef, {
+                            'coachApplication.status': 'demoted',
+                            coachProfile: null
+                        });
+                    }
+
+                    setNotification({ show: true, message: `User has been demoted to a regular user.`, type: 'success' });
+                    fetchData();
+                } catch (error) {
+                    console.error('Error demoting user:', error);
+                    setNotification({ show: true, message: `Failed to demote user: ${error.message}`, type: 'error' });
+                }
+
+                setDemotingId(null);
+            }
+        });
     };
 
     const getHighestRank = (rankedData) => {
@@ -335,13 +402,13 @@ function AdminPanel() {
                 <div className="admin-header">
                     <div className="header-content">
                         <h1>
-                            {userRole === 'owner' ? ' Owner Dashboard' : ' Admin Panel'}
+                            Admin Panel
                         </h1>
                         <p>Manage applications and user roles</p>
                     </div>
                     <div className="role-indicator">
                         <span className={`role-badge ${userRole}`}>
-                            {userRole === 'owner' ? ' Owner' : ' Admin'}
+                            Admin
                         </span>
                     </div>
                 </div>
@@ -353,7 +420,7 @@ function AdminPanel() {
                 )}
 
                 <div className="admin-tabs">
-                    {userRole === 'owner' && (
+                    {userRole === 'admin' && (
                         <button
                             className={`tab ${activeTab === 'admin-requests' ? 'active' : ''}`}
                             onClick={() => setActiveTab('admin-requests')}
@@ -373,10 +440,28 @@ function AdminPanel() {
                             <span className="badge">{coachApplications.length}</span>
                         )}
                     </button>
+                    <button
+                        className={`tab ${activeTab === 'current-admins' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('current-admins')}
+                    >
+                        Current Admins
+                        {currentAdmins.length > 0 && (
+                            <span className="staff-count">({currentAdmins.length})</span>
+                        )}
+                    </button>
+                    <button
+                        className={`tab ${activeTab === 'current-coaches' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('current-coaches')}
+                    >
+                        Current Coaches
+                        {currentCoaches.length > 0 && (
+                            <span className="staff-count">({currentCoaches.length})</span>
+                        )}
+                    </button>
                 </div>
 
                 <div className="admin-content">
-                    {activeTab === 'admin-requests' && userRole === 'owner' && (
+                    {activeTab === 'admin-requests' && userRole === 'admin' && (
                         <div className="requests-section">
                             <h2>Pending Admin Requests</h2>
                             {adminRequests.length === 0 ? (
@@ -416,14 +501,14 @@ function AdminPanel() {
                                                     onClick={() => handleApproveAdmin(request.id, request.userId)}
                                                     disabled={processingId === request.id}
                                                 >
-                                                    {processingId === request.id ? 'Processing...' : '✅ Approve'}
+                                                    {processingId === request.id ? 'Processing...' : 'Approve'}
                                                 </button>
                                                 <button
                                                     className="reject-btn"
                                                     onClick={() => setShowRejectModal({ type: 'admin', id: request.id })}
                                                     disabled={processingId === request.id}
                                                 >
-                                                    ❌ Reject
+                                                    Reject
                                                 </button>
                                             </div>
                                         </div>
@@ -433,7 +518,7 @@ function AdminPanel() {
                         </div>
                     )}
 
-                    {activeTab === 'coach-applications' && (userRole === 'owner' || userRole === 'admin') && (
+                    {activeTab === 'coach-applications' && userRole === 'admin' && (
                         <div className="requests-section">
                             <h2>Pending Coach Applications</h2>
                             {coachApplications.length === 0 ? (
@@ -442,73 +527,215 @@ function AdminPanel() {
                                 </div>
                             ) : (
                                 <div className="requests-grid">
-                                    {coachApplications.map(app => {
-                                        const rank = getHighestRank(app.rankedData);
-                                        return (
-                                            <div key={app.id} className="request-card coach-request">
-                                                <div className="request-header">
+                                    {coachApplications.map(app => (
+                                        <div key={app.id} className="request-card coach-request horizontal high-density">
+                                            <div className="card-column side-info">
+                                                <div className="user-profile-section">
+                                                    <div className="coach-avatar-box">
+                                                        <img
+                                                            src={app.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                            alt=""
+                                                            className="coach-avatar"
+                                                        />
+                                                    </div>
                                                     <div className="user-info">
-                                                        <h3>{app.username}</h3>
+                                                        <h3 className="u-mb-1">{app.username}</h3>
                                                         {app.riotAccount && (
-                                                            <span className="riot-id">
-                                                                {app.riotAccount.gameName}#{app.riotAccount.tagLine}
-                                                            </span>
+                                                            <div className="riot-id-wrap">
+                                                                <div className="riot-id">
+                                                                    {app.riotAccount.gameName}#{app.riotAccount.tagLine}
+                                                                </div>
+                                                                <button
+                                                                    className="copy-btn-sm"
+                                                                    title="Copy Riot ID"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        navigator.clipboard.writeText(`${app.riotAccount.gameName}#${app.riotAccount.tagLine}`);
+                                                                    }}
+                                                                >
+                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 17.75a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0zM8 17.75V4.25h11.25V17.75m-11.25 0h11.25m-11.25 0c0-1.243 1.007-2.25 2.25-2.25h6.75c1.243 0 2.25 1.007 2.25 2.25" /></svg>
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    {rank && (
-                                                        <div className="rank-display">
-                                                            <img src={getRankIcon(rank.tier)} alt={rank.tier} className="rank-icon" />
-                                                            <span>{rank.tier} {rank.rank}</span>
-                                                        </div>
-                                                    )}
                                                 </div>
 
-                                                <div className="request-details">
-                                                    <div className="detail-item">
-                                                        <label>Experience:</label>
-                                                        <p>{app.coachApplication?.experience || 'No experience provided'}</p>
+                                                <div className="side-details-group">
+                                                    <div className="detail-item compact">
+                                                        <label>Ranks</label>
+                                                        <div className="ranks-list compact">
+                                                            {app.rankedData && app.rankedData.length > 0 ? (
+                                                                app.rankedData.map((rank, idx) => (
+                                                                    <div key={idx} className="rank-badge-sm">
+                                                                        <img src={getRankIcon(rank.tier)} alt={rank.tier} />
+                                                                        <div className="rank-info">
+                                                                            <span className="queue-type">{rank.queueType === 'RANKED_SOLO_5x5' ? 'Solo' : 'Flex'}</span>
+                                                                            <span className="rank-text">{rank.tier} {rank.rank}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <span className="unranked-tag">Unranked</span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div className="detail-item">
-                                                        <label>Specialties:</label>
+
+                                                    <div className="detail-item compact u-mt-2">
+                                                        <label>Specialties</label>
                                                         <div className="specialty-tags">
                                                             {app.coachApplication?.specialties?.map(s => (
                                                                 <span key={s} className="specialty-tag">{s}</span>
                                                             ))}
                                                         </div>
                                                     </div>
-                                                    <div className="detail-item">
-                                                        <label>Availability:</label>
-                                                        <p>{app.coachApplication?.availability || 'Not specified'}</p>
-                                                    </div>
-                                                    <div className="detail-item">
-                                                        <label>Motivation:</label>
-                                                        <p>{app.coachApplication?.whyCoach || 'Not provided'}</p>
-                                                    </div>
-                                                    <div className="detail-item">
-                                                        <label>Submitted:</label>
-                                                        <p>{formatDate(app.coachApplication?.submittedAt)}</p>
+
+                                                    <div className="detail-item compact u-mt-2">
+                                                        <label>Availability</label>
+                                                        <p className="availability-text">{app.coachApplication?.availability || 'Not specified'}</p>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                <div className="request-actions">
+                                            <div className="card-column main-content">
+                                                <div className="detail-item compact">
+                                                    <label>Experience</label>
+                                                    <p className="experience-text">{app.coachApplication?.experience || 'No experience provided'}</p>
+                                                </div>
+                                                <div className="detail-item compact u-mt-3">
+                                                    <label>Motivation</label>
+                                                    <p className="motivation-text">{app.coachApplication?.whyCoach || 'Not provided'}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="card-column actions-side">
+                                                <div className="action-buttons-wrap">
                                                     <button
                                                         className="approve-btn"
                                                         onClick={() => handleApproveCoach(app.id)}
                                                         disabled={processingId === app.id}
                                                     >
-                                                        {processingId === app.id ? 'Processing...' : '✅ Approve'}
+                                                        {processingId === app.id ? '...' : 'Approve Application'}
                                                     </button>
                                                     <button
                                                         className="reject-btn"
                                                         onClick={() => setShowRejectModal({ type: 'coach', id: app.id })}
                                                         disabled={processingId === app.id}
                                                     >
-                                                        ❌ Reject
+                                                        Reject
                                                     </button>
                                                 </div>
+                                                <div className="submission-meta-bottom">
+                                                    <label>Submitted On</label>
+                                                    <span>{formatDate(app.coachApplication?.submittedAt)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'current-admins' && (
+                        <div className="current-staff-section">
+                            <h2>Current Administrators</h2>
+                            {currentAdmins.length === 0 ? (
+                                <div className="no-staff">
+                                    <p>No other administrators found.</p>
+                                </div>
+                            ) : (
+                                <div className="staff-grid">
+                                    {currentAdmins.map(admin => {
+                                        const metadata = adminsMetadata[admin.id];
+                                        return (
+                                            <div key={admin.id} className="staff-card">
+                                                <div className="staff-user-info">
+                                                    <img
+                                                        src={admin.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                        alt=""
+                                                        className="staff-avatar"
+                                                    />
+                                                    <div className="staff-details">
+                                                        <h3>{admin.username}</h3>
+                                                        <span className="email">{admin.email}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="staff-meta">
+                                                    <div className="meta-row">
+                                                        <label>Promoted On</label>
+                                                        <span>{metadata ? formatDate(metadata.promotedAt) : 'N/A'}</span>
+                                                    </div>
+                                                    <div className="meta-row">
+                                                        <label>Promoted By</label>
+                                                        <span>{metadata?.promotedBy ? (staffUsernames[metadata.promotedBy] || 'System') : 'N/A'}</span>
+                                                    </div>
+                                                </div>
+                                                {userRole === 'owner' && (
+                                                    <button
+                                                        className="demote-btn"
+                                                        onClick={() => handleDemote(admin.id, 'admin')}
+                                                        disabled={demotingId === admin.id || admin.id === user.uid}
+                                                        title={admin.id === user.uid ? "You cannot demote yourself" : ""}
+                                                    >
+                                                        {demotingId === admin.id ? 'Processing...' : 'Demote to User'}
+                                                    </button>
+                                                )}
                                             </div>
                                         );
                                     })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'current-coaches' && (
+                        <div className="current-staff-section">
+                            <h2>Current Coaches</h2>
+                            {currentCoaches.length === 0 ? (
+                                <div className="no-staff">
+                                    <p>No coaches found.</p>
+                                </div>
+                            ) : (
+                                <div className="staff-grid">
+                                    {currentCoaches.map(coach => (
+                                        <div key={coach.id} className="staff-card">
+                                            <div className="staff-user-info">
+                                                <img
+                                                    src={coach.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                    alt=""
+                                                    className="staff-avatar"
+                                                />
+                                                <div className="staff-details">
+                                                    <h3>{coach.username}</h3>
+                                                    <span className="email">{coach.email}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="staff-meta">
+                                                <div className="meta-row">
+                                                    <label>Specialties</label>
+                                                    <span>{coach.coachProfile?.specialties?.join(', ') || 'N/A'}</span>
+                                                </div>
+                                                <div className="meta-row">
+                                                    <label>Approved By</label>
+                                                    <span>{coach.coachProfile?.reviewedBy ? (staffUsernames[coach.coachProfile.reviewedBy] || 'System') : (staffUsernames[coach.coachApplication?.reviewedBy] || 'System')}</span>
+                                                </div>
+                                                <div className="meta-row">
+                                                    <label>Approved On</label>
+                                                    <span>{formatDate(coach.coachProfile?.approvedAt)}</span>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                className="demote-btn"
+                                                onClick={() => handleDemote(coach.id, 'coach')}
+                                                disabled={demotingId === coach.id}
+                                            >
+                                                {demotingId === coach.id ? 'Processing...' : 'Remove Coach Role'}
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -531,7 +758,9 @@ function AdminPanel() {
                             onChange={(e) => setRejectionReason(e.target.value)}
                             placeholder="Enter rejection reason..."
                             rows={4}
+                            maxLength={500}
                         />
+                        <span className="char-counter">{rejectionReason.length}/500</span>
                         <div className="modal-actions">
                             <button
                                 className="confirm-reject-btn"
@@ -555,6 +784,42 @@ function AdminPanel() {
                                 Cancel
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showConfirmModal.show && (
+                <div className="modal-overlay" onClick={() => setShowConfirmModal(prev => ({ ...prev, show: false }))}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <h3>{showConfirmModal.title}</h3>
+                        <p>{showConfirmModal.message}</p>
+                        <div className="modal-actions">
+                            <button className="confirm-btn" onClick={showConfirmModal.onConfirm}>
+                                Confirm Action
+                            </button>
+                            <button className="cancel-btn" onClick={() => setShowConfirmModal(prev => ({ ...prev, show: false }))}>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {notification.show && (
+                <div className="modal-overlay" onClick={() => setNotification({ show: false, message: '', type: 'success' })}>
+                    <div className="notification-popup modal-content" onClick={e => e.stopPropagation()}>
+                        <div className={`notification-icon ${notification.type}`}>
+                            {notification.type === 'success' ? (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg>
+                            ) : (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                            )}
+                        </div>
+                        <h3>{notification.type === 'success' ? 'Success' : 'Error'}</h3>
+                        <p>{notification.message}</p>
+                        <button className="close-notif-btn" onClick={() => setNotification({ show: false, message: '', type: 'success' })}>
+                            Continue
+                        </button>
                     </div>
                 </div>
             )}

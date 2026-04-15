@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
+import { Routes, Route, Link, useNavigate, Navigate, useLocation } from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
@@ -18,12 +18,47 @@ import AdminApplication from "./components/AdminApplication";
 import LiveGame from "./components/LiveGame";
 import Champions from "./components/Champions";
 import Feeds from "./components/Feeds";
+import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsOfService from "./components/TermsOfService";
+import Legal from "./components/Legal";
+import Contact from "./components/Contact";
+import FAQ from "./components/FAQ";
+import Footer from "./components/Footer";
+import CookieConsent from "./components/CookieConsent";
+import { applyActionCode, checkActionCode, reload } from "firebase/auth";
 
-import { auth, db } from "./firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { auth, db, storage } from "./firebase";
+import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where } from "firebase/firestore";
 import "./styles/index.css";
 
-const OWNER_EMAIL = "mainprofile@gmail.com";
+
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }, [pathname]);
+
+  return null;
+}
+
+function NavLink({ to, children }) {
+  const navigate = useNavigate();
+  const isActive = window.location.pathname === to;
+  return (
+    <Link
+      to={to}
+      className={`nav-link ${isActive ? 'active' : ''}`}
+    >
+      {children}
+    </Link>
+  );
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -37,8 +72,12 @@ function App() {
   const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
   const [profileImage, setProfileImage] = useState(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [globalFriends, setGlobalFriends] = useState([]);
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [verificationPopup, setVerificationPopup] = useState(null);
   const profileDropdownRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -54,53 +93,124 @@ function App() {
         } catch (error) {
           console.error("Error fetching profile image:", error);
         }
-      } else {
-        setUserRole('user');
       }
       setUser(firebaseUser);
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    const oobCode = params.get('oobCode');
 
-  const initializeUserInFirestore = async (user) => {
+    if (mode === 'verifyEmail' && oobCode) {
+      handleVerifyEmail(oobCode);
+    }
+  }, [location.search]);
+
+  const handleVerifyEmail = async (code) => {
+    setVerificationPopup({ status: 'loading' });
+    try {
+      await checkActionCode(auth, code);
+      await applyActionCode(auth, code);
+      if (auth.currentUser) {
+        await reload(auth.currentUser);
+      }
+      setVerificationPopup({ status: 'success' });
+      setTimeout(() => setVerificationPopup(null), 5000);
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    } catch (error) {
+      console.error("Verification error:", error);
+      setVerificationPopup({
+        status: 'error',
+        message: error.code === "auth/invalid-action-code"
+          ? "Verification link expired or already used."
+          : "An error occurred during verification."
+      });
+      setTimeout(() => setVerificationPopup(null), 5000);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) {
+      setGlobalFriends([]);
+      return;
+    }
+
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setGlobalFriends(data.friends || []);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+  useEffect(() => {
+    if (!user || globalFriends.length === 0) {
+      setUnreadCounts({});
+      setTotalUnreadMessages(0);
+      return;
+    }
+
+    const unsubscribes = new Map();
+
+    globalFriends.forEach(friend => {
+      const chatId = [user.uid, friend.id].sort().join('_');
+      const messagesRef = collection(db, 'chats', chatId, 'messages');
+      const q = query(messagesRef, where('read', '==', false));
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unreadCount = snapshot.docs.filter(doc => doc.data().senderId !== user.uid).length;
+        setUnreadCounts(prev => {
+          if (prev[friend.id] === unreadCount) return prev;
+          return { ...prev, [friend.id]: unreadCount };
+        });
+      });
+
+      unsubscribes.set(friend.id, unsubscribe);
+    });
+
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [user, globalFriends.map(f => f.id).join(',')]);
+
+  useEffect(() => {
+    const total = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
+    setTotalUnreadMessages(total);
+  }, [unreadCounts]);
+
+  async function initializeUserInFirestore(user) {
     const userRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userRef);
-    const isOwner = user.email?.toLowerCase() === OWNER_EMAIL;
 
     if (!userDoc.exists()) {
       const newUserData = {
-        username: isOwner ? "Owner" : user.displayName,
+        username: user.displayName,
+        usernameLowercase: (user.displayName || "anonymous").toLowerCase(),
         email: user.email,
         createdAt: new Date(),
         friends: [],
         pendingRequests: [],
-        role: isOwner ? "owner" : "user",
+        role: "user",
       };
       await setDoc(userRef, newUserData);
-
-      if (isOwner) {
-        await setDoc(doc(db, "owners", user.uid), {
-          username: "Owner",
-          email: user.email,
-          createdAt: new Date()
-        });
-      }
       return newUserData.role;
     } else {
       const existingData = userDoc.data();
-      if (isOwner && existingData.role !== 'owner') {
-        await setDoc(userRef, { role: 'owner', username: 'Owner' }, { merge: true });
-        await setDoc(doc(db, "owners", user.uid), {
-          username: "Owner",
-          email: user.email,
-          createdAt: new Date()
-        }, { merge: true });
-        return 'owner';
+      if (!existingData.usernameLowercase) {
+        await updateDoc(userRef, {
+          usernameLowercase: (existingData.username || user.displayName || "anonymous").toLowerCase()
+        });
       }
       return existingData.role || 'user';
     }
-  };
+  }
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -142,103 +252,148 @@ function App() {
   if (loading) return <div className="loading">Checking authentication...</div>;
 
   return (
-    <div className="app">
-      <nav>
-        <Link className="nav-brand" to="/">
-          Killstreak
-        </Link>
-        {!user ? (
-          <>
-            <Link className="nav-link" to="/summoner">
-              Summoner Lookup
-            </Link>
-            <Link className="nav-link" to="/coaching">
-              Coaching
-            </Link>
-            <Link className="nav-link" to="/login">
-              Login
-            </Link>
-            <Link className="nav-link" to="/register">
-              Register
-            </Link>
-          </>
-        ) : (
-          <>
-            <Link className="nav-link" to="/feeds">
-              Feeds
-            </Link>
-            <Link className="nav-link" to="/summoner">
-              Summoner Lookup
-            </Link>
-            <Link className="nav-link" to="/queue">
-              Find Queue
-            </Link>
-            <Link className="nav-link" to="/coaching">
-              Coaching
-            </Link>
-            {(userRole === 'admin' || userRole === 'owner' || userRole === 'coach') && (
-              <Link className="nav-link" to="/champions">
-                Champions
-              </Link>
-            )}
-            {(userRole === 'admin' || userRole === 'owner') && (
-              <Link className="nav-link admin-link" to="/admin">
-                {userRole === 'owner' ? ' Owner Panel' : ' Admin Panel'}
-              </Link>
-            )}
+    <div className={`app-root ${showSocial ? 'social-open' : ''}`}>
+      <header className="app-header">
+        <div className="header-inner">
+          <Link className="logo-link" to="/">
+            <img src="/rifthub.png" alt="RiftHub Logo" className="logo-image" />
+            <span className="logo-text">KILLSTREAK</span>
+          </Link>
 
-            <div
-              className="profile-dropdown"
-              ref={profileDropdownRef}
-              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-            >
-              <img
-                src={profileImage || "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/588.png"}
-                alt="Profile"
-                className="profile-image"
-              />
-              {profileDropdownOpen && (
-                <div className="profile-dropdown-menu" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => { navigate('/profile'); setProfileDropdownOpen(false); }}>
-                    View Profile
-                  </button>
-                  <button onClick={() => { handleLogout(); setProfileDropdownOpen(false); }} className="logout-option">
-                    Logout
-                  </button>
-                </div>
+          <div className="nav-actions">
+            <nav className="desktop-nav">
+              <NavLink to="/feeds">Feed</NavLink>
+              {!user ? (
+                <>
+                  <NavLink to="/summoner">Summoner Lookup</NavLink>
+                  <NavLink to="/coaching">Coaching</NavLink>
+                  <div className="auth-buttons-group">
+                    <Link to="/login" className="login-btn-desktop">LOGIN</Link>
+                    <Link to="/register" className="login-btn-desktop">REGISTER</Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <NavLink to="/summoner">Summoner Lookup</NavLink>
+                  <NavLink to="/queue">Queue finder</NavLink>
+                  <NavLink to="/coaching">Coaching</NavLink>
+                  {(userRole === 'admin' || userRole === 'coach') && (
+                    <NavLink to="/champions">Champions</NavLink>
+                  )}
+                  {userRole === 'admin' && (
+                    <Link className="admin-badge" to="/admin">
+                      ADMIN
+                    </Link>
+                  )}
+                </>
               )}
-            </div>
-          </>
-        )}
-      </nav>
+            </nav>
 
-      <div className="app-container">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route
-            path="/login"
-            element={user ? <Navigate to="/profile" /> : <Login />}
-          />
-          <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/:userId" element={<Profile />} />
-          <Route path="/feeds" element={<Feeds />} />
-          <Route path="/summoner" element={<Summoner />} />
-          <Route path="/live-game" element={<LiveGame />} />
-          <Route path="/queue" element={<QueueSystem />} />
-          <Route path="/finishSignIn" element={<FinishSignIn />} />
-          <Route path="/become-coach" element={<BecomeCoach />} />
-          <Route path="/coach-rules" element={<CoachRules />} />
-          <Route path="/coaching" element={<Coaching />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/apply-admin" element={<AdminApplication />} />
-          <Route path="/champions" element={<Champions />} />
+            {user && (
+              <div className="user-actions">
+                <button
+                  className="notification-btn"
+                  onClick={() => {
+                    if (showSocial && socialMode === 'notifications') {
+                      setShowSocial(false);
+                    } else {
+                      setShowSocial(true);
+                      setSocialMode('notifications');
+                      setActiveTab('requests');
+                      setSelectedFriend(null);
+                    }
+                  }}
+                  title="Notifications"
+                >
+                  <img src="/project-icons/Friends and Chat icons/bell.png" alt="Notifications" />
+                  {notificationCount > 0 && (
+                    <span className="notification-dot-wrapper">
+                      <span className="notification-ping" />
+                      <span className="notification-dot" />
+                    </span>
+                  )}
+                </button>
 
-          <Route
-            path="*"
-            element={<p className="error-box">404: Page not found</p>}
-          />
-        </Routes>
+                <div className="header-divider" />
+
+                <div className="profile-btn-wrapper" ref={profileDropdownRef}>
+                  <button
+                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    className="profile-btn"
+                  >
+                    <img
+                      src={profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                      alt="Profile"
+                      className="profile-avatar"
+                    />
+                  </button>
+                  {profileDropdownOpen && (
+                    <div className="profile-dropdown glass-panel">
+                      <button
+                        onClick={() => { navigate('/profile'); setProfileDropdownOpen(false); }}
+                        className="profile-dropdown-item"
+                      >
+                        <div className="dropdown-item-dot" />
+                        View Profile
+                      </button>
+                      <div className="dropdown-divider" />
+                      <button
+                        onClick={() => { handleLogout(); setProfileDropdownOpen(false); }}
+                        className="profile-dropdown-item danger"
+                      >
+                        <div className="dropdown-item-dot danger" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!user && (
+              <Link to="/login" className="mobile-login-btn">
+                <span>!</span>
+              </Link>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="main-content">
+        <ScrollToTop />
+        <div className="page-content">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/login"
+              element={user ? <Navigate to="/profile" /> : <Login />}
+            />
+            <Route path="/register" element={<Register />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/feeds" element={<Feeds />} />
+            <Route path="/summoner" element={<Summoner />} />
+            <Route path="/live-game" element={<LiveGame />} />
+            <Route path="/queue" element={<QueueSystem />} />
+            <Route path="/finishSignIn" element={<FinishSignIn />} />
+            <Route path="/become-coach" element={<BecomeCoach />} />
+            <Route path="/coach-rules" element={<CoachRules />} />
+            <Route path="/coaching" element={<Coaching />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/apply-admin" element={<AdminApplication />} />
+            <Route path="/champions" element={<Champions />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/tos" element={<TermsOfService />} />
+            <Route path="/legal" element={<Legal />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+
+            <Route
+              path="*"
+              element={<p className="error-box">404: Page not found</p>}
+            />
+          </Routes>
+        </div>
         {user && (
           <Announcement
             notificationCount={notificationCount}
@@ -250,27 +405,7 @@ function App() {
         {user && (
           <>
             <button
-              className="notification-side-btn"
-              onClick={() => {
-                if (showSocial && socialMode === 'notifications') {
-                  setShowSocial(false);
-                } else {
-                  setShowSocial(true);
-                  setSocialMode('notifications');
-                  setActiveTab('requests');
-                  setSelectedFriend(null);
-                }
-              }}
-              title="Notifications"
-            >
-              <img src="/project-icons/Friends and Chat icons/bell.png" alt="Notifications" className="side-tab-icon" />
-              {notificationCount > 0 && (
-                <span className="side-notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span>
-              )}
-            </button>
-
-            <button
-              className="floating-chat-btn"
+              className={`social-chat-trigger ${showSocial && socialMode === 'chat' ? 'active' : ''} ${showSocial ? 'hidden' : ''}`}
               onClick={() => {
                 if (showSocial && socialMode === 'chat') {
                   setShowSocial(false);
@@ -281,31 +416,49 @@ function App() {
                   setSelectedFriend(null);
                 }
               }}
-              title={showSocial ? "Close Chat" : "Open Friends & Chat"}
+              title={showSocial ? "Close Hub" : "Open Social Hub"}
             >
-              <img src="/project-icons/Friends and Chat icons/comment chat balloon.png" alt="Chat" className="floating-chat-icon" />
+              <div className="btn-overlay" />
+              <img src="/project-icons/Friends and Chat icons/comment chat balloon.png" alt="Chat" />
               {totalUnreadMessages > 0 && (
-                <span className="chat-unread-badge">{totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}</span>
+                <span className="unread-badge">
+                  {totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}
+                </span>
               )}
             </button>
 
-            <div className={`social-container-wrapper ${showSocial ? "open" : ""}`}>
-              <div className="social-header">
-                <h4 className="social-header-title">
-                  {socialMode === 'chat' ? ' Friends & Chat' : ' Notifications'}
-                </h4>
+            <div className={`social-panel glass-panel ${showSocial ? 'open' : ''}`}>
+              <div className="social-panel-header">
+                <div className="social-panel-title-group">
+                  <h4 className="social-panel-title">
+                    {socialMode === 'chat' ? 'Community Chat' : 'Notifications'}
+                  </h4>
+                  <div className="social-panel-status">
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSocial(false)}
+                  className="social-panel-close"
+                >
+                  <div className="close-icon">
+                    <div className="close-icon-line" />
+                    <div className="close-icon-line" />
+                  </div>
+                </button>
               </div>
-              <div className="social-container">
+              <div className="social-panel-body">
+                <div className="social-panel-body-glow" />
                 {socialMode === 'chat' ? (
                   !selectedFriend ? (
                     <FriendsList
                       onSelectFriend={handleSelectFriend}
-                      onUnreadCountChange={setTotalUnreadMessages}
+                      unreadCounts={unreadCounts}
                     />
                   ) : (
                     <Chat
                       selectedFriend={selectedFriend}
                       onBack={handleBackToFriends}
+                      isSocialOpen={showSocial}
                     />
                   )
                 ) : (
@@ -319,8 +472,38 @@ function App() {
             </div>
           </>
         )}
-      </div>
-    </div>
+      </main>
+      <Footer />
+      <CookieConsent />
+      {
+        verificationPopup && (
+          <div className={`verification-popup-overlay ${verificationPopup.status}`}>
+            <div className="verification-popup-card glass-panel">
+              {verificationPopup.status === 'loading' ? (
+                <div className="verifying-content">
+                  <div className="verifying-spinner" />
+                  <p>Verifying account...</p>
+                </div>
+              ) : verificationPopup.status === 'success' ? (
+                <div className="success-content">
+                  <div className="success-icon">✓</div>
+                  <h3>Success!</h3>
+                  <p>Account verification completed</p>
+                  <button onClick={() => setVerificationPopup(null)} className="close-popup-btn">Dismiss</button>
+                </div>
+              ) : (
+                <div className="error-content">
+                  <div className="error-icon">✕</div>
+                  <h3>Failed</h3>
+                  <p>{verificationPopup.message}</p>
+                  <button onClick={() => setVerificationPopup(null)} className="close-popup-btn">Dismiss</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 }
 

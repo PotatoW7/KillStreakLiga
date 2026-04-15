@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import '../styles/componentsCSS/coaching.css';
+import "../styles/componentsCSS/coaching.css";
 
 const MINIMUM_RANK_TIER = ['PLATINUM', 'EMERALD', 'DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER'];
 const REAPPLY_COOLDOWN_MS = 3 * 30 * 24 * 60 * 60 * 1000;
@@ -169,195 +169,278 @@ function BecomeCoach() {
 
     return (
         <div className="become-coach-page">
-            <div className="become-coach-container">
-                <div className="coach-header">
-                    <h1>Become a Coach</h1>
-                    <p>Share your knowledge and help other players improve</p>
-                </div>
+            <div className="coach-bg-decor-1" />
+            <div className="coach-bg-decor-2" />
 
-                <div className="coach-rules-banner">
-                    <p>
-                        <strong>Before you start:</strong> Please read the coach guidelines
+            <div className="become-coach-container animate-base">
+                <div className="coach-app-header">
+                    <div className="status-badge-container">
+                        <span className="status-ping">
+                            <span className="ping-animate" />
+                            <span className="ping-dot" />
+                        </span>
+                        <span className="status-text">Status: Open</span>
+                    </div>
+                    <h1 className="coach-app-title">
+                        Coach <span className="text-primary">Application</span>
+                    </h1>
+                    <p className="coach-app-subtitle">
+                        Apply to Coach
                     </p>
-                    <Link to="/coach-rules" className="view-rules-link">
-                        View complete coach rules and requirements →
-                    </Link>
                 </div>
+                <div className="coach-rules-banner glass-panel">
+                    <div className="banner-glow-bg" />
+                    <div className="banner-content">
+                        <div className="info-icon-wrapper">
+                            <img src="/project-icons/Coaching icons/guide.png" alt="Rules" />
+                        </div>
+                        <div className="banner-text-content">
+                            <h4 className="banner-title">Coach Guidelines</h4>
+                            <p className="banner-subtitle">Mandatory requirements for all active coaches.</p>
+                        </div>
+                        <Link to="/coach-rules" className="banner-action-btn">
+                            Review Rules
+                            <span className="btn-arrow">→</span>
+                        </Link>
+                    </div>
+                </div>
+                <div className="coach-checklist-panel glass-panel">
+                    <div className="checklist-header">
+                        <div className="section-accent-line" />
+                        <h3 className="checklist-title">Checklist</h3>
+                    </div>
 
-                <div className="requirements-summary">
-                    <h3>Requirements Checklist</h3>
-                    <ul className="requirements-list">
-                        <li className={hasRiotAccount ? 'met' : 'not-met'}>
-                            {hasRiotAccount ? '✅' : '❌'} Linked Riot Games Account
+                    <div className="checklist-grid">
+                        <div className={`checklist-card ${hasRiotAccount ? 'complete' : 'incomplete'}`}>
+                            <div className="card-step-header">
+                                <div className="step-label">Step 01</div>
+                                <div className="step-status-icon">
+                                    {hasRiotAccount ? '✓' : '01'}
+                                </div>
+                            </div>
+                            <div className="card-info-content">
+                                <h4 className="card-title">Link Account</h4>
+                                <p className="card-description">A verified Riot Games account must be linked to your profile.</p>
+                            </div>
                             {!hasRiotAccount && (
-                                <Link to="/profile" className="requirement-link">Link Account</Link>
+                                <Link to="/profile" className="link-action-text">Link Account [Link]</Link>
                             )}
-                        </li>
-                        <li className={meetsRankRequirement ? 'met' : 'not-met'}>
-                            {meetsRankRequirement ? '✅' : '❌'} Platinum Rank or Higher
-                            {highestRank && (
-                                <span className="current-rank">
-                                    (Current: {highestRank.tier} {highestRank.rank})
-                                </span>
-                            )}
-                        </li>
-                    </ul>
+                        </div>
+
+                        <div className={`checklist-card ${meetsRankRequirement ? 'complete' : 'incomplete'}`}>
+                            <div className="card-step-header">
+                                <div className="step-label">Step 02</div>
+                                <div className="step-status-icon">
+                                    {meetsRankRequirement ? '✓' : '02'}
+                                </div>
+                            </div>
+                            <div className="card-info-content">
+                                <h4 className="card-title">Rank Requirement</h4>
+                                <p className="card-description">Coach application requires a confirmed Platinum tier or above.</p>
+                                {highestRank && (
+                                    <div className="detected-tier">Detected Tier: {highestRank.tier} {highestRank.rank}</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {isAlreadyCoach && (
-                    <div className="status-banner success">
-                        <p>You are already a verified coach! <Link to="/coaching">Go to Coaching tab</Link></p>
+                    <div className="status-msg-panel verified glass-panel">
+                        <div className="status-msg-content">
+                            <div className="status-msg-icon">✓</div>
+                            <div className="status-msg-text">
+                                <h4 className="status-msg-title">Coach Verified</h4>
+                                <p className="status-msg-desc">You are already a verified coach. <Link to="/coaching" className="text-primary hover:underline">Access Dashboard</Link></p>
+                            </div>
+                        </div>
                     </div>
                 )}
 
                 {hasPendingApplication && (
-                    <div className="status-banner pending">
-                        <p>Your application is pending review. We'll notify you once it's been reviewed.</p>
+                    <div className="status-msg-panel pending glass-panel">
+                        <div className="status-msg-content">
+                            <div className="status-msg-icon animate-pulse">⟳</div>
+                            <div className="status-msg-text">
+                                <h4 className="status-msg-title">Application Pending</h4>
+                                <p className="status-msg-desc">Your application is being reviewed. You will be notified when a decision is made.</p>
+                            </div>
+                        </div>
                     </div>
                 )}
 
                 {wasRejected && !canReapply && (
-                    <div className="status-banner rejected">
-                        <div>
-                            <p>Your previous application was rejected.</p>
-                            {userData.coachApplication.rejectionReason && (
-                                <p className="rejection-reason">
-                                    Reason: {userData.coachApplication.rejectionReason}
-                                </p>
-                            )}
-                            <p className="cooldown-notice">
-                                You can reapply in <strong>{cooldownRemaining} days</strong> (3 month cooldown).
-                            </p>
+                    <div className="status-msg-panel rejected glass-panel">
+                        <div className="status-msg-content">
+                            <div className="status-msg-icon">✕</div>
+                            <div className="status-msg-text">
+                                <h4 className="status-msg-title">Application Rejected</h4>
+                                {userData.coachApplication.rejectionReason && (
+                                    <p className="rejection-reason">Reason: {userData.coachApplication.rejectionReason}</p>
+                                )}
+                                <p className="cooldown-text">You can reapply in <span>{cooldownRemaining} days</span>.</p>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {wasRejected && canReapply && (
-                    <div className="status-banner info">
-                        <div>
-                            <p>Your previous application was rejected, but you can now reapply.</p>
-                            {userData.coachApplication.rejectionReason && (
-                                <p className="rejection-reason">
-                                    Previous rejection reason: {userData.coachApplication.rejectionReason}
-                                </p>
-                            )}
+                    <div className="status-msg-panel reset glass-panel">
+                        <div className="status-msg-content">
+                            <div className="status-msg-icon">!</div>
+                            <div className="status-msg-text">
+                                <h4 className="status-msg-title">Status Reset</h4>
+                                <p className="status-msg-desc">Your previous application was unsuccessful, but you can now reapply.</p>
+                                {userData.coachApplication.rejectionReason && (
+                                    <p className="rejection-reason">Log: {userData.coachApplication.rejectionReason}</p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {!isAlreadyCoach && !hasPendingApplication && canReapply && hasRiotAccount && meetsRankRequirement && (
-                    <form onSubmit={handleSubmit} className="coach-application-form">
-                        <h3>Application Form</h3>
+                    <form onSubmit={handleSubmit} className="coach-form-panel glass-panel">
+                        <div className="banner-glow-bg" />
 
-                        <div className="form-group">
-                            <label htmlFor="experience">Your League of Legends Experience *</label>
-                            <textarea
-                                id="experience"
-                                value={form.experience}
-                                onChange={(e) => setForm({ ...form, experience: e.target.value })}
-                                placeholder="Tell us about your LoL experience, achievements, and what makes you qualified to coach..."
-                                rows={4}
-                                required
-                                minLength={50}
-                                maxLength={1000}
-                            />
-                            <span className="char-count">{form.experience.length}/1000</span>
+                        <div className="form-header">
+                            <div className="form-title-wrapper">
+                                <div className="section-accent-line" />
+                                <h3 className="form-title">Application Form</h3>
+                            </div>
+                            <p className="form-subtitle">Please fill out the details below</p>
                         </div>
 
-                        <div className="form-group">
-                            <label>Specialties (select at least one) *</label>
-                            <div className="specialty-grid">
-                                {specialtyOptions.map(specialty => (
-                                    <button
-                                        type="button"
-                                        key={specialty}
-                                        className={`specialty-btn ${form.specialties.includes(specialty) ? 'selected' : ''}`}
-                                        onClick={() => handleSpecialtyToggle(specialty)}
-                                    >
-                                        {specialty}
-                                    </button>
-                                ))}
+                        <div className="form-sections">
+                            <div className="form-group">
+                                <label className="form-label">Experience Summary [Min 50 Characters]</label>
+                                <textarea
+                                    id="experience"
+                                    value={form.experience}
+                                    onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        setForm(prev => ({ ...prev, experience: newValue }));
+                                    }}
+                                    placeholder="Detail your achievements, leadership, and coaching style..."
+                                    className="form-textarea"
+                                    required
+                                    minLength={50}
+                                    maxLength={1000}
+                                />
+                                <div className="char-counter">{form.experience.length} / 1000 CHARACTERS</div>
                             </div>
-                        </div>
 
-                        <div className="form-group">
-                            <label>Availability *</label>
-                            <div className="availability-options">
-                                <button
-                                    type="button"
-                                    className={`availability-btn ${form.availabilityType === '1-2 hours' ? 'selected' : ''}`}
-                                    onClick={() => setForm({ ...form, availabilityType: '1-2 hours', availability: '1-2 hours' })}
-                                >
-                                    1-2 hours
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`availability-btn ${form.availabilityType === '3-6 hours' ? 'selected' : ''}`}
-                                    onClick={() => setForm({ ...form, availabilityType: '3-6 hours', availability: '3-6 hours' })}
-                                >
-                                    3-6 hours
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`availability-btn ${form.availabilityType === 'custom' ? 'selected' : ''}`}
-                                    onClick={() => setForm({ ...form, availabilityType: 'custom', availability: '' })}
-                                >
-                                    Custom
-                                </button>
+                            <div className="form-group">
+                                <label className="form-label">Specialties</label>
+                                <div className="specialties-grid">
+                                    {specialtyOptions.map(specialty => (
+                                        <button
+                                            type="button"
+                                            key={specialty}
+                                            className={`specialty-btn ${form.specialties.includes(specialty) ? 'active' : 'inactive'}`}
+                                            onClick={() => handleSpecialtyToggle(specialty)}
+                                        >
+                                            {specialty}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            {form.availabilityType === 'custom' && (
-                                <>
-                                    <input
-                                        type="text"
-                                        id="availability"
-                                        value={form.availability}
-                                        onChange={(e) => setForm({ ...form, availability: e.target.value })}
-                                        placeholder="e.g., Weekdays 6PM-10PM EST, Weekends flexible"
-                                        required
-                                        maxLength={20}
-                                        className="custom-availability-input"
-                                    />
-                                    <span className="char-count">{form.availability.length}/20</span>
-                                </>
+
+                            <div className="form-group">
+                                <label className="form-label">Availability</label>
+                                <div className="availability-grid">
+                                    {['1-2 hours', '3-6 hours', 'custom'].map(type => (
+                                        <button
+                                            type="button"
+                                            key={type}
+                                            className={`availability-btn ${form.availabilityType === type ? 'active' : 'inactive'}`}
+                                            onClick={() => {
+                                                setForm(prev => ({
+                                                    ...prev,
+                                                    availabilityType: type,
+                                                    availability: type === 'custom' ? prev.availability : type
+                                                }));
+                                            }}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+                                {form.availabilityType === 'custom' && (
+                                    <div className="animate-base">
+                                        <input
+                                            type="text"
+                                            id="availability"
+                                            value={form.availability}
+                                            onChange={(e) => {
+                                                const newValue = e.target.value;
+                                                setForm(prev => ({ ...prev, availability: newValue }));
+                                            }}
+                                            placeholder="e.g., Weekdays 6PM-10PM EST"
+                                            className="custom-availability-input"
+                                            required
+                                            maxLength={20}
+                                        />
+                                        <div className="char-counter">{form.availability.length} / 20 CHARACTERS</div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Motivation</label>
+                                <textarea
+                                    id="whyCoach"
+                                    value={form.whyCoach}
+                                    onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        setForm(prev => ({ ...prev, whyCoach: newValue }));
+                                    }}
+                                    placeholder="Briefly share why you want to coach..."
+                                    className="form-textarea"
+                                    style={{ minHeight: '120px' }}
+                                    maxLength={1000}
+                                />
+                                <div className="char-counter">{(form.whyCoach || '').length} / 1000 CHARACTERS</div>
+                            </div>
+
+                            {error && (
+                                <div className="feedback-msg error">
+                                    Error: {error}
+                                </div>
                             )}
+                            {success && (
+                                <div className="feedback-msg success">
+                                    Success: {success}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                className="form-submit-btn"
+                                disabled={submitting}
+                            >
+                                <span className="btn-label">{submitting ? 'SUBMITTING...' : 'Submit Application'}</span>
+                                <div className="btn-hover-effect" />
+                            </button>
                         </div>
-
-                        <div className="form-group">
-                            <label htmlFor="whyCoach">Why do you want to become a coach?</label>
-                            <textarea
-                                id="whyCoach"
-                                value={form.whyCoach}
-                                onChange={(e) => setForm({ ...form, whyCoach: e.target.value })}
-                                placeholder="Share your motivation for coaching..."
-                                rows={3}
-                                maxLength={1000}
-                            />
-                            <span className="char-count">{(form.whyCoach || '').length}/1000</span>
-                        </div>
-
-                        {error && <div className="form-error">{error}</div>}
-                        {success && <div className="form-success">{success}</div>}
-
-                        <button type="submit" className="submit-application-btn" disabled={submitting}>
-                            {submitting ? 'Submitting...' : 'Submit Application'}
-                        </button>
                     </form>
                 )}
 
                 {!user && (
-                    <div className="login-prompt-banner">
-                        <h3>Ready to become a coach?</h3>
-                        <p>Login or create an account to submit your application.</p>
-                        <div className="login-prompt-buttons">
-                            <Link to="/login" className="login-prompt-btn primary">Login</Link>
-                            <Link to="/register" className="login-prompt-btn secondary">Create Account</Link>
+                    <div className="coach-guest-view glass-panel">
+                        <div className="guest-bg-glow" />
+                        <h3 className="guest-title">Become a Coach</h3>
+                        <p className="guest-subtitle">Sign in to submit your coach application.</p>
+                        <div className="guest-actions">
+                            <Link to="/login" className="guest-btn login">Login</Link>
+                            <Link to="/register" className="guest-btn register">Register</Link>
                         </div>
                     </div>
                 )}
 
                 {user && (!hasRiotAccount || !meetsRankRequirement) && !isAlreadyCoach && !hasPendingApplication && (
-                    <div className="eligibility-notice">
-                        <p>Please meet all requirements above before applying.</p>
+                    <div className="req-warning-panel">
+                        <p className="req-warning-text">Requirements not met. Please fulfill all requirements to apply.</p>
                     </div>
                 )}
             </div>

@@ -1,15 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Killstreak - Your League of Legends community hub. Find teammates, track stats, get coaching, and dominate the Rift." />
-    <meta name="theme-color" content="#dc143c" />
-    <title>Killstreak | League of Legends Community</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link id="favicon" rel="icon" type="image/png" href="/rifthub.png" />
+  <script>
+    (function () {
+      const img = new Image();
+      img.src = '/rifthub.png';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 128;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        const horizontalSlice = 0.32;
+        const verticalSlice = 0.75;
+
+        const sWidth = img.width * horizontalSlice;
+        const sHeight = img.height * verticalSlice;
+        const sx = (img.width - sWidth) / 2;
+        const sy = (img.height - sHeight) / 2;
+        ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, size, size);
+
+        const link = document.getElementById('favicon');
+        link.href = canvas.toDataURL('image/png');
+      };
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="KillStreak - Your League of Legends community hub. Find teammates, track stats, get coaching, and dominate the Rift." />
+  <meta name="theme-color" content="#dc143c" />
+  <title>KillStreak</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

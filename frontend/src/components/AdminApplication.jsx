@@ -13,7 +13,6 @@ import {
     orderBy,
     limit
 } from 'firebase/firestore';
-import '../styles/componentsCSS/admin.css';
 
 const REAPPLY_COOLDOWN_MS = 5 * 30 * 24 * 60 * 60 * 1000;
 
@@ -44,7 +43,7 @@ function AdminApplication() {
                         const data = userDoc.data();
                         setUserData(data);
 
-                        if (data.role === 'admin' || data.role === 'owner') {
+                        if (data.role === 'admin') {
                             navigate('/admin');
                             return;
                         }
@@ -148,7 +147,7 @@ function AdminApplication() {
                 rejectionReason: null
             });
 
-            setSuccess('Your admin application has been submitted! The Owner will review it soon.');
+            setSuccess('Your admin application has been submitted! An Admin will review it soon.');
             setForm({ reason: '', experience: '' });
             setExistingApplication({ status: 'pending' });
         } catch (err) {
@@ -185,22 +184,22 @@ function AdminApplication() {
             <div className="admin-application-container">
                 <div className="application-header">
                     <h1>Apply to Become an Admin</h1>
-                    <p>Help manage the Killstreak community</p>
+                    <p>Help manage the KillStreak community</p>
                 </div>
 
                 <div className="admin-info-section">
                     <h3>What do Admins do?</h3>
                     <ul>
-                        <li>✅ Review and approve coach applications</li>
-                        <li>✅ Monitor community guidelines</li>
-                        <li>✅ Help maintain platform quality</li>
-                        <li>✅ Support users with issues</li>
+                        <li> Review and approve coach applications</li>
+                        <li>Monitor community guidelines</li>
+                        <li>Help maintain platform quality</li>
+                        <li>Support users with issues</li>
                     </ul>
                 </div>
 
                 {hasPendingApplication && (
                     <div className="status-banner pending">
-                        <p>Your admin application is pending review. The Owner will review it soon.</p>
+                        <p>Your admin application is pending review. An Admin will review it soon.</p>
                     </div>
                 )}
 
@@ -240,12 +239,12 @@ function AdminApplication() {
                         <h3>Application Form</h3>
 
                         <div className="form-group">
-                            <label htmlFor="reason">Why do you want to become an Admin? *</label>
+                            <label htmlFor="reason">Why do you want to become an Admin?</label>
                             <textarea
                                 id="reason"
                                 value={form.reason}
                                 onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                                placeholder="Explain why you'd like to help manage the Killstreak community..."
+                                placeholder="Explain why you'd like to help manage the KillStreak community..."
                                 rows={4}
                                 required
                                 minLength={30}
@@ -255,7 +254,7 @@ function AdminApplication() {
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="experience">Relevant Experience *</label>
+                            <label htmlFor="experience">Relevant Experience</label>
                             <textarea
                                 id="experience"
                                 value={form.experience}

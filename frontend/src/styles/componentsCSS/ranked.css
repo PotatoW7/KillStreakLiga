@@ -1,138 +1,130 @@
-/* Ranked Information */
-.ranked-container {
-  display: flex;
-  gap: var(--space-md);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-xl);
+/* ===== RANKED INFO STYLES ===== */
+
+.ranked-grid {
+    display: grid;
+    gap: 1rem;
 }
 
-.ranked-container.compact {
-  gap: var(--space-md);
+/* Unranked Card */
+.ranked-card-empty {
+    background: hsl(var(--secondary) / 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1.25rem;
+    border-radius: 1rem;
 }
 
-.rank-card {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
-  min-width: 240px;
-  transition: all 0.3s ease;
-  flex: 1;
+.ranked-queue-label {
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: var(--color-muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.25rem;
 }
 
-.rank-card.compact {
-  min-width: 200px;
-  padding: var(--space-md);
+.ranked-unranked {
+    font-size: 0.875rem;
+    font-weight: 700;
+    opacity: 0.2;
+    font-style: italic;
 }
 
-.rank-card:hover {
-  border-color: var(--accent-blue);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(11, 198, 227, 0.15);
+/* Ranked Card */
+.ranked-card {
+    background: hsl(var(--secondary) / 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.25rem;
+    border-radius: 1rem;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
 }
 
-.rank-info {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
+.ranked-card:hover {
+    border-color: hsl(var(--primary) / 0.3);
 }
 
-.rank-icon {
-  width: 85px;
-  height: 85px;
-  filter: drop-shadow(0 4px 12px rgba(11, 198, 227, 0.3));
+.ranked-card-glow {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8rem;
+    height: 8rem;
+    background: hsl(var(--primary) / 0.05);
+    border-radius: 9999px;
+    filter: blur(48px);
+    margin-right: -4rem;
+    margin-top: -4rem;
+    transition: background var(--transition-base);
 }
 
-.rank-details {
-  flex: 1;
+.ranked-card:hover .ranked-card-glow {
+    background: hsl(var(--primary) / 0.1);
 }
 
-.tier {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--accent-blue);
-  text-transform: uppercase;
-  margin-bottom: var(--space-xs);
-  letter-spacing: 0.5px;
+.ranked-card-content {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    position: relative;
+    z-index: 10;
 }
 
-.queue-name,
-.queue-label {
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: var(--space-xs);
-  font-weight: var(--font-weight-semibold);
+.ranked-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    transition: transform 0.5s ease;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
-.unranked {
-  color: var(--text-secondary);
-  font-style: italic;
-  text-align: center;
-  padding: var(--space-md);
+.ranked-card:hover .ranked-icon {
+    transform: scale(1.1);
 }
 
-.stats {
-  display: flex;
-  gap: var(--space-xs);
-  margin: var(--space-xs) 0;
-  flex-wrap: wrap;
+.ranked-info {
+    flex: 1;
 }
 
-.lp,
-.winrate,
-.games {
-  background: rgba(11, 198, 227, 0.1);
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--accent-blue);
-  border: 1px solid rgba(11, 198, 227, 0.2);
+.ranked-queue-label-sm {
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: hsl(var(--muted-foreground) / 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.25rem;
 }
 
-.record {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  margin-top: var(--space-xs);
+.ranked-tier {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--color-primary);
+    line-height: 1.1;
 }
 
-/* Player rank in match details */
-.player-rank-section {
-  display: flex;
-  align-items: center;
-  margin-left: var(--space-md);
-  min-width: 100px;
+.ranked-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: hsl(var(--foreground) / 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
 }
 
-.player-rank-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.ranked-stats-dot {
+    width: 0.25rem;
+    height: 0.25rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.2);
 }
 
-.rank-emblem {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+.winrate-positive {
+    color: #4ade80;
 }
 
-.rank-tier {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
-  text-transform: capitalize;
-}
-
-.rank-lp {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
-.unranked-player {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  font-style: italic;
+.winrate-negative {
+    color: #f87171;
 }

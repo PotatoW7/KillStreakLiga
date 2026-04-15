@@ -1,5 +1,5 @@
 {
-  "name": "killstreak-frontend",
+  "name": "rifthub-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,6 +12,7 @@
   "dependencies": {
     "@splinetool/react-spline": "^4.1.0",
     "firebase": "^12.4.0",
+    "lucide-react": "^0.575.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-parallax-tilt": "^1.7.314",

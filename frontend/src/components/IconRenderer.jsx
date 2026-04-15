@@ -24,11 +24,15 @@ const IconRenderer = ({ text, className = "" }) => {
 
     const normalize = (name) => name.toLowerCase().replace(/\s+/g, '_').replace(/['.]/g, '');
 
-    const parts = text.split(/(:[a-z0-9_']+:)/gi);
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+
+    const parts = text.split(/(:[a-z0-9_']+:)|(https?:\/\/[^\s]+)/gi);
 
     return (
         <span className={`icon-rendered-text ${className}`}>
             {parts.map((part, index) => {
+                if (!part) return null;
+
                 if (part.startsWith(':') && part.endsWith(':')) {
                     const iconName = normalize(part.slice(1, -1));
                     const iconData = iconMap[iconName];
@@ -49,10 +53,26 @@ const IconRenderer = ({ text, className = "" }) => {
                         );
                     }
                 }
+
+                if (part.match(urlRegex)) {
+                    return (
+                        <a
+                            key={index}
+                            href={part}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="post-link"
+                        >
+                            {part}
+                        </a>
+                    );
+                }
+
                 return <span key={index}>{part}</span>;
             })}
         </span>
     );
+
 };
 
 export const LoLSuggestions = ({ query, onSelect, activeIndex }) => {
