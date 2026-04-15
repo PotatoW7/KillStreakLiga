@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useDDragon } from '../context/DDragonContext';
 import { auth, db } from '../firebase';
 import { collection, query, where, getDocs, doc, getDoc, addDoc, deleteDoc, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import '../styles/componentsCSS/coaching.css';
 
 function Coaching() {
+    const { latestVersion: version } = useDDragon();
     const [user, setUser] = useState(null);
     const [userRole, setUserRole] = useState('user');
     const [coaches, setCoaches] = useState([]);
@@ -553,6 +555,7 @@ function SessionCard({
     editFormData, setEditFormData, handleUpdate, handleDelete,
     handleEdit, handleCancelEdit, submitting, specialtyOptions
 }) {
+    const { latestVersion: version } = useDDragon();
     const getRankByQueue = (rankedData, queueType) => {
         if (!rankedData || rankedData.length === 0) return null;
         return rankedData.find(q => q.queueType === queueType) || null;
@@ -649,7 +652,7 @@ function SessionCard({
                         <div className="coach-avatar-wrapper">
                             <div className="avatar-hover-glow" />
                             <img
-                                src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${session.coachRiotAccount.profileIconId}.png`}
+                                src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${session.coachRiotAccount.profileIconId}.png`}
                                 alt="Coach"
                                 className="coach-pfp"
                             />
@@ -744,6 +747,7 @@ function SessionCard({
 }
 
 function CoachCard({ coach }) {
+    const { latestVersion: version } = useDDragon();
     const getRankByQueue = (rankedData, queueType) => {
         if (!rankedData || rankedData.length === 0) return null;
         return rankedData.find(q => q.queueType === queueType) || null;
@@ -761,7 +765,7 @@ function CoachCard({ coach }) {
                 <div className="avatar-container-inner">
                     {coach.riotAccount ? (
                         <img
-                            src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${coach.riotAccount.profileIconId}.png`}
+                            src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${coach.riotAccount.profileIconId}.png`}
                             alt={coach.username}
                             className="coach-main-pfp"
                         />

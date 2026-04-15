@@ -8,22 +8,25 @@ import {
   updateDoc, arrayUnion, arrayRemove, getDocs, writeBatch
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { useDDragon } from '../context/DDragonContext';
 import { MessageSquare, Users, Swords, Filter, Clock, ShieldCheck, ShieldX, Star, Trash2, Edit3, UserPlus, Check, X, Copy, ExternalLink, ChevronDown, PlusSquare } from 'lucide-react';
 import '../styles/componentsCSS/queue-system.css';
 
-const normalizeProfileIcon = (url) => {
-  if (!url) return url;
-  if (typeof url !== 'string') return url;
-  if (url.includes('profileicon/588.png')) {
-    return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
-  }
-  if (url.includes('ddragon.leagueoflegends.com/cdn/13.20.1/')) {
-    return url.replace('13.20.1', '14.3.1');
-  }
-  return url;
-};
-
 function QueueSystem() {
+  const { latestVersion: ddragonVersion } = useDDragon();
+
+  const normalizeProfileIcon = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    const defaultIcon = `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/profileicon/29.png`;
+
+    if (url.includes('profileicon/588.png')) return defaultIcon;
+
+    const versionPattern = /cdn\/\d+\.\d+\.\d+\//;
+    if (versionPattern.test(url)) {
+      return url.replace(versionPattern, `cdn/${ddragonVersion}/`);
+    }
+    return url;
+  };
   const [isPostingGame, setIsPostingGame] = useState(false);
   const [isEditingGame, setIsEditingGame] = useState(null);
   const [gameListings, setGameListings] = useState([]);
@@ -638,7 +641,7 @@ function QueueSystem() {
     if (game.userProfileImage) {
       return normalizeProfileIcon(game.userProfileImage);
     }
-    return 'https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png';
+    return `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/profileicon/29.png`;
   };
 
   const getQueueData = (rankedData, queueType) => {
@@ -1926,7 +1929,7 @@ function QueueSystem() {
                         <div key={request.id} className="lobby-card">
                           <div className="author-main-info u-flex u-items-center u-gap-4" style={{ width: '100%' }}>
                             <div className="author-pfp-circle icon-xxl">
-                              <img src={request.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"} alt="" className="author-pfp-img" />
+                              <img src={request.profileImage || `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/profileicon/29.png`} alt="" className="author-pfp-img" />
                             </div>
 
                             <div className="u-flex u-flex-1 u-items-center u-justify-between u-gap-6">

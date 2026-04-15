@@ -6,6 +6,7 @@ import RankedInfo from "./RankedInfo";
 import MatchHistory from "./MatchHistory";
 import ChampionMastery from "./ChampionMastery";
 import { fetchDDragon } from "../utils/fetchDDragon";
+import { useDDragon } from "../context/DDragonContext";
 
 function Summoner() {
   const [searchInput, setSearchInput] = useState("");
@@ -21,7 +22,7 @@ function Summoner() {
   const [champIdToName, setChampIdToName] = useState({});
   const [champNameToId, setChampNameToId] = useState({});
   const [itemsData, setItemsData] = useState({});
-  const [version, setVersion] = useState("");
+  const { latestVersion: version } = useDDragon();
   const [loading, setLoading] = useState(false);
   const [matchLoading, setMatchLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -102,8 +103,7 @@ function Summoner() {
     }
 
     try {
-      const { latestVersion, champIdToName, champNameToId, itemsData } = await fetchDDragon();
-      setVersion(latestVersion);
+      const { champIdToName, champNameToId, itemsData } = await fetchDDragon();
       setChampIdToName(champIdToName);
       setChampNameToId(champNameToId);
       setItemsData(itemsData);

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { fetchDDragon } from '../utils/fetchDDragon';
+import { useDDragon } from '../context/DDragonContext';
 import ItemTooltip from './ItemTooltip';
 import '../styles/componentsCSS/livegame.css';
 
@@ -15,7 +16,7 @@ function LiveGame() {
     const [elapsedTime, setElapsedTime] = useState(0);
     const [champIdToName, setChampIdToName] = useState({});
     const [championRoles, setChampionRoles] = useState({});
-    const [version, setVersion] = useState('');
+    const { latestVersion: version } = useDDragon();
     const [runesData, setRunesData] = useState(null);
     const [spellIdToData, setSpellIdToData] = useState(null);
     const [hoveredItem, setHoveredItem] = useState(null);
@@ -39,7 +40,6 @@ function LiveGame() {
 
             try {
                 const ddragon = await fetchDDragon();
-                setVersion(ddragon.latestVersion);
                 setChampIdToName(ddragon.champIdToName);
                 setRunesData(ddragon.runesData);
                 setSpellIdToData(ddragon.spellIdToData);

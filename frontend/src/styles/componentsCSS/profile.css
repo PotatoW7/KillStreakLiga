@@ -724,6 +724,18 @@
     transform: translateY(-1px);
 }
 
+.modal-confirm-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.modal-confirm-btn.waiting {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: wait;
+}
+
 .modal-update-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -1504,3 +1516,5 @@
     margin-top: 1rem;
     width: 100%;
 }
+
+

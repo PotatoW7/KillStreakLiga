@@ -26,12 +26,13 @@ import FAQ from "./components/FAQ";
 import AuthActionHandler from "./components/AuthActionHandler";
 import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
-import AiAssistant from "./components/AiAssistant";
+import ItemTooltip from "./components/ItemTooltip";
 import MatchDetails from "./components/MatchDetails";
 import { applyActionCode, checkActionCode, reload, getRedirectResult, linkWithCredential, EmailAuthProvider, signInWithPopup } from "firebase/auth";
 
 import { auth, db, storage } from "./firebase";
 import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs } from "firebase/firestore";
+import { useDDragon } from "./context/DDragonContext";
 import "./styles/index.css";
 
 
@@ -51,6 +52,7 @@ function ScrollToTop() {
 }
 
 function UsernameModal({ user, onComplete, onCancel }) {
+  const { latestVersion } = useDDragon();
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -85,7 +87,7 @@ function UsernameModal({ user, onComplete, onCancel }) {
         pendingRequests: [],
         emailVerified: user.emailVerified,
         role: "user",
-        profileImage: user.photoURL || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"
+        profileImage: user.photoURL || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`
       });
       onComplete();
     } catch (err) {
@@ -103,9 +105,9 @@ function UsernameModal({ user, onComplete, onCancel }) {
           <h2 className="modal-title">Complete Your Profile</h2>
         </div>
         <p className="modal-subtitle">Choose a username for RiftHub</p>
-        
+
         {error && <div className="auth-error" style={{ marginBottom: '1rem' }}>{error}</div>}
-        
+
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
             <p className="auth-label">Username</p>
@@ -144,6 +146,7 @@ function NavLink({ to, children }) {
 }
 
 function App() {
+  const { latestVersion } = useDDragon();
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
@@ -152,16 +155,15 @@ function App() {
   const [selectedFriend, setSelectedFriend] = useState(null);
 
   useEffect(() => {
-    // Only redirect if we ARE NOT loading, so the Router is definitely ready
     if (loading) return;
 
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("mode");
     const oobCode = params.get("oobCode");
-    
-    console.log("Auth Action Check:", { 
-      mode, 
-      hasCode: !!oobCode, 
+
+    console.log("Auth Action Check:", {
+      mode,
+      hasCode: !!oobCode,
       path: window.location.pathname,
       loading
     });
@@ -199,7 +201,7 @@ function App() {
         setUserRole(role);
 
         const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-        
+
         const isDeleting = sessionStorage.getItem('ignoringUsernameModal');
         if (!userDoc.exists() && !isDeleting) {
           setPendingUser(firebaseUser);
@@ -259,7 +261,7 @@ function App() {
           const user = result.user;
           const userRef = doc(db, "users", user.uid);
           const userDoc = await getDoc(userRef);
-          
+
           if (!userDoc.exists()) {
             setPendingUser(user);
             setShowUsernameModal(true);
@@ -454,7 +456,7 @@ function App() {
                     className="profile-btn"
                   >
                     <img
-                      src={profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                      src={profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                       alt="Profile"
                       className="profile-avatar"
                     />
@@ -607,7 +609,6 @@ function App() {
           </>
         )}
       </main>
-      <AiAssistant />
       <Footer />
       <CookieConsent />
       {
@@ -639,8 +640,8 @@ function App() {
         )
       }
       {showUsernameModal && pendingUser && (
-        <UsernameModal 
-          user={pendingUser} 
+        <UsernameModal
+          user={pendingUser}
           onComplete={() => {
             setShowUsernameModal(false);
             setPendingUser(null);

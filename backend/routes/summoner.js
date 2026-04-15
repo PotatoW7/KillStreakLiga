@@ -115,4 +115,37 @@ router.get('/:region/:gameName/:tagLine', async (req, res) => {
   }
 });
 
+router.post('/verify-icon', async (req, res) => {
+  const { region, puuid, expectedIconId } = req.body;
+  const platformDomain = regionDomains[region];
+
+  if (!platformDomain) {
+    return res.status(400).json({ error: 'Unsupported region' });
+  }
+
+  try {
+    const summonerRes = await fetch(
+      `https://${platformDomain}/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${API_KEY}`
+    );
+
+    if (!summonerRes.ok) {
+      return res.status(summonerRes.status).json({ error: 'Failed to fetch summoner data' });
+    }
+
+    const summonerData = await summonerRes.json();
+    const currentIconId = summonerData.profileIconId;
+
+    if (currentIconId === parseInt(expectedIconId)) {
+      res.json({ success: true, currentIconId });
+    } else {
+      const riotId = req.body.gameName ? `${req.body.gameName}#${req.body.tagLine}` : puuid;
+      console.log(`Verification failed for ${riotId}. Expected: ${expectedIconId}, Found: ${currentIconId}`);
+      res.json({ success: false, currentIconId, expectedIconId: parseInt(expectedIconId) });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;
+

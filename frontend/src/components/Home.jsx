@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ChevronDown } from 'lucide-react';
+import { useDDragon } from '../context/DDragonContext';
 
 function Home() {
+  const { latestVersion } = useDDragon();
   const [user, setUser] = useState(null);
   const [riotAccount, setRiotAccount] = useState(null);
   const [searchInput, setSearchInput] = useState('');
@@ -127,7 +129,7 @@ function Home() {
               <div className="account-info">
                 <div className="account-avatar-wrapper">
                   <img
-                    src={`https://ddragon.leagueoflegends.com/cdn/13.20.1/img/profileicon/${riotAccount.profileIconId}.png`}
+                    src={`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/${riotAccount.profileIconId}.png`}
                     alt="Profile"
                     className="account-avatar"
                   />

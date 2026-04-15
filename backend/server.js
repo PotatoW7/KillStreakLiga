@@ -54,8 +54,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   admin.initializeApp();
 }
 
-const aiRouter = require('./routes/ai');
-app.use('/api/ai', aiRouter);
+
 
 app.delete('/api/admin/users/:uid', async (req, res) => {
   const { uid } = req.params;

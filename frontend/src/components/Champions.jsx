@@ -10,6 +10,7 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { fetchDDragon } from '../utils/fetchDDragon';
+import { useDDragon } from '../context/DDragonContext';
 
 const ROLE_LABELS = {
     TOP: 'Top',
@@ -32,8 +33,8 @@ function Champions() {
     const [selectedChampion, setSelectedChampion] = useState(null);
     const [editRoles, setEditRoles] = useState({ mainRoles: [], secondaryRoles: [], offMetaRoles: [] });
     const [saving, setSaving] = useState(false);
-    const [version, setVersion] = useState('');
     const [statusMessage, setStatusMessage] = useState(null);
+    const { latestVersion: version } = useDDragon();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -74,8 +75,7 @@ function Champions() {
 
         const loadData = async () => {
             try {
-                const { latestVersion, champIdToName } = await fetchDDragon();
-                setVersion(latestVersion);
+                const { champIdToName } = await fetchDDragon();
 
                 const champList = Object.entries(champIdToName).map(([id, name]) => ({
                     id: id.toString(),

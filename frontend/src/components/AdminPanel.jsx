@@ -14,6 +14,7 @@ import {
     orderBy
 } from 'firebase/firestore';
 import { fetchDDragon } from '../utils/fetchDDragon';
+import { useDDragon } from '../context/DDragonContext';
 
 
 
@@ -36,7 +37,7 @@ function AdminPanel() {
     const [showConfirmModal, setShowConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
     const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
     const [error, setError] = useState(null);
-    const [latestVersion, setLatestVersion] = useState("14.3.1");
+    const { latestVersion } = useDDragon();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -81,17 +82,6 @@ function AdminPanel() {
         return () => unsubscribe();
     }, [navigate]);
 
-    useEffect(() => {
-        const loadVersion = async () => {
-            try {
-                const data = await fetchDDragon();
-                setLatestVersion(data.latestVersion);
-            } catch (err) {
-                console.error("Failed to load DDragon version:", err);
-            }
-        };
-        loadVersion();
-    }, []);
 
     useEffect(() => {
         if (userRole === 'admin') {
@@ -417,7 +407,7 @@ function AdminPanel() {
                             if (uData.friends?.some(f => f.id === userId)) updates.friends = uData.friends.filter(f => f.id !== userId);
                             if (uData.pendingRequests?.some(r => r.from === userId)) updates.pendingRequests = uData.pendingRequests.filter(r => r.from !== userId);
                             if (uData.sentFriendRequests?.some(r => r.to === userId)) updates.sentFriendRequests = uData.sentFriendRequests.filter(r => r.to !== userId);
-                            
+
                             if (Object.keys(updates).length > 0) {
                                 batch.update(doc(db, "users", uDoc.id), updates);
                                 opCount++;
@@ -619,9 +609,9 @@ function AdminPanel() {
                                     <div key={u.id} className="user-item-row glass-panel">
                                         <div className="user-main-info">
                                             <div className="user-identity">
-                                                <img 
-                                                    src={u.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"} 
-                                                    alt="" 
+                                                <img
+                                                    src={u.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
+                                                    alt=""
                                                     className="user-list-avatar"
                                                 />
                                                 <div className="user-text-meta">
@@ -629,17 +619,17 @@ function AdminPanel() {
                                                     <span className="user-email">{u.email}</span>
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="user-status-indicators">
                                                 <div className={`verification-badge ${u.emailVerified ? 'verified' : 'unverified'}`}>
                                                     {u.emailVerified ? 'Verified' : 'Unverified'}
                                                 </div>
                                                 {u.riotAccount && (
                                                     <div className="riot-connection-badge">
-                                                        <img 
-                                                            src={`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/${u.riotAccount.profileIconId}.png`} 
-                                                            alt="Riot" 
-                                                            className="riot-mini-icon" 
+                                                        <img
+                                                            src={`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/${u.riotAccount.profileIconId}.png`}
+                                                            alt="Riot"
+                                                            className="riot-mini-icon"
                                                             onError={(e) => {
                                                                 e.target.src = "/project-icons/Profile icons/riot guest icon.png";
                                                             }}
@@ -649,9 +639,9 @@ function AdminPanel() {
                                                 )}
                                             </div>
                                         </div>
-                                        
+
                                         <div className="user-actions">
-                                            <button 
+                                            <button
                                                 className="delete-user-btn"
                                                 onClick={() => handleDeleteUser(u.id)}
                                                 disabled={processingId === u.id || u.id === user.uid}
@@ -680,7 +670,7 @@ function AdminPanel() {
                                                 <div className="user-profile-section">
                                                     <div className="coach-avatar-box">
                                                         <img
-                                                            src={app.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                            src={app.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                                                             alt=""
                                                             className="coach-avatar"
                                                         />
@@ -798,7 +788,7 @@ function AdminPanel() {
                                             <div key={admin.id} className="staff-card">
                                                 <div className="staff-user-info">
                                                     <img
-                                                        src={admin.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                        src={admin.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                                                         alt=""
                                                         className="staff-avatar"
                                                     />
@@ -849,7 +839,7 @@ function AdminPanel() {
                                         <div key={coach.id} className="staff-card">
                                             <div className="staff-user-info">
                                                 <img
-                                                    src={coach.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                    src={coach.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                                                     alt=""
                                                     className="staff-avatar"
                                                 />

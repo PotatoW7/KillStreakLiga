@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchDDragon } from "../utils/fetchDDragon";
+import { useDDragon } from "../context/DDragonContext";
 import ItemTooltip from "./ItemTooltip";
 import { ChevronDown, TrendingUp } from "lucide-react";
 
 export default function MatchHistory({ matches, champIdToName, champNameToId, itemsData, version, puuid, region, onPlayerClick }) {
   const navigate = useNavigate();
+  const { latestVersion: ddragonVersion } = useDDragon();
   const [expandedMatch, setExpandedMatch] = useState(null);
-  const [latestVersion, setLatestVersion] = useState(version);
+  const [latestVersion, setLatestVersion] = useState(version || ddragonVersion);
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
   const [filterChampion, setFilterChampion] = useState("all");
   const [filterQueue, setFilterQueue] = useState("all");
@@ -22,13 +24,12 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   useEffect(() => {
     fetchDDragon()
       .then((data) => {
-        if (!version) setLatestVersion(data.latestVersion);
         setRunesData(data.runesData);
         setAugmentsData(data.augmentsData);
         setSpellIdToData(data.spellIdToData);
       })
       .catch((error) => console.error("Failed to fetch DDragon data:", error));
-  }, [version]);
+  }, []);
 
   const currentVersion = version || latestVersion;
   const toggleMatch = (index) => setExpandedMatch(expandedMatch === index ? null : index);

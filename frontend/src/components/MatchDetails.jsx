@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { fetchDDragon } from "../utils/fetchDDragon";
+import { useDDragon } from "../context/DDragonContext";
 import ItemTooltip from "./ItemTooltip";
 import { ChevronLeft, Swords, Shield, Heart, Eye, TrendingUp, Coins, MoveLeft } from "lucide-react";
 import "../styles/componentsCSS/matchdetails.css";
@@ -13,6 +14,7 @@ export default function MatchDetails() {
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const viewerPuuid = queryParams.get("puuid");
+    const { latestVersion } = useDDragon();
 
     const [match, setMatch] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -1259,7 +1261,7 @@ export default function MatchDetails() {
                 <ItemTooltip
                     item={hoveredItem}
                     position={tooltipPos}
-                    version={ddragon.latestVersion}
+                    version={latestVersion}
                 />
             )}
         </div>

@@ -17,6 +17,7 @@ import {
   query, where, getDocs, onSnapshot, writeBatch
 } from "firebase/firestore";
 import { fetchDDragon } from "../utils/fetchDDragon";
+import { useDDragon } from "../context/DDragonContext";
 import ProfilePosts from "./ProfilePosts";
 import { ChevronDown, RotateCw } from "lucide-react";
 import "../styles/componentsCSS/profile.css";
@@ -39,6 +40,8 @@ const REGIONS = [
   { value: "tw2", label: "TW" },
   { value: "vn2", label: "VN" }
 ];
+
+const STARTER_ICONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28];
 
 const RankedInfo = ({ rankedData }) => {
   const getQueueData = (queueType) => {
@@ -123,7 +126,6 @@ function Profile() {
     password: "",
     reauthError: "",
     deletingAccount: false,
-    latestVersion: "25.12",
     verificationLoading: false,
     emailVerificationSent: false,
     verificationCooldown: 0,
@@ -150,7 +152,12 @@ function Profile() {
     passConfirm: "",
     passError: "",
     passSuccess: "",
-    accountUpdating: false
+    accountUpdating: false,
+    verificationModalOpen: false,
+    verificationIconId: null,
+    tempAccountData: null,
+    verificationError: "",
+    verifyingAccount: false
   });
 
   const showNotification = (message, type = "success") => {
@@ -320,17 +327,6 @@ function Profile() {
   };
 
   useEffect(() => {
-    const loadLatestVersion = async () => {
-      try {
-        const ddragonData = await fetchDDragon();
-        setState(prev => ({ ...prev, latestVersion: ddragonData.latestVersion }));
-      } catch (error) {
-        console.error("Failed to load latest version:", error);
-      }
-    };
-
-    loadLatestVersion();
-
     const checkProfileType = async () => {
       const currentUser = auth.currentUser;
       const targetUserId = userId || currentUser?.uid;
@@ -545,9 +541,9 @@ function Profile() {
         }
       }
 
-      const userRef = doc(db, "users", state.user.uid);
       const accountData = { ...validatedAccount, linkedAt: new Date() };
 
+      const userRef = doc(db, "users", state.user.uid);
       const rankedData = await fetchRankedDataAndUpdate(accountData, state.user.uid);
 
       await updateDoc(userRef, {
@@ -559,11 +555,12 @@ function Profile() {
       setState(prev => ({
         ...prev,
         linkedAccount: accountData,
-        linkSuccess: `Riot account ${validatedAccount.gameName}#${validatedAccount.tagLine} linked successfully!`,
         riotId: "",
-        region: "na1",
-        linkingAccount: false
+        region: "euw1",
+        linkingAccount: false,
+        linkSuccess: `Riot account ${accountData.gameName}#${accountData.tagLine} linked successfully!`
       }));
+      showNotification("Account linked successfully!");
 
     } catch (error) {
       console.error("Error linking Riot account:", error);
@@ -684,19 +681,18 @@ function Profile() {
     setState(prev => ({ ...prev, accountUpdating: true, usernameError: "", usernameSuccess: "" }));
 
     try {
-      // 14-day cooldown check
       if (state.profileData?.lastUsernameChange) {
         const lastChange = state.profileData.lastUsernameChange.toDate ? state.profileData.lastUsernameChange.toDate() : new Date(state.profileData.lastUsernameChange);
         const diff = Date.now() - lastChange.getTime();
         const cooldownDays = 14;
         const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
-        
+
         if (diff < cooldownMs) {
           const remainingDays = Math.ceil((cooldownMs - diff) / (24 * 60 * 60 * 1000));
-          setState(prev => ({ 
-            ...prev, 
-            accountUpdating: false, 
-            usernameError: `You must wait ${remainingDays} more day${remainingDays > 1 ? 's' : ''} to change your username again.` 
+          setState(prev => ({
+            ...prev,
+            accountUpdating: false,
+            usernameError: `You must wait ${remainingDays} more day${remainingDays > 1 ? 's' : ''} to change your username again.`
           }));
           return;
         }
@@ -721,11 +717,11 @@ function Profile() {
         ...prev,
         accountUpdating: false,
         usernameSuccess: "Username updated!",
-        profileData: { 
-          ...prev.profileData, 
-          username: trimmed, 
+        profileData: {
+          ...prev.profileData,
+          username: trimmed,
           usernameLowercase: trimmed.toLowerCase(),
-          lastUsernameChange: now 
+          lastUsernameChange: now
         },
         newUsername: ""
       }));
@@ -886,7 +882,9 @@ function Profile() {
     setState(prev => ({ ...prev, tempAbout: state.aboutMe, isEditingAbout: true }));
   };
 
-  const getProfileIconUrl = (profileIconId) => `https://ddragon.leagueoflegends.com/cdn/${state.latestVersion}/img/profileicon/${profileIconId}.png`;
+  const { latestVersion: version } = useDDragon();
+
+  const getProfileIconUrl = (profileIconId) => `https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${profileIconId}.png`;
 
   const formatTimeAgo = (date) => {
     if (!date) return "Never updated";
@@ -905,7 +903,7 @@ function Profile() {
   const displayEmail = state.isOwnProfile ? state.user?.email : null;
   const joinedDate = state.profileData?.createdAt ? new Date(state.profileData.createdAt.seconds * 1000) : new Date();
   const accountAgeDays = Math.floor((Date.now() - joinedDate) / 86400000);
-  const currentProfileImage = state.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png";
+  const currentProfileImage = state.profileImage || `https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/29.png`;
   const userRole = state.profileData?.role || "user";
   const coachAppStatus = state.profileData?.coachApplication?.status;
 
@@ -1023,7 +1021,7 @@ function Profile() {
                   {state.profileImage && (
                     <button
                       onClick={() => {
-                        updateProfileImage("https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png");
+                        updateProfileImage(`https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/29.png`);
                         setState(prev => ({ ...prev, contextMenuPosition: null }));
                         showNotification("Profile image removed!", "success");
                       }}
@@ -1247,7 +1245,7 @@ function Profile() {
                     </div>
                   )}
                   {state.linkSuccess && (
-                    <div className="form-success-msg animate-bounce">
+                    <div className="form-success-msg">
                       {state.linkSuccess}
                     </div>
                   )}
@@ -1558,7 +1556,7 @@ function Profile() {
           </div>
         )}
       </div>
-    </div >
+    </div>
   );
 }
 
