@@ -1,15 +1,59 @@
-import React, { useState } from "react";
-import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { auth } from "../firebase";
+import React, { useState, useEffect, useRef } from "react";
+import { signInWithEmailAndPassword, sendEmailVerification, signInWithPopup, signInWithRedirect, sendPasswordResetEmail } from "firebase/auth";
+import { auth, googleProvider, db } from "../firebase";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 
 function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(0);
+  const loadStartTime = useRef(0);
+
+  useEffect(() => {
+    let timer;
+    if (resetCooldown > 0) {
+      timer = setInterval(() => {
+        setResetCooldown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resetCooldown]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (loading && (Date.now() - loadStartTime.current > 3000)) {
+        setTimeout(() => setLoading(false), 1000);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [loading]);
+
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isVerified = searchParams.get("verified") === "true";
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (resetCooldown > 0) return;
+    if (!resetEmail) return setError("Please enter your email address.");
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setResetSent(true);
+      setResetCooldown(60);
+      setError("");
+    } catch (err) {
+      console.error("Reset error:", err);
+      setError("Failed to send reset email. Verify your email address.");
+    }
+    setLoading(false);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -28,6 +72,11 @@ function Login() {
         await sendEmailVerification(user);
         setError("Verification pending: Please check your email first. A new verification link has been sent.");
       } else {
+        const { doc, updateDoc } = await import("firebase/firestore");
+        const { db } = await import("../firebase");
+        await updateDoc(doc(db, "users", user.uid), {
+          emailVerified: true
+        });
         navigate("/profile");
       }
     } catch (err) {
@@ -54,6 +103,23 @@ function Login() {
       setError(message);
     }
 
+    setLoading(false);
+  };
+  const handleGoogleLogin = async () => {
+    sessionStorage.removeItem('ignoringUsernameModal');
+    loadStartTime.current = Date.now();
+    setLoading(true);
+    setError("");
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      setLoading(false);
+      if (err.code !== "auth/popup-closed-by-user") {
+        setError("Google Sign-In failed. Please try again.");
+      }
+      return;
+    }
     setLoading(false);
   };
 
@@ -112,11 +178,60 @@ function Login() {
                 />
               </div>
 
+              <div className="auth-extra-row">
+                <button 
+                  type="button" 
+                  onClick={() => setShowForgot(!showForgot)} 
+                  className="auth-forgot-link"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
+              {showForgot && (
+                <div className="auth-forgot-panel animate-slideDown">
+                  <p className="auth-forgot-hint">Enter your email to receive a password reset link.</p>
+                  <div className="auth-field">
+                    <input 
+                      type="email" 
+                      placeholder="recovery@email.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      className="auth-input"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleForgotPassword}
+                    className="auth-reset-btn"
+                    disabled={loading || resetCooldown > 0}
+                  >
+                    {loading ? "Sending..." : resetCooldown > 0 ? `Resend in ${resetCooldown}s` : "Send Reset Link"}
+                  </button>
+                  {resetSent && <p className="auth-success-msg">Email sent! Check your inbox to set a new password.</p>}
+                </div>
+              )}
+
               <button disabled={loading} className="auth-submit">
                 <span>{loading ? "Logging in..." : "Sign In"}</span>
                 <div className="auth-submit-shine" />
               </button>
             </form>
+
+            <div className="auth-divider">
+              <div className="auth-divider-line" />
+              <p className="auth-divider-text">OR</p>
+              <div className="auth-divider-line" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="auth-google-btn"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="auth-google-icon" />
+              <span>Continue with Google</span>
+            </button>
 
             <div className="auth-footer">
               <div className="auth-footer-group">

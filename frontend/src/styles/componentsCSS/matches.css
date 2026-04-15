@@ -587,7 +587,7 @@
 }
 
 .mh-player-name {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 900;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -610,7 +610,7 @@
 }
 
 .mh-player-kda-text {
-    font-size: 0.625rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: hsl(var(--muted-foreground) / 0.5);
     text-transform: uppercase;
@@ -868,4 +868,123 @@
 .rune-icon.augment-icon:hover {
     transform: scale(1.15);
     box-shadow: 0 0 8px rgba(255, 215, 0, 0.35);
+}
+
+/* View Details Button */
+.mh-view-details-wrapper {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.mh-view-details-btn {
+    padding: 0.75rem 2rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-foreground);
+    font-weight: 700;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mh-view-details-btn.win:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.1);
+    transform: translateY(-2px);
+}
+
+.mh-view-details-btn.loss:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Mini Participants */
+.mh-participants-mini {
+    display: none;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    min-width: 15rem;
+    padding: 0 1rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (min-width: 1200px) {
+    .mh-participants-mini {
+        display: grid;
+    }
+}
+
+.mh-mini-team {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.mh-mini-player {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    max-width: 7.5rem;
+}
+
+.mh-mini-champ-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+}
+
+.mh-mini-riot-id {
+    font-size: 0.625rem;
+    color: var(--color-muted-foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color var(--transition-base);
+}
+
+.mh-mini-riot-id:hover {
+    color: var(--color-foreground);
+}
+
+.mh-mini-riot-id.current {
+    color: var(--color-primary);
+}
+
+/* Actions */
+.mh-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.mh-quick-view-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-muted-foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    cursor: pointer;
+}
+
+.mh-quick-view-btn:hover {
+    background: hsl(var(--primary) / 0.1);
+    border-color: hsl(var(--primary) / 0.3);
+    color: var(--color-primary);
+    transform: translateY(-2px);
 }

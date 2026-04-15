@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
+  signInWithPopup,
+  signInWithRedirect,
 } from "firebase/auth";
-import { doc, setDoc, getDocs, collection, query, where } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { doc, setDoc, getDocs, collection, query, where, getDoc } from "firebase/firestore";
+import { auth, db, googleProvider } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
 
 function Register() {
@@ -15,6 +17,18 @@ function Register() {
     confirm: "",
   });
   const [loading, setLoading] = useState(false);
+  const loadStartTime = useRef(0);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (loading && (Date.now() - loadStartTime.current > 3000)) {
+        setTimeout(() => setLoading(false), 1000);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [loading]);
+
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -110,6 +124,24 @@ function Register() {
     setLoading(false);
   };
 
+  const handleGoogleLogin = async () => {
+    sessionStorage.removeItem('ignoringUsernameModal');
+    loadStartTime.current = Date.now();
+    setLoading(true);
+    setError("");
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      setLoading(false);
+      if (err.code !== "auth/popup-closed-by-user") {
+        setError("Google Sign-In failed. Please try again.");
+      }
+      return;
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="auth-page">
 
@@ -191,6 +223,22 @@ function Register() {
                 <div className="auth-submit-shine" />
               </button>
             </form>
+
+            <div className="auth-divider">
+              <div className="auth-divider-line" />
+              <p className="auth-divider-text">OR</p>
+              <div className="auth-divider-line" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="auth-google-btn"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="auth-google-icon" />
+              <span>Continue with Google</span>
+            </button>
 
             <div className="auth-footer">
               <div className="auth-footer-group">

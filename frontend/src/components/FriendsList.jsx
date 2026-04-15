@@ -4,6 +4,7 @@ import {
   collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDocs, orderBy, getDoc, writeBatch
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { useDDragon } from '../context/DDragonContext';
 
 function FriendsList({ onSelectFriend, unreadCounts }) {
   const [friends, setFriends] = useState([]);
@@ -15,7 +16,15 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
   const [hasSearched, setHasSearched] = useState(false);
   const [friendsTabView, setFriendsTabView] = useState('all');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: '', text: '', onConfirm: null });
+  const { latestVersion } = useDDragon();
   const navigate = useNavigate();
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -141,7 +150,7 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
       setSearchResults(Array.from(resultsMap.values()));
     } catch (error) {
       console.error('Search error:', error);
-      alert('Error searching users: ' + error.message);
+      showNotification('Error searching users: ' + error.message, 'error');
     }
     setSearchLoading(false);
   };
@@ -183,13 +192,13 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
       });
 
       await batch.commit();
-
-      setSearchResults([]);
-      setSearchUsername('');
-      alert(`Friend request sent to ${targetUsername}!`);
+      setSearchResults(prev => prev.map(u =>
+        u.id === targetUserId ? { ...u, hasPendingRequest: true } : u
+      ));
+      showNotification(`Friend request sent to ${targetUsername}!`);
     } catch (error) {
       console.error('Error sending friend request:', error);
-      alert('Error sending friend request: ' + error.message);
+      showNotification('Error sending friend request: ' + error.message, 'error');
     }
   };
 
@@ -250,7 +259,7 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
       await batch.commit();
     } catch (error) {
       console.error('Error accepting friend request:', error);
-      alert('Error accepting friend request: ' + error.message);
+      showNotification('Error accepting friend request: ' + error.message, 'error');
     }
   };
 
@@ -300,7 +309,7 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
       await batch.commit();
     } catch (error) {
       console.error('Error rejecting friend request:', error);
-      alert('Error rejecting friend request: ' + error.message);
+      showNotification('Error rejecting friend request: ' + error.message, 'error');
     }
   };
 
@@ -338,51 +347,56 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
 
     } catch (error) {
       console.error('Error canceling friend request:', error);
-      alert('Error canceling friend request: ' + error.message);
+      showNotification('Error canceling friend request: ' + error.message, 'error');
     }
   };
 
-  const unfriend = async (friendId, friendUsername) => {
-    if (!window.confirm(`Are you sure you want to unfriend ${friendUsername}?`)) {
-      return;
-    }
+  const unfriend = (friendId, friendUsername) => {
+    setConfirmModal({
+      show: true,
+      title: 'Unfriend User',
+      text: `Are you sure you want to unfriend ${friendUsername}? You will no longer be able to message each other.`,
+      onConfirm: async () => {
+        try {
+          const batch = writeBatch(db);
+          const userRef = doc(db, 'users', auth.currentUser.uid);
+          const friendRef = doc(db, 'users', friendId);
 
-    try {
-      const batch = writeBatch(db);
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      const friendRef = doc(db, 'users', friendId);
+          const userSnap = await getDoc(userRef);
+          const userData = userSnap.exists() ? userSnap.data() : {};
 
-      const userSnap = await getDoc(userRef);
-      const userData = userSnap.exists() ? userSnap.data() : {};
+          const friendsToRemove = (userData.friends || []).filter(f => f.id === friendId);
+          if (friendsToRemove.length === 0) {
+            showNotification("Friend not found in your list.", "error");
+            setConfirmModal({ show: false, title: '', text: '', onConfirm: null });
+            return;
+          }
 
-      const friendsToRemove = (userData.friends || []).filter(f => f.id === friendId);
-      if (friendsToRemove.length === 0) {
-        alert("Friend not found in your list.");
-        return;
-      }
-
-      batch.update(userRef, {
-        friends: arrayRemove(...friendsToRemove)
-      });
-
-      const friendSnap = await getDoc(friendRef);
-      if (friendSnap.exists()) {
-        const friendData = friendSnap.data();
-        const userToRemoveFromFriend = (friendData.friends || []).filter(f => f.id === auth.currentUser.uid);
-        if (userToRemoveFromFriend.length > 0) {
-          batch.update(friendRef, {
-            friends: arrayRemove(...userToRemoveFromFriend)
+          batch.update(userRef, {
+            friends: arrayRemove(...friendsToRemove)
           });
+
+          const friendSnap = await getDoc(friendRef);
+          if (friendSnap.exists()) {
+            const friendData = friendSnap.data();
+            const userToRemoveFromFriend = (friendData.friends || []).filter(f => f.id === auth.currentUser.uid);
+            if (userToRemoveFromFriend.length > 0) {
+              batch.update(friendRef, {
+                friends: arrayRemove(...userToRemoveFromFriend)
+              });
+            }
+          }
+
+          await batch.commit();
+          showNotification(`You are no longer friends with ${friendUsername}`);
+        } catch (error) {
+          console.error('Error unfriending:', error);
+          showNotification('Error unfriending: ' + error.message, 'error');
+        } finally {
+          setConfirmModal({ show: false, title: '', text: '', onConfirm: null });
         }
       }
-
-      await batch.commit();
-
-      alert(`You are no longer friends with ${friendUsername}`);
-    } catch (error) {
-      console.error('Error unfriending:', error);
-      alert('Error unfriending: ' + error.message);
-    }
+    });
   };
 
   const totalPendingCount = pendingRequests.length + sentFriendRequests.length;
@@ -423,10 +437,10 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
               <div key={user.id} className="fl-result-card">
                 <div className="fl-user-info">
                   <img
-                    src={user.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                    src={user.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                     alt={user.username}
                     className="fl-user-avatar"
-                    onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
+                    onError={(e) => { e.target.src = `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`; }}
                   />
                   <span className="fl-user-name">{user.username}</span>
                 </div>
@@ -487,7 +501,7 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
                     <div className="fl-request-user">
                       <div className="fl-avatar-container" onClick={() => navigate(`/profile/${req.from}`)}>
                         <img
-                          src={req.fromProfileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                          src={req.fromProfileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                           alt={req.fromUsername}
                           className="fl-request-avatar"
                         />
@@ -515,7 +529,7 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
                     <div className="fl-request-user">
                       <div className="fl-avatar-container" onClick={() => navigate(`/profile/${req.to}`)}>
                         <img
-                          src={req.toProfileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                          src={req.toProfileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                           alt={req.toUsername}
                           className="fl-request-avatar"
                         />
@@ -574,10 +588,10 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
                         <div className="fl-avatar-container" onClick={() => navigate(`/profile/${friend.id}`)}>
                           <div className="fl-avatar-glow" />
                           <img
-                            src={friend.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                            src={friend.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                             alt={friend.username}
                             className="fl-friend-avatar"
-                            onError={(e) => { e.target.src = "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"; }}
+                            onError={(e) => { e.target.src = `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`; }}
                           />
                         </div>
                         <div className="fl-friend-text">
@@ -608,6 +622,35 @@ function FriendsList({ onSelectFriend, unreadCounts }) {
           </div>
         )}
       </div>
+
+      {notification.show && (
+        <div className={`fl-notification ${notification.type}`}>
+          {notification.message}
+        </div>
+      )}
+
+      {confirmModal.show && (
+        <div className="fl-modal-overlay">
+          <div className="fl-modal">
+            <h3 className="fl-modal-title">{confirmModal.title}</h3>
+            <p className="fl-modal-text">{confirmModal.text}</p>
+            <div className="fl-modal-actions">
+              <button
+                className="fl-modal-btn cancel"
+                onClick={() => setConfirmModal({ show: false, title: '', text: '', onConfirm: null })}
+              >
+                Cancel
+              </button>
+              <button
+                className="fl-modal-btn confirm"
+                onClick={confirmModal.onConfirm}
+              >
+                Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,7 +5,13 @@ export default defineConfig({
   plugins: [
     react(),
   ],
+  define: {
+    'process.env': '({})'
+  },
   server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    },
     proxy: {
       '/summoner-info': {
         target: 'http://localhost:3000',

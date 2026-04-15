@@ -23,12 +23,16 @@ import TermsOfService from "./components/TermsOfService";
 import Legal from "./components/Legal";
 import Contact from "./components/Contact";
 import FAQ from "./components/FAQ";
+import AuthActionHandler from "./components/AuthActionHandler";
 import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
-import { applyActionCode, checkActionCode, reload } from "firebase/auth";
+import ItemTooltip from "./components/ItemTooltip";
+import MatchDetails from "./components/MatchDetails";
+import { applyActionCode, checkActionCode, reload, getRedirectResult, linkWithCredential, EmailAuthProvider, signInWithPopup } from "firebase/auth";
 
 import { auth, db, storage } from "./firebase";
-import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs } from "firebase/firestore";
+import { useDDragon } from "./context/DDragonContext";
 import "./styles/index.css";
 
 
@@ -47,6 +51,87 @@ function ScrollToTop() {
   return null;
 }
 
+function UsernameModal({ user, onComplete, onCancel }) {
+  const { latestVersion } = useDDragon();
+  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const trimmedUsername = username.trim();
+
+    if (trimmedUsername.length < 3) return setError("Username must be at least 3 characters.");
+    if (trimmedUsername.length > 15) return setError("Username cannot exceed 15 characters.");
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const q = query(collection(db, "users"), where("usernameLowercase", "==", trimmedUsername.toLowerCase()));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        setError("Username already exists.");
+        setLoading(false);
+        return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, {
+        username: trimmedUsername,
+        usernameLowercase: trimmedUsername.toLowerCase(),
+        email: user.email.toLowerCase(),
+        createdAt: new Date(),
+        friends: [],
+        pendingRequests: [],
+        emailVerified: user.emailVerified,
+        role: "user",
+        profileImage: user.photoURL || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`
+      });
+      onComplete();
+    } catch (err) {
+      console.error("Error creating profile:", err);
+      setError("Could not save profile. Try again.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="username-modal glass-panel">
+        <div className="modal-header">
+          <div className="auth-title-bar" />
+          <h2 className="modal-title">Complete Your Profile</h2>
+        </div>
+        <p className="modal-subtitle">Choose a username for RiftHub</p>
+
+        {error && <div className="auth-error" style={{ marginBottom: '1rem' }}>{error}</div>}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-field">
+            <p className="auth-label">Username</p>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="auth-input"
+              placeholder="Enter username..."
+              maxLength={15}
+              required
+              autoFocus
+            />
+          </div>
+          <button disabled={loading} className="auth-submit">
+            <span>{loading ? "Saving..." : "Start Climbing"}</span>
+            <div className="auth-submit-shine" />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function NavLink({ to, children }) {
   const navigate = useNavigate();
   const isActive = window.location.pathname === to;
@@ -61,10 +146,40 @@ function NavLink({ to, children }) {
 }
 
 function App() {
+  const { latestVersion } = useDDragon();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState('user');
   const [loading, setLoading] = useState(true);
   const [selectedFriend, setSelectedFriend] = useState(null);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get("mode");
+    const oobCode = params.get("oobCode");
+
+    console.log("Auth Action Check:", {
+      mode,
+      hasCode: !!oobCode,
+      path: window.location.pathname,
+      loading
+    });
+
+    if (mode && oobCode) {
+      if (mode === "resetPassword") {
+        if (window.location.pathname !== "/auth/action") {
+          console.log("Redirecting to /auth/action...");
+          navigate(`/auth/action${window.location.search}`, { replace: true });
+        }
+      } else if (mode === "verifyEmail") {
+        handleVerifyEmail(oobCode);
+      }
+    }
+  }, [location.search, navigate, loading]);
+
   const [showSocial, setShowSocial] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [activeTab, setActiveTab] = useState('friends');
@@ -75,9 +190,9 @@ function App() {
   const [globalFriends, setGlobalFriends] = useState([]);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [verificationPopup, setVerificationPopup] = useState(null);
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
+  const [pendingUser, setPendingUser] = useState(null);
   const profileDropdownRef = useRef(null);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -85,14 +200,27 @@ function App() {
         const role = await initializeUserInFirestore(firebaseUser);
         setUserRole(role);
 
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+
+        const isDeleting = sessionStorage.getItem('ignoringUsernameModal');
+        if (!userDoc.exists() && !isDeleting) {
+          setPendingUser(firebaseUser);
+          setShowUsernameModal(true);
+        }
+
         try {
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           if (userDoc.exists()) {
             setProfileImage(userDoc.data().profileImage || null);
           }
         } catch (error) {
           console.error("Error fetching profile image:", error);
         }
+      } else {
+        sessionStorage.removeItem('ignoringUsernameModal');
+        setProfileImage(null);
+      }
+      if (firebaseUser) {
+        setProfileImage(prev => prev || firebaseUser.photoURL);
       }
       setUser(firebaseUser);
       setLoading(false);
@@ -100,15 +228,6 @@ function App() {
 
     return () => unsubscribe();
   }, []);
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const mode = params.get('mode');
-    const oobCode = params.get('oobCode');
-
-    if (mode === 'verifyEmail' && oobCode) {
-      handleVerifyEmail(oobCode);
-    }
-  }, [location.search]);
 
   const handleVerifyEmail = async (code) => {
     setVerificationPopup({ status: 'loading' });
@@ -135,6 +254,27 @@ function App() {
   };
 
   useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          const user = result.user;
+          const userRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userRef);
+
+          if (!userDoc.exists()) {
+            setPendingUser(user);
+            setShowUsernameModal(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error handling redirect:", error);
+      }
+    };
+    handleRedirect();
+  }, []);
+
+  useEffect(() => {
     if (!user) {
       setGlobalFriends([]);
       return;
@@ -145,6 +285,8 @@ function App() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setGlobalFriends(data.friends || []);
+        setProfileImage(data.profileImage || null);
+        setUserRole(data.role || 'user');
       }
     });
 
@@ -187,29 +329,21 @@ function App() {
 
   async function initializeUserInFirestore(user) {
     const userRef = doc(db, "users", user.uid);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
-      const newUserData = {
-        username: user.displayName,
-        usernameLowercase: (user.displayName || "anonymous").toLowerCase(),
-        email: user.email,
-        createdAt: new Date(),
-        friends: [],
-        pendingRequests: [],
-        role: "user",
-      };
-      await setDoc(userRef, newUserData);
-      return newUserData.role;
-    } else {
-      const existingData = userDoc.data();
-      if (!existingData.usernameLowercase) {
-        await updateDoc(userRef, {
-          usernameLowercase: (existingData.username || user.displayName || "anonymous").toLowerCase()
-        });
+    try {
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        if (!data.usernameLowercase) {
+          await updateDoc(userRef, {
+            usernameLowercase: (data.username || user.displayName || "anonymous").toLowerCase()
+          });
+        }
+        return data.role || 'user';
       }
-      return existingData.role || 'user';
+    } catch (error) {
+      console.error("Error in initializeUserInFirestore:", error);
     }
+    return 'user';
   }
 
   useEffect(() => {
@@ -322,7 +456,7 @@ function App() {
                     className="profile-btn"
                   >
                     <img
-                      src={profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                      src={profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                       alt="Profile"
                       className="profile-avatar"
                     />
@@ -374,8 +508,10 @@ function App() {
             <Route path="/feeds" element={<Feeds />} />
             <Route path="/summoner" element={<Summoner />} />
             <Route path="/live-game" element={<LiveGame />} />
+            <Route path="/match/:region/:matchId" element={<MatchDetails />} />
             <Route path="/queue" element={<QueueSystem />} />
             <Route path="/finishSignIn" element={<FinishSignIn />} />
+            <Route path="/auth/action" element={<AuthActionHandler />} />
             <Route path="/become-coach" element={<BecomeCoach />} />
             <Route path="/coach-rules" element={<CoachRules />} />
             <Route path="/coaching" element={<Coaching />} />
@@ -503,6 +639,16 @@ function App() {
           </div>
         )
       }
+      {showUsernameModal && pendingUser && (
+        <UsernameModal
+          user={pendingUser}
+          onComplete={() => {
+            setShowUsernameModal(false);
+            setPendingUser(null);
+            navigate('/profile');
+          }}
+        />
+      )}
     </div >
   );
 }

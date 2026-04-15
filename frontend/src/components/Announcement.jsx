@@ -221,7 +221,7 @@ function Announcement({ notificationCount, setNotificationCount, isEmbedded = fa
       });
 
       await addFriendOnAccept(gameData.userId, applicantUserId, applicantName);
-      alert(`Request accepted! ${applicantName} has been added to your game and as a friend.`);
+      alert(`Request accepted! ${applicantName} has been added as a friend.`);
       setGameRequests(prev => prev.filter(req =>
         !(req.gameId === gameId && req.userId === applicantUserId)
       ));

@@ -8,11 +8,13 @@ import {
     getDocs,
     doc,
     getDoc,
-    updateDoc,
-    setDoc,
+    deleteDoc,
+    writeBatch,
     serverTimestamp,
     orderBy
 } from 'firebase/firestore';
+import { fetchDDragon } from '../utils/fetchDDragon';
+import { useDDragon } from '../context/DDragonContext';
 
 
 
@@ -27,6 +29,7 @@ function AdminPanel() {
     const [currentCoaches, setCurrentCoaches] = useState([]);
     const [adminsMetadata, setAdminsMetadata] = useState({});
     const [staffUsernames, setStaffUsernames] = useState({});
+    const [allUsers, setAllUsers] = useState([]);
     const [processingId, setProcessingId] = useState(null);
     const [demotingId, setDemotingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -34,6 +37,7 @@ function AdminPanel() {
     const [showConfirmModal, setShowConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
     const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
     const [error, setError] = useState(null);
+    const { latestVersion } = useDDragon();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -77,6 +81,7 @@ function AdminPanel() {
 
         return () => unsubscribe();
     }, [navigate]);
+
 
     useEffect(() => {
         if (userRole === 'admin') {
@@ -178,6 +183,9 @@ function AdminPanel() {
                 });
                 setStaffUsernames(staffMap);
             }
+
+            const allUsersSnap = await getDocs(collection(db, "users"));
+            setAllUsers(allUsersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -366,8 +374,74 @@ function AdminPanel() {
                     console.error('Error demoting user:', error);
                     setNotification({ show: true, message: `Failed to demote user: ${error.message}`, type: 'error' });
                 }
-
                 setDemotingId(null);
+            }
+        });
+    };
+
+    const handleDeleteUser = async (userId) => {
+        setShowConfirmModal({
+            show: true,
+            title: `Delete User Account`,
+            message: `Are you sure you want to delete this user's profile and all their data (posts, friends, etc.)?`,
+            onConfirm: async () => {
+                setShowConfirmModal(prev => ({ ...prev, show: false }));
+                setProcessingId(userId);
+                try {
+                    try {
+                        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/queue/leave`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId })
+                        });
+                    } catch (e) { }
+
+                    const allUsersSnapshot = await getDocs(collection(db, "users"));
+                    let batch = writeBatch(db);
+                    let opCount = 0;
+
+                    allUsersSnapshot.forEach(uDoc => {
+                        if (uDoc.id !== userId) {
+                            const uData = uDoc.data();
+                            const updates = {};
+                            if (uData.friends?.some(f => f.id === userId)) updates.friends = uData.friends.filter(f => f.id !== userId);
+                            if (uData.pendingRequests?.some(r => r.from === userId)) updates.pendingRequests = uData.pendingRequests.filter(r => r.from !== userId);
+                            if (uData.sentFriendRequests?.some(r => r.to === userId)) updates.sentFriendRequests = uData.sentFriendRequests.filter(r => r.to !== userId);
+
+                            if (Object.keys(updates).length > 0) {
+                                batch.update(doc(db, "users", uDoc.id), updates);
+                                opCount++;
+                                if (opCount >= 400) {
+                                    batch.commit();
+                                    batch = writeBatch(db);
+                                    opCount = 0;
+                                }
+                            }
+                        }
+                    });
+                    if (opCount > 0) await batch.commit();
+
+                    const chatsSnap = await getDocs(query(collection(db, "chats"), where("participants", "array-contains", userId)));
+                    for (const cDoc of chatsSnap.docs) await deleteDoc(doc(db, "chats", cDoc.id));
+
+                    const postsSnap = await getDocs(query(collection(db, "posts"), where("userId", "==", userId)));
+                    for (const pDoc of postsSnap.docs) await deleteDoc(doc(db, "posts", pDoc.id));
+
+                    await deleteDoc(doc(db, "users", userId));
+
+                    try {
+                        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/users/${userId}`, {
+                            method: 'DELETE'
+                        });
+                    } catch (e) { }
+
+                    setAllUsers(prev => prev.filter(u => u.id !== userId));
+                    setNotification({ show: true, message: 'User and all their database data deleted successfully!', type: 'success' });
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    setNotification({ show: true, message: `Failed to delete user: ${error.message}`, type: 'error' });
+                }
+                setProcessingId(null);
             }
         });
     };
@@ -444,7 +518,7 @@ function AdminPanel() {
                         className={`tab ${activeTab === 'current-admins' ? 'active' : ''}`}
                         onClick={() => setActiveTab('current-admins')}
                     >
-                        Current Admins
+                        Admins
                         {currentAdmins.length > 0 && (
                             <span className="staff-count">({currentAdmins.length})</span>
                         )}
@@ -453,9 +527,18 @@ function AdminPanel() {
                         className={`tab ${activeTab === 'current-coaches' ? 'active' : ''}`}
                         onClick={() => setActiveTab('current-coaches')}
                     >
-                        Current Coaches
+                        Coaches
                         {currentCoaches.length > 0 && (
                             <span className="staff-count">({currentCoaches.length})</span>
+                        )}
+                    </button>
+                    <button
+                        className={`tab ${activeTab === 'all-users' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('all-users')}
+                    >
+                        Users
+                        {allUsers.length > 0 && (
+                            <span className="staff-count">({allUsers.length})</span>
                         )}
                     </button>
                 </div>
@@ -518,6 +601,60 @@ function AdminPanel() {
                         </div>
                     )}
 
+                    {activeTab === 'all-users' && (
+                        <div className="requests-section">
+                            <h2>Current Users Management</h2>
+                            <div className="user-list">
+                                {allUsers.map(u => (
+                                    <div key={u.id} className="user-item-row glass-panel">
+                                        <div className="user-main-info">
+                                            <div className="user-identity">
+                                                <img
+                                                    src={u.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
+                                                    alt=""
+                                                    className="user-list-avatar"
+                                                />
+                                                <div className="user-text-meta">
+                                                    <h3>{u.username}</h3>
+                                                    <span className="user-email">{u.email}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="user-status-indicators">
+                                                <div className={`verification-badge ${u.emailVerified ? 'verified' : 'unverified'}`}>
+                                                    {u.emailVerified ? 'Verified' : 'Unverified'}
+                                                </div>
+                                                {u.riotAccount && (
+                                                    <div className="riot-connection-badge">
+                                                        <img
+                                                            src={`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/${u.riotAccount.profileIconId}.png`}
+                                                            alt="Riot"
+                                                            className="riot-mini-icon"
+                                                            onError={(e) => {
+                                                                e.target.src = "/project-icons/Profile icons/riot guest icon.png";
+                                                            }}
+                                                        />
+                                                        {u.riotAccount.gameName}#{u.riotAccount.tagLine}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="user-actions">
+                                            <button
+                                                className="delete-user-btn"
+                                                onClick={() => handleDeleteUser(u.id)}
+                                                disabled={processingId === u.id || u.id === user.uid}
+                                            >
+                                                {processingId === u.id ? '...' : 'Delete Account'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {activeTab === 'coach-applications' && userRole === 'admin' && (
                         <div className="requests-section">
                             <h2>Pending Coach Applications</h2>
@@ -533,7 +670,7 @@ function AdminPanel() {
                                                 <div className="user-profile-section">
                                                     <div className="coach-avatar-box">
                                                         <img
-                                                            src={app.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                            src={app.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                                                             alt=""
                                                             className="coach-avatar"
                                                         />
@@ -651,7 +788,7 @@ function AdminPanel() {
                                             <div key={admin.id} className="staff-card">
                                                 <div className="staff-user-info">
                                                     <img
-                                                        src={admin.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                        src={admin.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                                                         alt=""
                                                         className="staff-avatar"
                                                     />
@@ -702,7 +839,7 @@ function AdminPanel() {
                                         <div key={coach.id} className="staff-card">
                                             <div className="staff-user-info">
                                                 <img
-                                                    src={coach.profileImage || "https://ddragon.leagueoflegends.com/cdn/14.3.1/img/profileicon/29.png"}
+                                                    src={coach.profileImage || `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/profileicon/29.png`}
                                                     alt=""
                                                     className="staff-avatar"
                                                 />

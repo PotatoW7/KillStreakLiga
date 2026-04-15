@@ -6,10 +6,11 @@ import RankedInfo from "./RankedInfo";
 import MatchHistory from "./MatchHistory";
 import ChampionMastery from "./ChampionMastery";
 import { fetchDDragon } from "../utils/fetchDDragon";
+import { useDDragon } from "../context/DDragonContext";
 
 function Summoner() {
-  const [searchInput, setSearchInput] = useState(""); // Separate state for search input
-  const [displayRiotId, setDisplayRiotId] = useState(""); // Separate state for displayed summoner name
+  const [searchInput, setSearchInput] = useState("");
+  const [displayRiotId, setDisplayRiotId] = useState("");
   const [region, setRegion] = useState("euw1");
   const [mode, setMode] = useState("all");
   const [data, setData] = useState(null);
@@ -21,7 +22,7 @@ function Summoner() {
   const [champIdToName, setChampIdToName] = useState({});
   const [champNameToId, setChampNameToId] = useState({});
   const [itemsData, setItemsData] = useState({});
-  const [version, setVersion] = useState("");
+  const { latestVersion: version } = useDDragon();
   const [loading, setLoading] = useState(false);
   const [matchLoading, setMatchLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -35,8 +36,8 @@ function Summoner() {
     const regionParam = searchParams.get('region');
 
     if (search && regionParam) {
-      setSearchInput(search); // Set search input
-      setDisplayRiotId(search); // Set display name
+      setSearchInput(search);
+      setDisplayRiotId(search);
       setRegion(regionParam);
       searchPlayer(search, regionParam);
     }
@@ -45,8 +46,8 @@ function Summoner() {
   useEffect(() => {
     const handleSearchPlayer = (event) => {
       const { riotId, region } = event.detail;
-      setSearchInput(riotId); // Set search input
-      setDisplayRiotId(riotId); // Set display name
+      setSearchInput(riotId);
+      setDisplayRiotId(riotId);
       setRegion(region);
       searchPlayer(riotId, region);
     };
@@ -90,7 +91,7 @@ function Summoner() {
     setElapsedTime(0);
     if (timerRef.current) clearInterval(timerRef.current);
     setMatches([]);
-    setDisplayRiotId(playerRiotId); // Set display name when searching
+    setDisplayRiotId(playerRiotId);
     setRegion(playerRegion);
 
     const [gameName, tagLine] = playerRiotId.split("#");
@@ -102,8 +103,7 @@ function Summoner() {
     }
 
     try {
-      const { latestVersion, champIdToName, champNameToId, itemsData } = await fetchDDragon();
-      setVersion(latestVersion);
+      const { champIdToName, champNameToId, itemsData } = await fetchDDragon();
       setChampIdToName(champIdToName);
       setChampNameToId(champNameToId);
       setItemsData(itemsData);
@@ -150,8 +150,8 @@ function Summoner() {
   };
 
   const handleRecentSearchClick = (recentRiotId, recentRegion) => {
-    setSearchInput(recentRiotId); // Set search input
-    setDisplayRiotId(recentRiotId); // Set display name
+    setSearchInput(recentRiotId);
+    setDisplayRiotId(recentRiotId);
     setRegion(recentRegion);
     searchPlayer(recentRiotId, recentRegion);
   };
@@ -184,7 +184,7 @@ function Summoner() {
   };
 
   const getSummonerInfo = async () => {
-    await searchPlayer(searchInput, region); // Use searchInput for searching
+    await searchPlayer(searchInput, region);
   };
 
   const handleKeyPress = (e) => {
@@ -306,15 +306,14 @@ function Summoner() {
 
   return (
     <div className="summoner-page">
-      {/* Search Section */}
       <div className="summoner-search">
         <div className="summoner-search-glow-wrapper">
           <div className="summoner-search-glow"></div>
           <div className="summoner-search-bar glass-panel">
             <input
               type="text"
-              value={searchInput} // Use searchInput state
-              onChange={(e) => setSearchInput(e.target.value)} // Update only searchInput
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Faker#KR1"
               className="summoner-search-input"
@@ -457,8 +456,6 @@ function Summoner() {
               })()}
             </div>
           </div>
-
-          {/* Mastery section - no margin bottom to collide with profile */}
           {data.mastery && data.mastery.length > 0 && (
             <div className="summoner-mastery-strip glass-panel" style={{ marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
               <h4 className="summoner-section-title">
@@ -534,6 +531,7 @@ function Summoner() {
                 itemsData={itemsData}
                 version={version}
                 puuid={data.puuid}
+                region={region}
                 onPlayerClick={searchPlayer}
               />
             )}

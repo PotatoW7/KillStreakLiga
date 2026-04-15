@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchDDragon } from "../utils/fetchDDragon";
+import { useDDragon } from "../context/DDragonContext";
 import ItemTooltip from "./ItemTooltip";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, TrendingUp } from "lucide-react";
 
-export default function MatchHistory({ matches, champIdToName, champNameToId, itemsData, version, puuid, onPlayerClick }) {
+export default function MatchHistory({ matches, champIdToName, champNameToId, itemsData, version, puuid, region, onPlayerClick }) {
+  const navigate = useNavigate();
+  const { latestVersion: ddragonVersion } = useDDragon();
   const [expandedMatch, setExpandedMatch] = useState(null);
-  const [latestVersion, setLatestVersion] = useState(version);
+  const [latestVersion, setLatestVersion] = useState(version || ddragonVersion);
   const [hoveredPlayer, setHoveredPlayer] = useState(null);
   const [filterChampion, setFilterChampion] = useState("all");
   const [filterQueue, setFilterQueue] = useState("all");
@@ -20,13 +24,12 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
   useEffect(() => {
     fetchDDragon()
       .then((data) => {
-        if (!version) setLatestVersion(data.latestVersion);
         setRunesData(data.runesData);
         setAugmentsData(data.augmentsData);
         setSpellIdToData(data.spellIdToData);
       })
       .catch((error) => console.error("Failed to fetch DDragon data:", error));
-  }, [version]);
+  }, []);
 
   const currentVersion = version || latestVersion;
   const toggleMatch = (index) => setExpandedMatch(expandedMatch === index ? null : index);
@@ -265,6 +268,38 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
     );
   };
 
+  const renderMiniParticipants = (players, matchQueueId) => {
+    const blue = players.filter(p => p.teamId === 100);
+    const red = players.filter(p => p.teamId === 200);
+
+    const renderColumn = (teamPlayers, side) => (
+      <div className={`mh-mini-team ${side}`}>
+        {teamPlayers.map((p, idx) => (
+          <div key={idx} className="mh-mini-player">
+            <img
+              src={`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champIdToName?.[p.championId] || p.championName}.png`}
+              className="mh-mini-champ-icon"
+              onError={(e) => (e.target.src = "/placeholder-champ.png")}
+            />
+            <span 
+              className={`mh-mini-riot-id ${p.puuid === puuid ? "current" : ""}`}
+              onClick={(e) => handlePlayerClick(p.riotId, e)}
+            >
+              {p.riotId.split('#')[0]}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+
+    return (
+      <div className="mh-participants-mini">
+        {renderColumn(blue, "blue")}
+        {renderColumn(red, "red")}
+      </div>
+    );
+  };
+
   const handleItemEnter = (id, event) => {
     const item = itemsData?.[id];
     if (item) {
@@ -419,8 +454,6 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
                 <div className="mh-time-ago">{timeAgo}</div>
               </div>
             </div>
-
-            {/* Stats */}
             <div className="mh-stats">
               <div className="mh-kda">
                 <div className="mh-kda-numbers">
@@ -455,9 +488,22 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
               </div>
             </div>
 
-            {/* Toggle */}
-            <div className={`mh-toggle ${isWin ? "win" : "loss"}`}>
-              <span className={`mh-toggle-arrow ${expanded ? "expanded" : ""}`}>▼</span>
+            {renderMiniParticipants(match.players, match.queueId)}
+
+            <div className="mh-actions">
+              <button 
+                className="mh-quick-view-btn"
+                title="Quick View Details"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/match/${region || 'euw1'}/${match.matchId}?puuid=${puuid}`);
+                }}
+              >
+                <TrendingUp size={16} />
+              </button>
+              <div className={`mh-toggle ${isWin ? "win" : "loss"}`}>
+                <span className={`mh-toggle-arrow ${expanded ? "expanded" : ""}`}>▼</span>
+              </div>
             </div>
           </div>
         </div>
@@ -486,6 +532,17 @@ export default function MatchHistory({ matches, champIdToName, champNameToId, it
                 </div>
               </div>
             )}
+            <div className="mh-view-details-wrapper">
+              <button 
+                className={`mh-view-details-btn ${isWin ? "win" : "loss"}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/match/${region || 'euw1'}/${match.matchId}?puuid=${puuid}`);
+                }}
+              >
+                View Detailed Stats
+              </button>
+            </div>
           </div>
         )}
       </div>
