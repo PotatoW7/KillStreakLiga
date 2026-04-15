@@ -29,14 +29,14 @@ const Contact = () => {
                                 <div>
                                     <h3 className="legal-contact-label" style={{ letterSpacing: '0.3em', color: 'hsl(var(--primary) / 0.7)' }}>Email Address</h3>
                                     <a
-                                        href="mailto:rifthubofficial@gmail.com"
+                                        href="mailto:KillStreakofficial@gmail.com"
                                         style={{ fontSize: '1.25rem', fontWeight: 900, color: 'white', transition: 'color 0.3s', letterSpacing: '-0.025em' }}
                                     >
-                                        rifthubofficial@gmail.com
+                                        KillStreakofficial@gmail.com
                                     </a>
                                 </div>
                                 <button
-                                    onClick={() => window.location.href = "mailto:rifthubofficial@gmail.com"}
+                                    onClick={() => window.location.href = "mailto:KillStreakofficial@gmail.com"}
                                     className="legal-contact-btn"
                                     style={{ flexShrink: 0 }}
                                 >

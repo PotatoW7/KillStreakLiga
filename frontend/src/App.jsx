@@ -104,7 +104,7 @@ function UsernameModal({ user, onComplete, onCancel }) {
           <div className="auth-title-bar" />
           <h2 className="modal-title">Complete Your Profile</h2>
         </div>
-        <p className="modal-subtitle">Choose a username for RiftHub</p>
+        <p className="modal-subtitle">Choose a username for KillStreak</p>
 
         {error && <div className="auth-error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
@@ -390,7 +390,7 @@ function App() {
       <header className="app-header">
         <div className="header-inner">
           <Link className="logo-link" to="/">
-            <img src="/rifthub.png" alt="RiftHub Logo" className="logo-image" />
+            <img src="/KillStreak.png" alt="KillStreak Logo" className="logo-image" />
             <span className="logo-text">KILLSTREAK</span>
           </Link>
 

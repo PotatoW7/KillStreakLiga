@@ -9,7 +9,7 @@ const FAQ = () => {
     }, []);
 
     const sections = [
-        { id: 'what-is-rifthub', title: 'Neural Overview' },
+        { id: 'what-is-KillStreak', title: 'Neural Overview' },
         { id: 'is-it-free', title: 'Resource Allocation' },
         { id: 'riot-games', title: 'Synchronization' },
         { id: 'coaching', title: 'Strategic Training' },
@@ -58,7 +58,7 @@ const FAQ = () => {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem', marginLeft: '1.25rem' }}>
-                        <section id="what-is-rifthub" className="legal-section" style={{ scrollMarginTop: '8rem' }}>
+                        <section id="what-is-KillStreak" className="legal-section" style={{ scrollMarginTop: '8rem' }}>
                             <h2 className="faq-question">
                                 <span className="faq-number">01.</span> What is KillStreak?
                             </h2>
@@ -82,7 +82,7 @@ const FAQ = () => {
                                 <span className="faq-number">03.</span> Is it official?
                             </h2>
                             <p className="faq-answer">
-                                KillStreak is entirely independent. We are not endorsed by Riot Games and do not reflect their views or policies
+                                KillStreak.lol is entirely independent. We are not endorsed by Riot Games and do not reflect their views or policies
                             </p>
                         </section>
 

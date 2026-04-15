@@ -12,7 +12,7 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://rifthub-2358b-default-rtdb.firebaseio.com/"
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://KillStreak-2358b-default-rtdb.firebaseio.com/"
 };
 
 const app = initializeApp(firebaseConfig);

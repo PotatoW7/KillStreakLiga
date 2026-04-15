@@ -7,7 +7,7 @@ const CookieConsent = () => {
 
     useEffect(() => {
         const checkConsent = async () => {
-            const consent = localStorage.getItem('rifthub_cookie_consent');
+            const consent = localStorage.getItem('KillStreak_cookie_consent');
 
             if (consent) {
                 try {
@@ -32,7 +32,7 @@ const CookieConsent = () => {
 
     const handleAcceptAll = async () => {
         const newPreferences = { essential: true };
-        localStorage.setItem('rifthub_cookie_consent', JSON.stringify(newPreferences));
+        localStorage.setItem('KillStreak_cookie_consent', JSON.stringify(newPreferences));
 
         try {
             await setPersistence(auth, browserLocalPersistence);
@@ -45,7 +45,7 @@ const CookieConsent = () => {
 
     const handleDeclineAll = async () => {
         const newPreferences = { essential: false };
-        localStorage.setItem('rifthub_cookie_consent', JSON.stringify(newPreferences));
+        localStorage.setItem('KillStreak_cookie_consent', JSON.stringify(newPreferences));
 
         try {
             await setPersistence(auth, browserSessionPersistence);

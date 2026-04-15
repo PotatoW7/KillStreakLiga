@@ -179,9 +179,9 @@ function Login() {
               </div>
 
               <div className="auth-extra-row">
-                <button 
-                  type="button" 
-                  onClick={() => setShowForgot(!showForgot)} 
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(!showForgot)}
                   className="auth-forgot-link"
                 >
                   Forgot Password?
@@ -192,15 +192,15 @@ function Login() {
                 <div className="auth-forgot-panel animate-slideDown">
                   <p className="auth-forgot-hint">Enter your email to receive a password reset link.</p>
                   <div className="auth-field">
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       placeholder="recovery@email.com"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       className="auth-input"
                     />
                   </div>
-                  <button 
+                  <button
                     onClick={handleForgotPassword}
                     className="auth-reset-btn"
                     disabled={loading || resetCooldown > 0}

@@ -59,7 +59,7 @@ const TermsOfService = () => {
                                 <h2 className="legal-section-title">1. Acceptance of Terms</h2>
                             </div>
                             <p className="legal-text">
-                                By accessing or using <span className="highlight">KillStreak</span> (the "Platform"), you formally agree to comply with and be bound by these Terms of Service. Access to the platform implies total acceptance of these terms.
+                                By accessing or using <span className="highlight">KillStreak.lol</span> (the "Platform"), you formally agree to comply with and be bound by these Terms of Service. Access to the platform implies total acceptance of these terms.
                             </p>
                         </section>
 
@@ -69,7 +69,7 @@ const TermsOfService = () => {
                                 <h2 className="legal-section-title">2. Service Overview</h2>
                             </div>
                             <p className="legal-text">
-                                KillStreak provides League of Legends analytics, match history, and a peer-to-peer coaching marketplace. We provide in-depth data and community features to the user base.
+                                KillStreak.lol provides League of Legends analytics, match history, and a peer-to-peer coaching marketplace. We provide in-depth data and community features to the user base.
                             </p>
                         </section>
 
@@ -134,7 +134,7 @@ const TermsOfService = () => {
                                 <h2 className="legal-section-title">7. Intellectual Property</h2>
                             </div>
                             <p className="legal-text">
-                                All original content, site design, and architectural code on KillStreak remain exclusive property of KillStreak. League of Legends items are subject to Riot Games, Inc. ownership.
+                                All original content, site design, and architectural code on KillStreak.lol remain exclusive property of KillStreak. League of Legends items are subject to Riot Games, Inc. ownership.
                             </p>
                         </section>
 
@@ -166,9 +166,9 @@ const TermsOfService = () => {
                             <div className="legal-contact-card">
                                 <div>
                                     <p className="legal-contact-label">Support Email:</p>
-                                    <p className="legal-contact-email">rifthubofficial@gmail.com</p>
+                                    <p className="legal-contact-email">KillStreakofficial@gmail.com</p>
                                 </div>
-                                <a href="mailto:rifthubofficial@gmail.com" className="legal-contact-btn">
+                                <a href="mailto:KillStreakofficial@gmail.com" className="legal-contact-btn">
                                     Contact Support
                                 </a>
                             </div>
